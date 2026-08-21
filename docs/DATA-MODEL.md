@@ -1,132 +1,149 @@
-# Seedly — datový model
+# Data model
 
-## Dvě rozhodnutí, ze kterých plyne všechno ostatní
+## Two decisions everything else follows from
 
-**1. Turnaj je uspořádaný seznam fází (`stages`), ne pevná struktura.**
+### 1. A tournament is an ordered list of stages, not a fixed shape
 
-Každá fáze má vlastní formát. „Skupiny a pak playoff" a „playoff a pak skupiny"
-nejsou dva různé typy turnaje — je to stejná struktura s jiným `stages.position`.
-Přidat útěchovou větev nebo Swiss kolo na začátek znamená vložit další řádek,
-ne sáhnout do schématu.
+Each stage carries its own format. "Groups, then playoff" and "playoff, then
+groups" are not two kinds of tournament — they are the same structure with a
+different `stages.position`. Adding a consolation bracket or a Swiss round at
+the front means inserting a row, not touching the schema.
 
-**2. Pozice v turnaji (`slots`) existuje dřív než účastník, který ji obsadí.**
+### 2. A position exists before the participant who fills it
 
-Slot je místo, které se teprve naplní: „Vítěz QF1", „1. ze skupiny A". Dokud
-zdroj nedoběhne, `slot.entry` je `null` a zobrazuje se `slot.label`.
+A **slot** is a place that gets filled later: "Winner of QF1", "1st of Pool A".
+Until its source resolves, `slot.entry` is null and `slot.label` is displayed.
 
-Tohle je celý důvod, proč tabulka existuje. Bez ní nemůžeš vykreslit pavouka,
-dokud neznáš jména — a přesně to potřebuješ na projektoru celé dopoledne, kdy
-se hrají skupiny a diváci chtějí vidět, o co se hraje.
+This is the entire reason the table exists. Without it you cannot draw a
+bracket before you know the names — and that is exactly what the projector has
+to show all morning, while the group stage is still deciding who is in it.
 
 ```mermaid
 erDiagram
-    tournaments ||--o{ stages    : "má fáze"
-    tournaments ||--o{ entries   : "má účastníky"
+    tournaments ||--o{ stages    : "has stages"
+    tournaments ||--o{ entries   : "has participants"
     tournaments ||--o{ courts    : ""
     tournaments ||--o{ staff     : ""
-    tournaments ||--o{ displays  : "projektory"
-    stages      ||--o{ pools     : "má skupiny/větve"
+    tournaments ||--o{ displays  : "projector screens"
+    stages      ||--o{ pools     : "groups / bracket sides"
     stages      ||--o{ slots     : ""
     stages      ||--o{ standings : ""
     pools       ||--o{ slots     : ""
-    slots       }o--o| entries   : "rozřešeno na"
-    slots       }o--o| fixtures  : "zdroj: vítěz/poražený"
-    fixtures    }o--|| slots     : "domácí + hosté"
-    fixtures    ||--o{ games     : "sety"
+    slots       }o--o| entries   : "resolves to"
+    slots       }o--o| fixtures  : "source: winner / loser"
+    fixtures    }o--|| slots     : "home + away"
+    fixtures    ||--o{ games     : "sets"
     entries     ||--o{ standings : ""
 ```
 
-## Kolekce
+## Collections
 
-| Kolekce | Co to je |
+| Collection | What it is |
 |---|---|
-| `tournaments` | Akce. Vlastník, sport, konfigurace bodování a tiebreaků. |
-| `staff` | Kdo smí turnaj obsluhovat (`organizer` / `referee` / `scorer`). |
-| `courts` | Kurty/stoly. Používá rozpis a projektor („Kurt 3: další zápas"). |
-| `entries` | Účastník — tým i jednotlivec. `short_name` je to, co kreslí projektor. |
-| `stages` | Fáze. `position` + `format` + `config`. |
-| `pools` | Samostatná podsoutěž uvnitř fáze: jedna skupina, nebo jedna větev dvojité vyřazovačky. |
-| `slots` | Naplnitelná pozice. Jádro celého modelu. |
-| `fixtures` | Zápas. |
-| `games` | Sety/legy uvnitř zápasu. |
-| `standings` | Tabulka. Materializovaná, ne SQL view. |
-| `displays` | Projekční obrazovka. |
+| `tournaments` | The event. Owner, sport, scoring and tiebreak config. |
+| `staff` | Who may operate it (`organizer` / `referee` / `scorer`). |
+| `courts` | Playing areas. Used by the schedule and the projector. |
+| `entries` | A participant — team or individual. `short_name` is what the projector draws. |
+| `stages` | A phase. `position` + `format` + `config`. |
+| `pools` | A self-contained sub-competition inside a stage: one round-robin group, or one side of a double-elimination bracket. |
+| `slots` | A fillable position. The core of the model. |
+| `fixtures` | A match. |
+| `games` | Sets / legs / maps inside a fixture. |
+| `standings` | A table. Materialised, not a SQL view. |
+| `displays` | A projector screen. |
 
-## Jak vzniká „playoff navázané na skupiny"
+## How a playoff hangs off a group stage
 
-Slot v playoff nemá `entry`, ale má zdroj:
+A playoff slot has no `entry`, but it does have a source:
 
-```js
-{ source_type: "pool_rank", source_pool: <id skupiny A>, source_position: 1,
-  label: "1. A", entry: null }
+```json
+{
+  "source_type": "pool_rank",
+  "source_pool": "<id of pool A>",
+  "source_position": 1,
+  "label": "1. A",
+  "entry": null
+}
 ```
 
-Když skupina A doběhne, engine přepočítá `standings`, najde všechny sloty se
-`source_type: "pool_rank"` mířící na tuhle skupinu a doplní jim `entry`.
-Stejný mechanismus řeší postup uvnitř pavouka (`fixture_winner` /
-`fixture_loser`) i navázání skupiny na předchozí playoff (`stage_rank`).
+When pool A finishes, the engine recomputes `standings`, finds every slot whose
+`source_type` is `pool_rank` pointing at that pool, and fills in `entry`. The
+same mechanism handles progression inside a bracket (`fixture_winner`,
+`fixture_loser`) and a group stage fed by an earlier playoff (`stage_rank`).
 
-Jeden mechanismus, všechny směry postupu. Proto model zvládne i „playoff na
-začátku" bez zvláštního případu.
+One mechanism, every direction of progression. That is why playoff-first needs
+no special case.
 
-## Záměrné odchylky od čistoty
+## Deliberate impurities
 
-**`fixtures.home_entry` / `away_entry` jsou denormalizované ze slotů.**
-Bez toho by projektor musel číst `fixtures` → `slots` → `entries`, tedy dvě
-úrovně expandu. S tím je to jeden dotaz. Cenou je, že engine musí obě pole
-udržovat — což stejně dělá, protože zapisuje obojí ve stejné transakci.
-Autorita je `slot`; `fixtures.*_entry` je cache.
+**`fixtures.home_entry` / `away_entry` are denormalised from the slots.**
+Without them the projector would have to read `fixtures` → `slots` → `entries`,
+two levels of expand. With them it is one query. The cost is that the resolver
+has to maintain both — which it does anyway, since it writes both in the same
+transaction. The slot is authoritative; `fixtures.*_entry` is cache.
 
-**`standings` je tabulka, ne view.** V SQL se dá spočítat body i skóre, ale
-ne vzájemný zápas — a ten je v pravidlech skoro každého sportu první tiebreak.
-Engine tabulku přepočítá po každém uzavřeném zápase a zapíše včetně `tiebreak`
-auditu (která kritéria se v jakém pořadí použila). Až se někdo bude po turnaji
-hádat o postup, tohle pole spor ukončí. Zápisová pravidla jsou `null` — mění
-to jen hook, ne klient.
+**`standings` is a table, not a view.** SQL can compute points and goal
+difference, but not head-to-head — and head-to-head is the first tiebreak in
+almost every sport's rules. The engine recomputes after each settled fixture
+and writes the result, including a `tiebreak` audit recording which criteria
+were applied in which order. When somebody disputes a qualification after the
+tournament, that field ends the argument. Write rules are nil: only hooks and
+superusers touch it.
 
-**`games` je zvlášť, i když by se skóre vešlo do JSONu.** Chceš dotazovat
-„kolik setů vyhrál tým X celkem" kvůli tiebreakům; přes JSON to nejde rozumně.
+**`games` is separate even though the scores would fit in a JSON column.** You
+need to query "how many sets has team X won in total" for tiebreaks, and that
+is not reasonable through JSON.
 
-## Názvosloví: pozor na SQL klíčová slova
+## Naming: SQL keywords
 
-SQLite si rezervuje `GROUP`, `ORDER`, `MATCH`, `INDEX`, `KEY`, `RANK`, `FILTER`.
-Všechna jsou v téhle doméně přirozená, a všechna jsou proto na úrovni úložiště
-záměrně přejmenovaná:
+SQLite reserves `GROUP`, `ORDER`, `MATCH`, `INDEX`, `KEY`, `RANK` and `FILTER`.
+All seven are natural words in this domain, so all seven are deliberately
+renamed at the storage layer:
 
-| Přirozeně | V DB | Kde |
+| Natural word | In the database | Where |
 |---|---|---|
-| group | `pool` / `pools` | skupina i větev pavouka |
-| order | `position` | všude |
-| match | `fixture` / `fixtures` | zápas |
-| index | `number` | `games.number` = číslo setu |
+| group | `pool` / `pools` | a group, or a bracket side |
+| order | `position` | everywhere |
+| match | `fixture` / `fixtures` | a match |
+| index | `number` | `games.number` = set number |
 | key | `token` | `displays.token` |
 | rank | `position` | `standings.position` |
 | filter | `scope` | `displays.scope` |
 
-V UI klidně piš „Skupina A" a „Zápas" — přejmenování se týká jen schématu.
+Use "Group A" and "Match" freely in the UI — the renaming is a storage concern.
 
-## Projektor
+## A PocketBase constraint worth remembering
 
-`displays` má `token` v URL jako jediné pověření, aby šlo obrazovku otevřít na
-půjčeném notebooku bez přihlašování. Čtecí pravidlo je:
+**A required number field rejects 0.** PocketBase validates `required` as "not
+blank" and treats 0 as blank, so every zero-based ordering column here (stage
+and pool `position`, slot and fixture `round`/`position`) has to be declared
+optional. The unique indexes are what actually protect ordering. Fields that
+are genuinely 1-based — `games.number`, `standings.position` — stay required.
+
+## The projector
+
+`displays.token` in the URL is the screen's only credential, so it can be
+opened on a borrowed laptop without logging in. The read rule is:
 
 ```
 active = true && token = @request.query.token
 ```
 
-`listRule` tedy nejde zneužít k vylistování obrazovek — bez tokenu nevrátí nic.
+`listRule` therefore cannot be used to enumerate screens — without the token it
+returns nothing.
 
-Pro produkci doporučuju místo přímého čtení kolekcí přidat custom routu
-`GET /api/display/{token}`, která vrátí jeden hotový payload (fáze + tabulky +
-zápasy + téma). Ušetří to projektoru pět realtime subscriptions a dá ti jedno
-místo, kde řešit cache.
+For production, prefer a custom route `GET /api/display/{token}` returning one
+assembled payload (stages, standings, fixtures, theme) over reading the
+collections directly. It saves the screen five realtime subscriptions and gives
+you one place to handle caching.
 
-## Co model zatím neřeší
+## What the model does not solve yet
 
-- **Swiss párování** — `stages.format` hodnotu má, generátor ne.
-- **Dvojitá vyřazovačka** — `pools.kind` má `winners`/`losers`, generátor ne.
-  Model na to připravený je; chybí kód.
-- **Vícedenní rozpis a kolize kurtů** — `scheduled_at` a `court` existují,
-  ale nic nehlídá, že tým hraje dva zápasy naráz.
-- **Historie výsledků** — přepsané skóre se ztratí. Až to bude vadit, přidej
-  append-only `fixture_events`.
+- **Standings computation.** The table exists; nothing fills it.
+- **`pool_rank` / `stage_rank` resolution**, which depends on standings.
+- **Swiss pairing** and **double elimination** generators. `pools.kind` already
+  has `winners`/`losers`; the code does not exist.
+- **Schedule conflicts.** `scheduled_at` and `court` exist, but nothing stops a
+  team being booked onto two courts at once.
+- **Result history.** An overwritten score is gone. When that starts to matter,
+  add an append-only `fixture_events` collection.
