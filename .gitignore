@@ -11,3 +11,7 @@ backend/pocketbase
 .env.*
 !.env.example
 .DS_Store
+
+# IDE
+.idea/
+.vscode/
