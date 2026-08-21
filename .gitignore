@@ -1,0 +1,13 @@
+node_modules/
+dist/
+*.log
+
+# PocketBase runtime data — never commit; pb_migrations IS committed
+backend/pb_data/
+backend/pocketbase
+backend/pb_hooks/engine.js
+
+.env
+.env.*
+!.env.example
+.DS_Store
