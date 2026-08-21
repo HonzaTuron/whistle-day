@@ -74,9 +74,9 @@ func sel(name string, required bool, values ...string) *core.SelectField {
 	return &core.SelectField{Name: name, Required: required, MaxSelect: 1, Values: values}
 }
 
-func jsn(name string) *core.JSONField  { return &core.JSONField{Name: name, MaxSize: 200000} }
-func bln(name string) *core.BoolField  { return &core.BoolField{Name: name} }
-func dt(name string) *core.DateField   { return &core.DateField{Name: name} }
+func jsn(name string) *core.JSONField { return &core.JSONField{Name: name, MaxSize: 200000} }
+func bln(name string) *core.BoolField { return &core.BoolField{Name: name} }
+func dt(name string) *core.DateField  { return &core.DateField{Name: name} }
 
 func img(name string, maxSize int64) *core.FileField {
 	return &core.FileField{
@@ -342,7 +342,9 @@ func init() {
 			txt("notes", false, 500),
 		)
 		stamps(fixtures)
-		fixtures.AddIndex("idx_fixtures_position", true, "stage, round, position", "")
+		// Pool must be part of the key: in a group stage, pool A and pool B both
+		// have a fixture at round 0 position 0.
+		fixtures.AddIndex("idx_fixtures_position", true, "stage, COALESCE(pool, ''), round, position", "")
 		fixtures.AddIndex("idx_fixtures_board", false, "tournament, status", "")
 		fixtures.AddIndex("idx_fixtures_schedule", false, "court, scheduled_at", "")
 		b.save(fixtures)

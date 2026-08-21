@@ -118,6 +118,16 @@ export type StageFormat =
 
 export type StageStatus = "draft" | "seeded" | "live" | "finished";
 
+/**
+ * Where a stage's participants come from. Present means the stage is fed by an
+ * earlier stage's pool tables rather than by the raw entry list — this is the
+ * "groups feed the playoff" wiring.
+ */
+export interface SeedSource {
+  stage: Id;
+  advancePerPool: number;
+}
+
 export interface StageConfig {
   /** round_robin */
   poolCount?: number;
@@ -129,6 +139,8 @@ export interface StageConfig {
   consolation?: boolean;
   /** swiss */
   rounds?: number;
+  /** Seed this stage from an earlier stage's tables. */
+  seedFrom?: SeedSource;
 }
 
 export interface Stage {
@@ -293,10 +305,14 @@ export interface Display {
 }
 
 // ---------------------------------------------------------------------------
-// drafts — what the generators emit before anything has a PocketBase id
+// plan drafts — the wire format of POST /api/stages/{stage}/generate
+//
+// These mirror the Go structs in backend/internal/tournament/generate.go. The
+// generators run on the server; `?dry_run=1` returns this shape without
+// writing, which is how the organiser previews a draw.
 // ---------------------------------------------------------------------------
 
-/** A local, generator-scoped key used to wire drafts together. */
+/** A generator-scoped key wiring drafts together before ids exist. */
 export type DraftKey = string;
 
 export interface PoolDraft {
@@ -304,36 +320,55 @@ export interface PoolDraft {
   name: string;
   position: number;
   kind: PoolKind;
-  advance_count: number | null;
+  advance_count: number;
 }
 
 export interface SlotDraft {
   key: DraftKey;
-  poolKey: DraftKey | null;
+  pool_key: DraftKey;
   round: number;
   position: number;
   label: string;
-  entry: Id | null;
+  entry: Id;
   source_type: SlotSourceType;
-  sourceFixtureKey: DraftKey | null;
-  sourcePoolKey: DraftKey | null;
-  source_position: number | null;
+  source_fixture_key: DraftKey;
+  source_pool: Id;
+  source_stage: Id;
+  source_position: number;
 }
 
 export interface FixtureDraft {
   key: DraftKey;
-  poolKey: DraftKey | null;
+  pool_key: DraftKey;
   round: number;
   position: number;
   code: string;
-  homeSlotKey: DraftKey;
-  awaySlotKey: DraftKey;
+  home_slot_key: DraftKey;
+  away_slot_key: DraftKey;
   status: FixtureStatus;
 }
 
-/** Everything one stage needs, ready to be written in a single transaction. */
+/** Everything one stage needs, written in a single transaction on commit. */
 export interface StagePlan {
   pools: PoolDraft[];
   slots: SlotDraft[];
   fixtures: FixtureDraft[];
+}
+
+export interface GenerateDryRunResponse {
+  stage: Id;
+  dry_run: true;
+  plan: StagePlan;
+}
+
+export interface GenerateCommitResponse {
+  stage: Id;
+  pools: number;
+  slots: number;
+  fixtures: number;
+}
+
+export interface ResolveResponse {
+  stage: Id;
+  resolved: number;
 }

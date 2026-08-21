@@ -3,17 +3,17 @@
 Tournament organiser with arbitrary stage ordering — groups, playoff, Swiss, in
 any sequence — and a public projector view.
 
-**Status: skeleton.** The data model, the slot resolver and the bracket
-generators work and are tested. There is no frontend yet.
+**Status: backend works end to end.** Generate a group stage, play it, and the
+playoff seeded from it fills itself in. There is no frontend yet.
 
 ```
 seedly/
-├── docs/DATA-MODEL.md      ← start here
-├── backend/                 PocketBase as a Go framework
-│   ├── migrations/          schema (this IS the schema — committed)
-│   └── internal/tournament/ slot resolution, custom routes
-├── packages/engine/         pure TS: types + bracket generators
-└── scripts/smoke.ts         end-to-end check against a live server
+├── docs/DATA-MODEL.md       ← start here
+├── backend/                  PocketBase as a Go framework
+│   ├── migrations/           the schema
+│   └── internal/tournament/  generation, standings, slot resolution
+├── packages/engine/          shared TypeScript types (no logic)
+└── scripts/smoke.ts          end-to-end check against a live server
 ```
 
 ## The data model in one sentence
@@ -30,10 +30,9 @@ Rationale and trade-offs in [docs/DATA-MODEL.md](docs/DATA-MODEL.md).
 | Bun | 1.4.0 — pinned in `.bun-version` and `packageManager` |
 | PocketBase | v0.39.11, as a Go dependency — not a downloaded binary |
 
-PocketBase is used as a **Go framework**, not as a prebuilt binary. `go build`
-produces a server with the tournament logic compiled in. This is deliberate:
-PocketBase's JS hooks run in goja, which has no npm and no Node APIs, and the
-slot resolver needs real transactions.
+PocketBase is used as a **Go framework**. `go build` produces a server with the
+tournament logic compiled in. Its JS hooks run in goja, which has no npm and no
+Node APIs, and this logic needs real transactions and real tests.
 
 ## Getting started
 
@@ -48,70 +47,82 @@ bun run pb:serve      # http://127.0.0.1:8090/_/
 ## Checks
 
 ```bash
-bun run check   # typecheck + engine tests + go vet/test + smoke
+bun run check   # typecheck + go vet/test + smoke
 ```
-
-Individually:
 
 | Command | What it covers |
 |---|---|
-| `bun test` | 16 tests — bracket generator structure |
 | `bun run typecheck` | TypeScript 7 |
-| `bun run pb:test` | `go vet` + outcome derivation unit tests |
-| `bun run smoke` | 18 assertions against a real PocketBase on a temp data dir |
+| `bun run pb:test` | `go vet` + 22 unit tests: generators, tiebreaks, outcomes |
+| `bun run smoke` | 42 assertions against a real PocketBase on a temp data dir |
 
-The smoke run is the one that matters: it boots the server, plays a
-four-team bracket over the REST API and asserts that results propagate.
+The smoke run is the one that matters. It boots the server, generates a
+two-pool group stage and a playoff seeded from it, plays every group fixture
+over the REST API, and asserts that the tables and the bracket come out right.
 
-## The slot resolver
+## How a tournament runs
 
-Closing a fixture pushes its outcome into every slot that names it as a source,
-then fills the denormalised entries on the fixtures those slots feed and flips
-them to `ready` once both sides are known. It lives in
-`backend/internal/tournament/resolve.go`.
+```bash
+# 1. groups
+POST /api/stages/{groups}/generate?dry_run=1   # preview the draw
+POST /api/stages/{groups}/generate             # commit it
 
-Three behaviours worth knowing about:
+# 2. playoff, seeded from the groups
+#    stages.config = { "seedFrom": { "stage": "<groups>", "advancePerPool": 2 } }
+POST /api/stages/{playoff}/generate
 
-- **Corrections re-propagate.** Editing a score hours later reruns the chain;
-  the resolver is idempotent, so replaying it writes nothing new.
-- **Byes settle themselves.** A fixture whose opponent slot is a *declared* bye
-  is decided as soon as both sides are known. A slot that is merely waiting on
-  an earlier result looks identical, so the distinction is explicit.
-- **`POST /api/stages/{stage}/resolve`** re-resolves an entire stage. Event
-  propagation misses slots created after the fixture they source from, which
-  bracket generation can easily do. This is the repair path.
-
-## Engine
-
-```ts
-import { planSingleElimination, planRoundRobin } from "@seedly/engine";
-
-planRoundRobin(entryIds, { poolCount: 2, advancePerPool: 2 });
-planSingleElimination(entryIds, { thirdPlace: true });
-
-// An empty entry list yields the same bracket shape with unresolved slots —
-// exactly what the projector needs while the group stage is still running.
-planSingleElimination([]);
+# 3. play. Nothing else to call — closing a fixture does the rest.
+PATCH /api/collections/fixtures/records/{id}
+      { "status": "finished", "home_score": 2, "away_score": 0 }
 ```
 
-> **Open decision.** These generators are TypeScript so the organiser's browser
-> can preview a draw without a round trip. Committing a draw is a server
-> concern, so generation will eventually need a Go implementation too — and two
-> implementations of bracket seeding is how brackets drift. Before writing the
-> Go side, decide instead whether generation should move to Go entirely, with
-> the browser previewing via a dry-run endpoint. Recommended: the latter.
+Closing a fixture triggers the whole chain: derive the winner from the score,
+push it into the slots that name the fixture as their source, recompute the
+pool tables, and — once a pool is complete — fill the playoff slots waiting on
+its final positions.
+
+### Endpoints beyond the collection API
+
+| | |
+|---|---|
+| `POST /api/stages/{stage}/generate` | Generate pools, slots and fixtures. `?dry_run=1` returns the plan without writing, so preview and commit run the same generator. Refuses to overwrite played fixtures. |
+| `POST /api/stages/{stage}/resolve` | Re-resolve a stage. The repair path for corrected scores and for slots written after the fixture they source from. Idempotent. |
+
+## Behaviour worth knowing about
+
+- **Corrections re-propagate.** Editing a score hours later reruns the chain,
+  including the tables. Standings are recomputed from scratch rather than
+  accumulated, because incremental accumulation is exactly where a corrected
+  score produces a table that no longer matches its own fixtures.
+- **Byes settle themselves.** A fixture whose opponent slot is a *declared* bye
+  is decided as soon as the other side is known. A slot merely waiting on an
+  earlier result looks identical, so the distinction is explicit.
+- **Playoff slots wait for a complete pool.** A table is provisional until
+  every fixture in the pool is settled, and promoting a provisionally-first
+  team into the bracket would be the worst bug this system could have.
+- **Head-to-head is computed among the tied group only**, from the fixtures
+  those entries played against each other — which is why ranking is recursive
+  rather than one comparator chain.
+
+## Generation lives on the server
+
+The generators used to be duplicated in TypeScript so the browser could preview
+a draw without a round trip. They are now Go only, and preview goes through
+`?dry_run=1`. Two implementations of bracket seeding is how brackets drift;
+`packages/engine` is types only.
 
 ## What is not built yet
 
-1. **Standings computation** — `standings` exists and is written only by hooks,
-   but nothing computes it. Head-to-head tiebreaks are the hard part.
-2. **`pool_rank` / `stage_rank` slot sources** — the schema and the resolver's
-   shape support them; resolving them depends on standings.
-3. **Swiss pairing** and **double elimination** generators. The model is ready
+1. **Swiss pairing** and **double elimination** generators. The model is ready
    (`pools.kind` has `winners`/`losers`); the code is not.
-4. **A projector payload route** — `GET /api/display/{token}` returning one
+2. **`stage_rank` slot resolution.** `pool_rank` works. `stage_rank` needs a
+   stage-wide table, which does not exist yet — pools are ranked, stages are
+   not.
+3. **A projector payload route** — `GET /api/display/{token}` returning one
    bundle, so a screen needs one request instead of five subscriptions.
-5. **The frontend.** React + Vite + TanStack Router/Query, with the projector
+4. **The frontend.** React + Vite + TanStack Router/Query, with the projector
    as a `/display/:token` route in the same app.
-6. **Schedule conflict detection** — `scheduled_at` and `court` exist, but
+5. **Schedule conflict detection.** `scheduled_at` and `court` exist, but
    nothing stops a team being booked onto two courts at once.
+6. **Result history.** An overwritten score is gone; there is no audit trail of
+   who changed what.

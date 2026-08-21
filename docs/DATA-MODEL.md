@@ -66,13 +66,29 @@ A playoff slot has no `entry`, but it does have a source:
 }
 ```
 
-When pool A finishes, the engine recomputes `standings`, finds every slot whose
+When pool A finishes, the server recomputes `standings`, finds every slot whose
 `source_type` is `pool_rank` pointing at that pool, and fills in `entry`. The
 same mechanism handles progression inside a bracket (`fixture_winner`,
-`fixture_loser`) and a group stage fed by an earlier playoff (`stage_rank`).
+`fixture_loser`).
 
 One mechanism, every direction of progression. That is why playoff-first needs
 no special case.
+
+**Slots only resolve once the source pool is complete.** Every fixture in it
+must be settled. A table is provisional until then, and promoting a
+provisionally-first team into the playoff is the single worst bug this system
+could have.
+
+Generating such a bracket is one call:
+
+```json
+// stages.config on the playoff stage
+{ "seedFrom": { "stage": "<groups stage id>", "advancePerPool": 2 } }
+```
+
+Qualifiers are ordered by rank first, then by pool — A1 B1 C1 D1 A2 B2 C2 D2 —
+which, combined with standard bracket seeding, guarantees no two entries from
+the same pool meet in round 1.
 
 ## Deliberate impurities
 
@@ -84,11 +100,24 @@ transaction. The slot is authoritative; `fixtures.*_entry` is cache.
 
 **`standings` is a table, not a view.** SQL can compute points and goal
 difference, but not head-to-head — and head-to-head is the first tiebreak in
-almost every sport's rules. The engine recomputes after each settled fixture
+almost every sport's rules. The server recomputes after each settled fixture
 and writes the result, including a `tiebreak` audit recording which criteria
 were applied in which order. When somebody disputes a qualification after the
 tournament, that field ends the argument. Write rules are nil: only hooks and
 superusers touch it.
+
+Two consequences of how ranking works, in `backend/internal/tournament/standings.go`:
+
+- **Tables are rebuilt from scratch, never accumulated.** A score corrected two
+  hours later has to yield the same table as if it had been right the first
+  time, and incremental accumulation is precisely where that guarantee breaks.
+- **Ranking is recursive, not a comparator chain.** Head-to-head is computed
+  only among the entries that are actually tied, from the fixtures they played
+  against each other. A global comparator cannot see that context, so the
+  ranker sorts, groups the still-tied rows, and recurses with the next
+  criterion. The default order is
+  `points → head_to_head → score_diff → score_for → sub_diff → seed`,
+  overridable per tournament via `tournaments.scoring.tiebreakers`.
 
 **`games` is separate even though the scores would fit in a JSON column.** You
 need to query "how many sets has team X won in total" for tiebreaks, and that
@@ -112,7 +141,12 @@ renamed at the storage layer:
 
 Use "Group A" and "Match" freely in the UI — the renaming is a storage concern.
 
-## A PocketBase constraint worth remembering
+## Two storage constraints worth remembering
+
+**Uniqueness has to include the pool.** `fixtures` and `slots` are keyed on
+`(stage, COALESCE(pool, ''), round, position)`. Leaving the pool out looks
+correct for a bracket and breaks the moment a stage has two groups, since pool
+A and pool B both hold a fixture at round 0, position 0.
 
 **A required number field rejects 0.** PocketBase validates `required` as "not
 blank" and treats 0 as blank, so every zero-based ordering column here (stage
@@ -139,8 +173,9 @@ you one place to handle caching.
 
 ## What the model does not solve yet
 
-- **Standings computation.** The table exists; nothing fills it.
-- **`pool_rank` / `stage_rank` resolution**, which depends on standings.
+- **`stage_rank` resolution.** `pool_rank` works. `stage_rank` needs a
+  stage-wide table across pools, which nothing computes — pools are ranked,
+  stages are not.
 - **Swiss pairing** and **double elimination** generators. `pools.kind` already
   has `winners`/`losers`; the code does not exist.
 - **Schedule conflicts.** `scheduled_at` and `court` exist, but nothing stops a

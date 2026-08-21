@@ -7,11 +7,10 @@
     "packages/*"
   ],
   "scripts": {
-    "test": "bun test",
+    "check": "bun run typecheck && bun run pb:test && bun run smoke",
     "typecheck": "tsc --noEmit -p packages/engine/tsconfig.json",
-    "check": "bun run typecheck && bun test && bun run pb:test && bun run smoke",
-    "pb:build": "cd backend && go build -o pocketbase .",
     "pb:test": "cd backend && go vet ./... && go test ./...",
+    "pb:build": "cd backend && go build -o pocketbase .",
     "pb:migrate": "cd backend && go run . migrate up",
     "pb:down": "cd backend && go run . migrate down 1",
     "pb:serve": "cd backend && go run . serve --http=127.0.0.1:8090",

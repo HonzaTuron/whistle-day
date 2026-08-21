@@ -6,10 +6,12 @@ the tournament logic compiled in.
 ```
 backend/
 ├── main.go                     app entry, hook + route registration
-├── migrations/                 the schema — committed, this is the source of truth
+├── migrations/                 the schema — this is the source of truth
 └── internal/tournament/
-    ├── resolve.go              outcome derivation + slot propagation
-    └── routes.go               POST /api/stages/{stage}/resolve
+    ├── generate.go             bracket + round-robin generators, plan commit
+    ├── standings.go            table computation, tiebreaks, pool_rank slots
+    ├── resolve.go              outcome derivation, slot propagation, hooks
+    └── routes.go               generate + resolve endpoints
 ```
 
 `pb_data/` and the compiled `pocketbase` binary are gitignored.
@@ -17,37 +19,58 @@ backend/
 ## Why Go and not pb_hooks
 
 PocketBase's JS hooks run in goja: no npm, no Node APIs, ES5 with parts of
-ES2015. Slot resolution needs transactions and is the most correctness-critical
-code in the project, so it belongs in compiled code with real tests.
+ES2015. This is the most correctness-critical code in the project and it needs
+transactions, so it belongs in compiled code with real tests.
+
+## The write chain
+
+Everything hangs off one event — a fixture being settled:
+
+```
+fixture settled
+  └─ deriveOutcome        winner/loser from the score (before the write)
+  └─ PropagateFixture     fill slots sourcing this fixture
+       └─ refreshDependentFixtures   denormalise entries, promote to "ready"
+  └─ ComputeStandings     rebuild every pool table in the stage
+  └─ ResolvePoolRanks     fill slots waiting on a completed pool's table
+```
+
+The recursion terminates because propagation only writes fixtures into
+`ready`/`pending`, and the chain is gated on the fixture being settled. That
+gate is load-bearing, not an optimisation — see `afterFixtureWrite`.
 
 ## Migration notes
 
-`1787270400_init_schema.go` creates all 11 collections. Order inside the
-migration is forced by relation dependencies — a relation field needs its
-target's `collectionId`, so the target must exist first.
+`1787270400_init_schema.go` creates all 11 collections. Order is forced by
+relation dependencies: a relation field needs its target's `collectionId`, so
+the target must exist first.
 
-Two cycles had to be broken in two passes:
+Two cycles are broken in two passes:
 
-- **`tournaments` ↔ `staff`.** The access rules on `tournaments` reference the
+- **`tournaments` ↔ `staff`.** Access rules on `tournaments` reference the
   `staff_via_tournament` back-relation, which PocketBase validates on save.
-  `tournaments` is therefore created with owner-only rules and patched once
-  `staff` exists.
+  `tournaments` is created owner-only and patched once `staff` exists.
 - **`slots` ↔ `fixtures`.** `slots.source_fixture` points at `fixtures` and
   `fixtures.home_slot` points back. `slots` is created without
   `source_fixture`, and the field is added after `fixtures`.
 
-## Two PocketBase behaviours that bit us
+## Three things that bit us
 
-**A required number field rejects 0.** PocketBase validates `required` as
-"not blank", and 0 is blank. Every zero-based ordering column here — stage and
-pool `position`, slot and fixture `round`/`position` — is therefore optional.
-The unique indexes are what actually protect ordering. `games.number` and
+**A required number field rejects 0.** PocketBase validates `required` as "not
+blank", and 0 is blank. Every zero-based ordering column — stage and pool
+`position`, slot and fixture `round`/`position` — is therefore optional. The
+unique indexes protect ordering instead. `games.number` and
 `standings.position` are 1-based and stay required.
 
+**Uniqueness has to include the pool.** `fixtures` was originally unique on
+`(stage, round, position)`, which silently works for a bracket and breaks the
+moment a stage has two groups: pool A and pool B both hold a fixture at round 0
+position 0. Both `fixtures` and `slots` key on
+`(stage, COALESCE(pool, ''), round, position)`.
+
 **Access rules are expressions, not code.** Anything more conditional than a
-relation path needs a custom route; `routes.go` re-implements the staff check
-for exactly that reason, because collection API rules do not cover custom
-routes.
+relation path needs a custom route, and collection API rules do not apply to
+custom routes — which is why `routes.go` re-implements the staff check.
 
 ## Backups
 

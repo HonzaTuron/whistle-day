@@ -42,14 +42,77 @@ func RegisterHooks(app core.App) {
 		if err := e.Next(); err != nil {
 			return err
 		}
-		return PropagateFixture(e.App, e.Record)
+		return afterFixtureWrite(e.App, e.Record, "")
 	})
 	app.OnRecordAfterUpdateSuccess("fixtures").BindFunc(func(e *core.RecordEvent) error {
 		if err := e.Next(); err != nil {
 			return err
 		}
-		return PropagateFixture(e.App, e.Record)
+		previous := ""
+		if original := e.Record.Original(); original != nil {
+			previous = original.GetString("status")
+		}
+		return afterFixtureWrite(e.App, e.Record, previous)
 	})
+
+	// Per-set scores feed the sub_for / sub_against tiebreak, so editing them
+	// can reorder a table even though no fixture changed.
+	app.OnRecordAfterCreateSuccess("games").BindFunc(func(e *core.RecordEvent) error {
+		if err := e.Next(); err != nil {
+			return err
+		}
+		return recomputeForGame(e.App, e.Record)
+	})
+	app.OnRecordAfterUpdateSuccess("games").BindFunc(func(e *core.RecordEvent) error {
+		if err := e.Next(); err != nil {
+			return err
+		}
+		return recomputeForGame(e.App, e.Record)
+	})
+	app.OnRecordAfterDeleteSuccess("games").BindFunc(func(e *core.RecordEvent) error {
+		if err := e.Next(); err != nil {
+			return err
+		}
+		return recomputeForGame(e.App, e.Record)
+	})
+}
+
+// afterFixtureWrite runs the full downstream chain for one fixture: bracket
+// propagation, then the pool tables, then any slot waiting on a table position.
+//
+// The table work is skipped unless this write settled or un-settled the
+// fixture. That is not just an optimisation: propagation writes other fixtures
+// (flipping them to "ready"), which re-enters this hook, and without the guard
+// the recursion would not terminate.
+func afterFixtureWrite(app core.App, fixture *core.Record, previousStatus string) error {
+	if err := PropagateFixture(app, fixture); err != nil {
+		return err
+	}
+
+	if !isSettled(fixture.GetString("status")) && !isSettled(previousStatus) {
+		return nil
+	}
+
+	stageID := fixture.GetString("stage")
+	if stageID == "" {
+		return nil
+	}
+	if err := ComputeStandings(app, stageID); err != nil {
+		return err
+	}
+	_, err := ResolvePoolRanks(app, stageID)
+	return err
+}
+
+func recomputeForGame(app core.App, game *core.Record) error {
+	fixture, err := app.FindRecordById("fixtures", game.GetString("fixture"))
+	if err != nil {
+		return nil // the parent fixture is gone; nothing to recompute
+	}
+	if !isSettled(fixture.GetString("status")) {
+		return nil
+	}
+	return ComputeStandings(app, fixture.GetString("stage"))
 }
 
 // deriveOutcome fills winner/loser from the fixture's status and score.

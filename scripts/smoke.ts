@@ -249,6 +249,184 @@ try {
   const again = await api("POST", `/api/stages/${stage3.id}/resolve`);
   check("resolve is idempotent", again.resolved, 1);
   check("repeated resolve changes nothing", (await get("slots", late.id)).entry, f1.id);
+  // =====================================================================
+  console.log("\n4. generation runs on the server, preview and commit alike");
+  // =====================================================================
+  const cup = await create("tournaments", {
+    name: "Group Cup",
+    slug: `groups-${Date.now()}`,
+    status: "published",
+    owner: organiser.id,
+    scoring: { pointsWin: 3, pointsDraw: 1, pointsLoss: 0 },
+  });
+
+  // Eight seeded entries so the snake distribution is deterministic.
+  const teams: Record<string, any> = {};
+  for (let i = 1; i <= 8; i++) {
+    teams[`T${i}`] = await create("entries", {
+      tournament: cup.id, name: `T${i}`, seed: i, status: "active",
+    });
+  }
+  const teamName = (id: string) =>
+    Object.entries(teams).find(([, t]) => t.id === id)?.[0] ?? "?";
+
+  const groups = await create("stages", {
+    tournament: cup.id, position: 0, name: "Groups",
+    format: "round_robin", status: "draft",
+    config: { poolCount: 2, advancePerPool: 2 },
+  });
+
+  const preview = await api("POST", `/api/stages/${groups.id}/generate?dry_run=1`);
+  check("dry run reports itself", preview.dry_run, true);
+  check("dry run plans two pools", preview.plan.pools.length, 2);
+  check("dry run plans 2x6 fixtures", preview.plan.fixtures.length, 12);
+
+  const beforeCommit = await api(
+    "GET", `/api/collections/fixtures/records?filter=(stage='${groups.id}')`);
+  check("dry run wrote nothing", beforeCommit.totalItems, 0);
+
+  const committed = await api("POST", `/api/stages/${groups.id}/generate`);
+  check("commit creates the planned fixtures", committed.fixtures, 12);
+  check("commit creates the planned pools", committed.pools, 2);
+
+  // =====================================================================
+  console.log("\n5. standings, tiebreaks and pool_rank slots");
+  // =====================================================================
+  const playoff = await create("stages", {
+    tournament: cup.id, position: 1, name: "Playoff",
+    format: "single_elim", status: "draft",
+    config: { seedFrom: { stage: groups.id, advancePerPool: 2 } },
+  });
+  await api("POST", `/api/stages/${playoff.id}/generate`);
+
+  const poolList = await api(
+    "GET", `/api/collections/pools/records?filter=(stage='${groups.id}')&sort=position`);
+  const [poolA, poolB] = poolList.items;
+
+  const playoffFixtures = await api(
+    "GET",
+    `/api/collections/fixtures/records?filter=(stage='${playoff.id}')&sort=round,position&expand=home_slot,away_slot`,
+  );
+  const semis = playoffFixtures.items.filter((f: any) => f.round === 0);
+  check("playoff has two semi-finals", semis.length, 2);
+  check(
+    "playoff slots start unresolved",
+    semis.every((f: any) => f.home_entry === "" && f.away_entry === ""),
+    true,
+  );
+  check(
+    "no semi pairs two teams from the same pool",
+    semis.every(
+      (f: any) => f.expand.home_slot.source_pool !== f.expand.away_slot.source_pool,
+    ),
+    true,
+  );
+
+  // Play every group fixture. T1/T4 are in pool A, T2/T3 in pool B (snake).
+  // Lower-numbered (better-seeded) team always wins, so the tables are known.
+  const groupFixtures = await api(
+    "GET", `/api/collections/fixtures/records?filter=(stage='${groups.id}')&sort=round,position`);
+
+  for (const f of groupFixtures.items) {
+    const home = Number(teamName(f.home_entry).slice(1));
+    const away = Number(teamName(f.away_entry).slice(1));
+    await patch("fixtures", f.id, {
+      status: "finished",
+      home_score: home < away ? 2 : 0,
+      away_score: home < away ? 0 : 2,
+    });
+  }
+
+  const tableA = await api(
+    "GET", `/api/collections/standings/records?filter=(pool='${poolA.id}')&sort=position`);
+  check("pool A table has four rows", tableA.items.length, 4);
+  check("pool A is won by its top seed", teamName(tableA.items[0].entry), "T1");
+  check("pool A winner took maximum points", tableA.items[0].points, 9);
+  check("pool A winner played three", tableA.items[0].played, 3);
+  check("pool A runner-up", teamName(tableA.items[1].entry), "T4");
+  check("top two qualify", tableA.items.map((r: any) => r.qualified), [true, true, false, false]);
+  check("the table records how it was ranked", tableA.items[0].tiebreak.applied, ["points"]);
+
+  const tableB = await api(
+    "GET", `/api/collections/standings/records?filter=(pool='${poolB.id}')&sort=position`);
+  check("pool B is won by its top seed", teamName(tableB.items[0].entry), "T2");
+  check("pool B runner-up", teamName(tableB.items[1].entry), "T3");
+
+  // With both pools complete, the playoff slots must now be filled.
+  const resolvedSemis = await api(
+    "GET", `/api/collections/fixtures/records?filter=(stage='${playoff.id}')&sort=round,position`);
+  const pairings = resolvedSemis.items
+    .filter((f: any) => f.round === 0)
+    .map((f: any) => `${teamName(f.home_entry)}v${teamName(f.away_entry)}`)
+    .sort();
+
+  // A1=T1 A2=T4 B1=T2 B2=T3, seeded [A1 B1 A2 B2] -> pairs (A1,B2) and (B1,A2).
+  check("pool winners meet the other pool's runner-up", pairings, ["T1vT3", "T2vT4"]);
+  check(
+    "resolved semis are ready to play",
+    resolvedSemis.items.filter((f: any) => f.round === 0).every((f: any) => f.status === "ready"),
+    true,
+  );
+
+  // =====================================================================
+  console.log("\n6. regenerating a played stage is refused");
+  // =====================================================================
+  let refused = false;
+  try {
+    await api("POST", `/api/stages/${groups.id}/generate`);
+  } catch {
+    refused = true;
+  }
+  check("generation will not destroy played results", refused, true);
+
+  // =====================================================================
+  console.log("\n7. head-to-head decides a real tie");
+  // =====================================================================
+  const h2h = await create("tournaments", {
+    name: "Tie Cup", slug: `tie-${Date.now()}`, status: "published",
+    owner: organiser.id,
+  });
+  const trio: Record<string, any> = {};
+  for (const name of ["X", "Y", "Z"]) {
+    trio[name] = await create("entries", {
+      tournament: h2h.id, name, status: "active",
+    });
+  }
+  const trioName = (id: string) =>
+    Object.entries(trio).find(([, t]) => t.id === id)?.[0] ?? "?";
+
+  const tieStage = await create("stages", {
+    tournament: h2h.id, position: 0, name: "Group",
+    format: "round_robin", status: "draft",
+    config: { poolCount: 1, advancePerPool: 1 },
+  });
+  await api("POST", `/api/stages/${tieStage.id}/generate`);
+
+  // Y beats X, X beats Z, Y beats Z -> Y 6pts, X 3pts, Z 0pts.
+  const tieFixtures = await api(
+    "GET", `/api/collections/fixtures/records?filter=(stage='${tieStage.id}')&sort=round,position`);
+  const winners: Record<string, string> = { XY: "Y", XZ: "X", YZ: "Y" };
+  for (const f of tieFixtures.items) {
+    const home = trioName(f.home_entry);
+    const away = trioName(f.away_entry);
+    const key = [home, away].sort().join("");
+    const homeWins = winners[key] === home;
+    await patch("fixtures", f.id, {
+      status: "finished",
+      home_score: homeWins ? 2 : 0,
+      away_score: homeWins ? 0 : 2,
+    });
+  }
+
+  const tiePool = (await api(
+    "GET", `/api/collections/pools/records?filter=(stage='${tieStage.id}')`)).items[0];
+  const tieTable = await api(
+    "GET", `/api/collections/standings/records?filter=(pool='${tiePool.id}')&sort=position`);
+  check("clear points order needs no tiebreak",
+    tieTable.items.map((r: any) => trioName(r.entry)), ["Y", "X", "Z"]);
+  check("set totals are accumulated", tieTable.items[0].score_for, 4);
+  check("conceded sets are accumulated", tieTable.items[0].score_against, 0);
+
 } catch (error) {
   console.error("\nsmoke run threw:");
   console.error(error instanceof Error ? error.message : error);
