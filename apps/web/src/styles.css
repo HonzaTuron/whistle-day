@@ -1,0 +1,923 @@
+/*
+ * Seedly screens.
+ *
+ * Everything on the projector is sized in vmin, not pixels. A hall projector
+ * might be 1280x720 or 1920x1080 and is read from five metres away; type that
+ * looks generous on a laptop is unreadable there. Scaling to the shorter
+ * viewport axis means one layout works on both.
+ */
+
+:root {
+  --bg: #0b0f14;
+  --surface: #141b24;
+  --surface-2: #1c2733;
+  --line: #26313f;
+  --text: #f2f5f8;
+  --muted: #8496a8;
+  --accent: #22c55e;
+  --live: #f97316;
+
+  --radius: 0.6vmin;
+  --font: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
+  --numeric: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Numbers in a table must not jitter as they change. */
+td,
+th,
+.live__score,
+.card__score,
+.fixtures__score,
+.bracket__score {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ==========================================================================
+   Projector
+   ========================================================================== */
+
+.screen {
+  height: 100%;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  padding: 2.5vmin 3vmin;
+  gap: 2vmin;
+}
+
+.screen--message {
+  display: grid;
+  place-items: center;
+  font-size: 4vmin;
+  color: var(--muted);
+}
+
+.screen__header {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 2vmin;
+  padding-bottom: 1.6vmin;
+  border-bottom: 0.25vmin solid var(--line);
+}
+
+.screen__brand {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3vmin;
+  min-width: 0;
+}
+
+.screen__tournament {
+  font-size: 2.6vmin;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.screen__location {
+  font-size: 1.7vmin;
+  color: var(--muted);
+}
+
+.screen__title {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2vmin;
+}
+
+.screen__title span {
+  font-size: 4.2vmin;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+
+.screen__title small {
+  font-size: 1.7vmin;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+}
+
+.screen__meta {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 1.5vmin;
+}
+
+.screen__clock {
+  font-size: 2.6vmin;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+}
+
+.screen__stale {
+  font-size: 1.5vmin;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--live);
+  border: 0.2vmin solid var(--live);
+  border-radius: 999px;
+  padding: 0.4vmin 1.2vmin;
+}
+
+.screen__body {
+  min-height: 0;
+  display: grid;
+  align-content: stretch;
+  animation: fade-in 400ms ease-out;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(1vmin);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .screen__body {
+    animation: none;
+  }
+}
+
+/* Rotation progress: the bar fills over exactly one panel's dwell time, so the
+   hall can see when the screen is about to change. */
+.screen__dots {
+  display: flex;
+  justify-content: center;
+  gap: 1vmin;
+}
+
+.dot {
+  width: 4vmin;
+  height: 0.5vmin;
+  border-radius: 999px;
+  background: var(--line);
+  overflow: hidden;
+}
+
+.dot--on {
+  background: var(--surface-2);
+  position: relative;
+}
+
+.dot--on::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--accent);
+  transform-origin: left;
+  animation: sweep var(--rotate, 15s) linear forwards;
+}
+
+@keyframes sweep {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+/* --- standings ---------------------------------------------------------- */
+
+.standings {
+  height: 100%;
+  display: grid;
+  align-content: center;
+  gap: 2vmin;
+}
+
+.standings__note {
+  margin: 0;
+  text-align: center;
+  font-size: 1.9vmin;
+  color: var(--muted);
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 3.6vmin;
+}
+
+.table th {
+  font-size: 1.7vmin;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--muted);
+  font-weight: 600;
+  text-align: center;
+  padding-bottom: 1.2vmin;
+}
+
+.table th.table__team {
+  text-align: left;
+}
+
+.table td {
+  text-align: center;
+  padding: 1.9vmin 0.8vmin;
+  border-top: 0.2vmin solid var(--line);
+}
+
+.table__rank {
+  width: 7vmin;
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.table__team {
+  text-align: left !important;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.table__sets {
+  color: var(--muted);
+  width: 12vmin;
+}
+
+.table__points {
+  font-weight: 800;
+  width: 10vmin;
+}
+
+/* A qualifying place is the single most-asked question in the hall. */
+.table tbody tr.is-qualified .table__rank {
+  color: var(--accent);
+}
+
+.table tbody tr.is-qualified {
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+}
+
+.table tbody tr.is-qualified .table__points {
+  color: var(--accent);
+}
+
+/* --- now playing -------------------------------------------------------- */
+
+.live {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(46vmin, 1fr));
+  align-content: center;
+  gap: 2.5vmin;
+  height: 100%;
+}
+
+.live--dense {
+  grid-template-columns: repeat(auto-fit, minmax(34vmin, 1fr));
+}
+
+/* A hall with one match on court should see that match from the back row. */
+.live--single {
+  grid-template-columns: minmax(0, 80vmin);
+  justify-content: center;
+}
+
+.live__card {
+  background: var(--surface);
+  border: 0.25vmin solid var(--line);
+  border-left: 0.8vmin solid var(--live);
+  border-radius: var(--radius);
+  padding: 2.4vmin 2.8vmin;
+  display: grid;
+  gap: 1vmin;
+  align-content: center;
+}
+
+.live--single .live__card {
+  padding: 4vmin 4.5vmin;
+  gap: 1.6vmin;
+}
+
+.live--single .live__team {
+  font-size: 5.4vmin;
+}
+
+.live--single .live__score {
+  font-size: 8vmin;
+}
+
+.live__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 2vmin;
+}
+
+.live__court {
+  font-size: 1.8vmin;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--live);
+  font-weight: 700;
+}
+
+/* Set-by-set scores: the set count alone does not tell you how close it is. */
+.live__sets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.2vmin;
+  margin-top: 0.6vmin;
+  padding-top: 1.4vmin;
+  border-top: 0.2vmin solid var(--line);
+}
+
+.live__set {
+  font-size: 2vmin;
+  font-weight: 600;
+  color: var(--muted);
+  background: var(--surface-2);
+  border-radius: 0.4vmin;
+  padding: 0.5vmin 1.2vmin;
+}
+
+.live--single .live__set {
+  font-size: 2.8vmin;
+}
+
+.live__set--current {
+  color: var(--live);
+  background: color-mix(in srgb, var(--live) 16%, transparent);
+}
+
+.live__row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 2vmin;
+}
+
+.live__team {
+  font-size: 3.6vmin;
+  font-weight: 650;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.live__score {
+  font-size: 5vmin;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.live__code {
+  font-size: 1.6vmin;
+  color: var(--muted);
+  letter-spacing: 0.1em;
+}
+
+/* --- fixture lists ------------------------------------------------------ */
+
+.fixtures {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  align-content: center;
+  gap: 0.8vmin;
+  height: 100%;
+}
+
+.fixtures__row {
+  display: grid;
+  grid-template-columns: 12vmin 1fr 14vmin 1fr 14vmin;
+  align-items: center;
+  gap: 1.5vmin;
+  background: var(--surface);
+  border-radius: var(--radius);
+  padding: 1.6vmin 2vmin;
+  font-size: 3vmin;
+}
+
+.fixtures--dense .fixtures__row {
+  padding: 1.1vmin 2vmin;
+  font-size: 2.5vmin;
+}
+
+.fixtures__lead {
+  color: var(--muted);
+  font-weight: 700;
+  font-size: 0.8em;
+  letter-spacing: 0.06em;
+}
+
+.fixtures__team {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.fixtures__team:nth-of-type(odd) {
+  text-align: right;
+}
+
+.fixtures__team.is-winner {
+  font-weight: 800;
+  color: var(--accent);
+}
+
+.fixtures__score {
+  text-align: center;
+  font-weight: 800;
+  color: var(--muted);
+}
+
+.fixtures__court {
+  text-align: right;
+  color: var(--muted);
+  font-size: 0.75em;
+}
+
+/* --- bracket ------------------------------------------------------------ */
+
+.bracket {
+  display: flex;
+  gap: 3vmin;
+  justify-content: center;
+  align-items: stretch;
+  height: 100%;
+  padding: 1vmin 0;
+}
+
+.bracket__round {
+  flex: 1;
+  min-width: 0;
+  max-width: 40vmin;
+  display: grid;
+  grid-template-rows: auto 1fr;
+  gap: 1.5vmin;
+}
+
+.bracket__round-title {
+  margin: 0;
+  text-align: center;
+  font-size: 1.7vmin;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+/* space-around is what makes each match sit centred between the two it is fed
+   by, without any absolute positioning. */
+.bracket__matches {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-around;
+  gap: 1vmin;
+}
+
+.bracket__match {
+  background: var(--surface);
+  border: 0.2vmin solid var(--line);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.bracket__match.is-live {
+  border-color: var(--live);
+  box-shadow: 0 0 0 0.2vmin color-mix(in srgb, var(--live) 40%, transparent);
+}
+
+/* The third-place match shares a round with the final but is not part of the
+   tree, so it is set apart rather than stacked under it. */
+.bracket__bronze {
+  margin-top: 2vmin;
+  padding-top: 1.5vmin;
+  border-top: 0.2vmin dashed var(--line);
+}
+
+.bracket__bronze h4 {
+  margin: 0 0 1vmin;
+}
+
+.bracket__side {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1vmin;
+  padding: 1.6vmin 1.8vmin;
+  font-size: 2.7vmin;
+}
+
+.bracket__side + .bracket__side {
+  border-top: 0.2vmin solid var(--line);
+}
+
+.bracket__name {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.bracket__score {
+  font-weight: 800;
+  color: var(--muted);
+}
+
+/* An unresolved slot shows its label, dimmed — it is information, not a gap. */
+.bracket__side.is-pending .bracket__name {
+  color: var(--muted);
+  font-style: italic;
+}
+
+.bracket__side.is-winner {
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  font-weight: 750;
+}
+
+.bracket__side.is-winner .bracket__score {
+  color: var(--accent);
+}
+
+.bracket__side.is-loser {
+  color: var(--muted);
+}
+
+/* ==========================================================================
+   Phone
+   ========================================================================== */
+
+.phone {
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.phone--message {
+  display: grid;
+  place-items: center;
+  color: var(--muted);
+  padding: 2rem;
+  text-align: center;
+}
+
+.phone__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: calc(env(safe-area-inset-top) + 1rem) 1rem 0.75rem;
+}
+
+.phone__header h1 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.phone__stale {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--live);
+  border: 1px solid var(--live);
+  border-radius: 999px;
+  padding: 0.15rem 0.5rem;
+}
+
+/* Sticky so switching views never needs a scroll back to the top. */
+.phone__tabs {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  gap: 0.25rem;
+  padding: 0 0.5rem 0.5rem;
+  background: linear-gradient(var(--bg) 70%, transparent);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.phone__tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.phone__tab {
+  flex: 1 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  /* 44px minimum: this is tapped with a thumb, often one-handed. */
+  min-height: 44px;
+  padding: 0 0.9rem;
+  border: 0;
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.phone__tab.is-active {
+  background: var(--accent);
+  color: #06210f;
+}
+
+.phone__badge {
+  display: inline-grid;
+  place-items: center;
+  min-width: 1.15rem;
+  height: 1.15rem;
+  padding: 0 0.3rem;
+  border-radius: 999px;
+  background: var(--live);
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+.phone__body {
+  flex: 1;
+  padding: 0.5rem 0.75rem 2rem;
+  display: grid;
+  gap: 1.5rem;
+  align-content: start;
+}
+
+.phone__section h2 {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  margin: 0 0 0.6rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+}
+
+.phone__section h2 small {
+  font-size: 0.7rem;
+  text-transform: none;
+  letter-spacing: 0;
+  opacity: 0.7;
+}
+
+.phone__empty {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.cards {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 0.75rem;
+  padding: 0.75rem 0.9rem;
+  display: grid;
+  gap: 0.35rem;
+}
+
+.card--live {
+  border-left: 3px solid var(--live);
+}
+
+.card__meta {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+
+.card__side {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.75rem;
+}
+
+.card__team {
+  font-size: 1rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.card__side.is-pending .card__team {
+  color: var(--muted);
+  font-style: italic;
+}
+
+.card__side.is-winner {
+  font-weight: 700;
+}
+
+.card__side.is-winner .card__team,
+.card__side.is-winner .card__score {
+  color: var(--accent);
+}
+
+.card__score {
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.mini-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.mini-table th {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  font-weight: 600;
+  text-align: center;
+  padding-bottom: 0.4rem;
+}
+
+.mini-table th.mini-table__team {
+  text-align: left;
+}
+
+.mini-table td {
+  text-align: center;
+  padding: 0.55rem 0.25rem;
+  border-top: 1px solid var(--line);
+}
+
+.mini-table__rank {
+  width: 1.75rem;
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.mini-table__team {
+  text-align: left !important;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 0;
+  width: 100%;
+}
+
+.mini-table__sets {
+  color: var(--muted);
+  font-size: 0.85em;
+}
+
+.mini-table__points {
+  font-weight: 700;
+}
+
+.mini-table__note {
+  margin: 0.6rem 0 0;
+  font-size: 0.75rem;
+  line-height: 1.4;
+  color: var(--muted);
+}
+
+.card__sets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-top: 0.35rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--line);
+}
+
+.card__set {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--muted);
+  background: var(--surface-2);
+  border-radius: 0.3rem;
+  padding: 0.15rem 0.45rem;
+}
+
+.card__set--current {
+  color: var(--live);
+  background: color-mix(in srgb, var(--live) 16%, transparent);
+}
+
+.mini-table tbody tr.is-qualified .mini-table__rank,
+.mini-table tbody tr.is-qualified .mini-table__points {
+  color: var(--accent);
+}
+
+.phone-bracket {
+  display: grid;
+  gap: 1.25rem;
+}
+
+.phone-bracket__round {
+  margin: 0 0 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+}
+
+/* ==========================================================================
+   Landing
+   ========================================================================== */
+
+.landing {
+  min-height: 100%;
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 1rem;
+  padding: 2rem;
+  text-align: center;
+}
+
+.landing h1 {
+  margin: 0;
+  font-size: 2rem;
+  letter-spacing: -0.02em;
+}
+
+.landing p {
+  margin: 0;
+  color: var(--muted);
+}
+
+.landing input {
+  width: min(22rem, 100%);
+  min-height: 44px;
+  padding: 0 0.9rem;
+  border: 1px solid var(--line);
+  border-radius: 0.6rem;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  text-align: center;
+}
+
+.landing input:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.landing__actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.landing__actions button {
+  min-height: 44px;
+  padding: 0 1.25rem;
+  border: 1px solid var(--line);
+  border-radius: 0.6rem;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.landing__actions button:first-child {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #06210f;
+}

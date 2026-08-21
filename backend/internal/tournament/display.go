@@ -100,6 +100,10 @@ type displayStanding struct {
 	ScoreAgainst int    `json:"score_against"`
 	Points       int    `json:"points"`
 	Qualified    bool   `json:"qualified"`
+	/// Which criteria were needed to place this row. Shown when a table has a
+	/// tie, because "why are they above us" is the question that starts
+	/// arguments in a hall.
+	Tiebreak []string `json:"tiebreak"`
 }
 
 type displayRound struct {
@@ -230,9 +234,16 @@ func BuildDisplayPayload(app core.App, display *core.Record) (*DisplayPayload, e
 		return nil, err
 	}
 
+	games, err := gameIndex(app, tournamentID)
+	if err != nil {
+		return nil, err
+	}
+
 	converted := make([]displayFixture, 0, len(allFixtures))
 	for _, f := range allFixtures {
-		converted = append(converted, toDisplayFixture(f, slotLabels))
+		fixture := toDisplayFixture(f, slotLabels)
+		fixture.Games = games[f.Id]
+		converted = append(converted, fixture)
 	}
 
 	byPool := map[string][]displayFixture{}
@@ -304,6 +315,7 @@ func BuildDisplayPayload(app core.App, display *core.Record) (*DisplayPayload, e
 					ScoreAgainst: row.GetInt("score_against"),
 					Points:       row.GetInt("points"),
 					Qualified:    row.GetBool("qualified"),
+					Tiebreak:     appliedCriteria(row),
 				})
 			}
 
@@ -471,4 +483,43 @@ func truncate(fixtures []displayFixture, limit int) []displayFixture {
 func payloadETag(body []byte) string {
 	sum := sha256.Sum256(body)
 	return `"` + hex.EncodeToString(sum[:16]) + `"`
+}
+
+// appliedCriteria reads the tiebreak audit the ranker wrote.
+func appliedCriteria(row *core.Record) []string {
+	raw := row.GetString("tiebreak")
+	if raw == "" || raw == "null" {
+		return nil
+	}
+	var parsed struct {
+		Applied []string `json:"applied"`
+	}
+	if err := json.Unmarshal([]byte(raw), &parsed); err != nil {
+		return nil
+	}
+	return parsed.Applied
+}
+
+// gameIndex fetches every set in the tournament in one query and groups them by
+// fixture, rather than asking per fixture. A tournament has hundreds of sets at
+// most, and a projector polls every few seconds.
+func gameIndex(app core.App, tournamentID string) (map[string][]displayGame, error) {
+	records, err := app.FindRecordsByFilter(
+		"games", "fixture.tournament = {:t}", "number", 0, 0,
+		dbx.Params{"t": tournamentID},
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	index := map[string][]displayGame{}
+	for _, g := range records {
+		fixtureID := g.GetString("fixture")
+		index[fixtureID] = append(index[fixtureID], displayGame{
+			Number: g.GetInt("number"),
+			Home:   g.GetInt("home_score"),
+			Away:   g.GetInt("away_score"),
+		})
+	}
+	return index, nil
 }

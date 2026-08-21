@@ -443,6 +443,12 @@ export interface DisplayStanding {
   score_against: number;
   points: number;
   qualified: boolean;
+  /**
+   * Which criteria were needed to place this row, in order. Only interesting
+   * when a table has a tie — "why are they above us" is the question that
+   * starts arguments in a hall.
+   */
+  tiebreak: Tiebreaker[] | null;
 }
 
 export interface DisplayRound {

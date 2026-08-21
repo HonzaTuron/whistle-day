@@ -295,7 +295,7 @@ try {
   const playoff = await create("stages", {
     tournament: cup.id, position: 1, name: "Playoff",
     format: "single_elim", status: "draft",
-    config: { seedFrom: { stage: groups.id, advancePerPool: 2 } },
+    config: { seedFrom: { stage: groups.id, advancePerPool: 2 }, thirdPlace: true },
   });
   await api("POST", `/api/stages/${playoff.id}/generate`);
 

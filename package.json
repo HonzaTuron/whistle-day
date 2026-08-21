@@ -4,11 +4,12 @@
   "packageManager": "bun@1.4.0",
   "version": "0.0.0",
   "workspaces": [
-    "packages/*"
+    "packages/*",
+    "apps/*"
   ],
   "scripts": {
     "check": "bun run typecheck && bun run pb:test && bun run smoke",
-    "typecheck": "tsc --noEmit -p packages/engine/tsconfig.json",
+    "typecheck": "tsc --noEmit -p packages/engine/tsconfig.json && tsc --noEmit -p apps/web/tsconfig.json",
     "pb:test": "cd backend && go vet ./... && go test ./...",
     "pb:build": "cd backend && go build -o pocketbase .",
     "pb:migrate": "cd backend && go run . migrate up",
@@ -17,7 +18,9 @@
     "pb:superuser": "cd backend && go run . superuser upsert admin@seedly.local seedlyadmin1",
     "pb:reset": "rm -rf backend/pb_data && bun run pb:migrate",
     "smoke": "bun run scripts/smoke.ts",
-    "dev": "bun run pb:serve"
+    "dev": "bun run pb:serve",
+    "web": "cd apps/web && bun run dev",
+    "seed": "bun run scripts/seed-demo.ts"
   },
   "devDependencies": {
     "typescript": "^7.0.2",

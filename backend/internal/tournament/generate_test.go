@@ -46,6 +46,26 @@ func assertPlanIsConsistent(t *testing.T, plan *StagePlan) {
 		fixtureKeys[f.Key] = true
 	}
 
+	// Slot and fixture identity in the database is (pool, round, position), not
+	// the generator's key. A key collision is impossible; a position collision
+	// is not, and only shows up when the unique index rejects the write.
+	slotPositions := map[string]bool{}
+	for _, s := range plan.Slots {
+		at := fmt.Sprintf("%s/%d/%d", s.PoolKey, s.Round, s.Position)
+		if slotPositions[at] {
+			t.Errorf("two slots occupy %s (%q and an earlier one)", at, s.Key)
+		}
+		slotPositions[at] = true
+	}
+	fixturePositions := map[string]bool{}
+	for _, f := range plan.Fixtures {
+		at := fmt.Sprintf("%s/%d/%d", f.PoolKey, f.Round, f.Position)
+		if fixturePositions[at] {
+			t.Errorf("two fixtures occupy %s (%q and an earlier one)", at, f.Code)
+		}
+		fixturePositions[at] = true
+	}
+
 	for _, f := range plan.Fixtures {
 		if !slotKeys[f.HomeSlotKey] {
 			t.Errorf("fixture %q home slot %q does not exist", f.Code, f.HomeSlotKey)
@@ -305,4 +325,16 @@ func TestPoolName(t *testing.T) {
 			t.Errorf("poolName(%d) = %q, want %q", index, got, want)
 		}
 	}
+}
+
+func TestPlanSingleEliminationThirdPlaceInASmallBracket(t *testing.T) {
+	// A four-team bracket puts the bronze match in the same round as the
+	// final, where the two finalist slots already sit. This is the case that
+	// collided.
+	plan := PlanSingleElimination(directSeeds(4), StageConfig{ThirdPlace: true})
+
+	if len(plan.Fixtures) != 4 {
+		t.Errorf("fixtures = %d, want 4 (2 semis, final, bronze)", len(plan.Fixtures))
+	}
+	assertPlanIsConsistent(t, plan)
 }

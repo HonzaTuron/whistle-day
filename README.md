@@ -3,8 +3,9 @@
 Tournament organiser with arbitrary stage ordering — groups, playoff, Swiss, in
 any sequence — and a public projector view.
 
-**Status: backend works end to end.** Generate a group stage, play it, and the
-playoff seeded from it fills itself in. There is no frontend yet.
+**Status: backend and both public screens work end to end.** Generate a group
+stage, play it, and the playoff seeded from it fills itself in — on the wall and
+on a phone. The organiser UI is not built yet.
 
 ```
 seedly/
@@ -41,8 +42,30 @@ bun install
 bun run pb:build      # compile backend/pocketbase
 bun run pb:migrate    # apply the schema
 bun run pb:superuser  # admin@seedly.local / seedlyadmin1
-bun run pb:serve      # http://127.0.0.1:8090/_/
 ```
+
+Then, in three terminals:
+
+```bash
+bun run pb:serve   # backend + admin UI on :8090
+bun run seed       # a demo tournament: 8 teams, groups, a live semi-final
+bun run web        # screens on :5173
+```
+
+- Projector — <http://localhost:5173/display/hala-1>
+- Phone — <http://localhost:5173/m/hala-1>
+
+Re-running `bun run seed` replaces the demo rather than adding a second one.
+
+## Screens
+
+| Route | For |
+|---|---|
+| `/display/:token` | The projector: unattended, rotates itself, read from across a hall. |
+| `/m/:token` | A phone: tabs, scrolling, one person looking for one thing. |
+
+They are separate routes because they share almost nothing but data — see
+[apps/web/README.md](apps/web/README.md).
 
 ## Checks
 

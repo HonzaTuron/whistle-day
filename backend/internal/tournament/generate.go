@@ -291,10 +291,13 @@ func PlanSingleElimination(seeds []bracketSeed, cfg StageConfig) *StagePlan {
 		for i := 0; i < 2; i++ {
 			key := fmt.Sprintf("slot:bronze:%d", i)
 			plan.Slots = append(plan.Slots, SlotDraft{
-				Key:              key,
-				PoolKey:          poolKey,
-				Round:            bronzeRound,
-				Position:         1 + i, // sit beside the final, which is position 0
+				Key:     key,
+				PoolKey: poolKey,
+				Round:   bronzeRound,
+				// The two finalist slots already hold positions 0 and 1 of this
+				// round, so the bronze pair starts at 2. Getting this wrong is
+				// invisible in the plan and only fails against the unique index.
+				Position:         2 + i,
 				Label:            "Loser " + fixtureCode(2, i),
 				SourceType:       "fixture_loser",
 				SourceFixtureKey: fmt.Sprintf("fixture:%d:%d", semiRound, i),
