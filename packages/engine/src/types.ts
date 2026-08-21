@@ -372,3 +372,131 @@ export interface ResolveResponse {
   stage: Id;
   resolved: number;
 }
+
+// ---------------------------------------------------------------------------
+// projector payload — the wire format of GET /api/display/{token}
+//
+// Mirrors the Go structs in backend/internal/tournament/display.go. One
+// request replaces subscribing to five collections and joining them in the
+// browser. Public: the token in the URL is the only credential.
+//
+// Poll it with the returned ETag in `If-None-Match`; an unchanged tournament
+// answers 304.
+// ---------------------------------------------------------------------------
+
+export interface DisplayEntry {
+  id: Id;
+  name: string;
+  short_name: string;
+  club: string;
+  logo: string;
+  seed: number;
+}
+
+export interface DisplayCourt {
+  id: Id;
+  name: string;
+  position: number;
+}
+
+/**
+ * One half of a fixture. `entry` is empty until the slot resolves, and `label`
+ * always carries something renderable ("Winner QF1", "1. A", "TBD") — a screen
+ * never has to draw a blank box.
+ */
+export interface DisplaySide {
+  entry: Id | "";
+  label: string;
+  score: number;
+}
+
+export interface DisplayGame {
+  number: number;
+  home: number;
+  away: number;
+}
+
+export interface DisplayFixture {
+  id: Id;
+  code: string;
+  stage: Id;
+  pool: Id | "";
+  round: number;
+  position: number;
+  status: FixtureStatus;
+  home: DisplaySide;
+  away: DisplaySide;
+  winner: Id | "";
+  court: Id | "";
+  scheduled_at: IsoDate | "";
+  games?: DisplayGame[];
+}
+
+export interface DisplayStanding {
+  position: number;
+  entry: Id;
+  played: number;
+  won: number;
+  drawn: number;
+  lost: number;
+  score_for: number;
+  score_against: number;
+  points: number;
+  qualified: boolean;
+}
+
+export interface DisplayRound {
+  round: number;
+  fixtures: DisplayFixture[];
+}
+
+export interface DisplayPool {
+  id: Id;
+  name: string;
+  kind: PoolKind;
+  advance_count: number;
+  standings: DisplayStanding[];
+  rounds: DisplayRound[];
+}
+
+export interface DisplayStage {
+  id: Id;
+  position: number;
+  name: string;
+  format: StageFormat;
+  status: StageStatus;
+  pools: DisplayPool[];
+}
+
+export interface DisplayTheme {
+  accent?: string;
+  logo?: string;
+  sponsors?: string[];
+}
+
+export interface DisplayPayload {
+  generated_at: IsoDate;
+  tournament: {
+    id: Id;
+    name: string;
+    sport: string;
+    location: string;
+    logo: string;
+    status: TournamentStatus;
+  };
+  display: {
+    id: Id;
+    name: string;
+    mode: DisplayMode;
+    rotate_seconds: number;
+    scope: { stage?: Id; pool?: Id; court?: Id };
+    theme: DisplayTheme | null;
+  };
+  /** Sent once, referenced by id everywhere else. */
+  entries: Record<Id, DisplayEntry>;
+  courts: DisplayCourt[];
+  stages: DisplayStage[];
+  now_playing: DisplayFixture[];
+  next_up: DisplayFixture[];
+  recent: DisplayFixture[];
+}

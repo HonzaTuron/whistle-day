@@ -54,11 +54,12 @@ bun run check   # typecheck + go vet/test + smoke
 |---|---|
 | `bun run typecheck` | TypeScript 7 |
 | `bun run pb:test` | `go vet` + 22 unit tests: generators, tiebreaks, outcomes |
-| `bun run smoke` | 42 assertions against a real PocketBase on a temp data dir |
+| `bun run smoke` | 63 assertions against a real PocketBase on a temp data dir |
 
 The smoke run is the one that matters. It boots the server, generates a
 two-pool group stage and a playoff seeded from it, plays every group fixture
-over the REST API, and asserts that the tables and the bracket come out right.
+over the REST API, and asserts that the tables, the bracket and the projector
+payload all come out right.
 
 ## How a tournament runs
 
@@ -74,6 +75,9 @@ POST /api/stages/{playoff}/generate
 # 3. play. Nothing else to call — closing a fixture does the rest.
 PATCH /api/collections/fixtures/records/{id}
       { "status": "finished", "home_score": 2, "away_score": 0 }
+
+# 4. put it on the wall
+GET /api/display/{token}
 ```
 
 Closing a fixture triggers the whole chain: derive the winner from the score,
@@ -87,6 +91,7 @@ its final positions.
 |---|---|
 | `POST /api/stages/{stage}/generate` | Generate pools, slots and fixtures. `?dry_run=1` returns the plan without writing, so preview and commit run the same generator. Refuses to overwrite played fixtures. |
 | `POST /api/stages/{stage}/resolve` | Re-resolve a stage. The repair path for corrected scores and for slots written after the fixture they source from. Idempotent. |
+| `GET /api/display/{token}` | The whole projector screen in one response. Public — the token is the only credential. Poll it with `If-None-Match`; an unchanged tournament answers 304. |
 
 ## Behaviour worth knowing about
 
@@ -103,6 +108,9 @@ its final positions.
 - **Head-to-head is computed among the tied group only**, from the fixtures
   those entries played against each other — which is why ranking is recursive
   rather than one comparator chain.
+- **Every fixture side is renderable.** When a slot has no entry yet the
+  projector payload sends its label instead — "Winner SF1", "1. A", "TBD" — so
+  a screen never has to draw a blank box.
 
 ## Generation lives on the server
 
@@ -118,9 +126,7 @@ a draw without a round trip. They are now Go only, and preview goes through
 2. **`stage_rank` slot resolution.** `pool_rank` works. `stage_rank` needs a
    stage-wide table, which does not exist yet — pools are ranked, stages are
    not.
-3. **A projector payload route** — `GET /api/display/{token}` returning one
-   bundle, so a screen needs one request instead of five subscriptions.
-4. **The frontend.** React + Vite + TanStack Router/Query, with the projector
+3. **The frontend.** React + Vite + TanStack Router/Query, with the projector
    as a `/display/:token` route in the same app.
 5. **Schedule conflict detection.** `scheduled_at` and `court` exist, but
    nothing stops a team being booked onto two courts at once.

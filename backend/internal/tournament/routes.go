@@ -1,6 +1,7 @@
 package tournament
 
 import (
+	"encoding/json"
 	"net/http"
 
 	"github.com/pocketbase/pocketbase/apis"
@@ -90,6 +91,62 @@ func RegisterRoutes(app core.App) {
 			})
 		}).Bind(apis.RequireAuth())
 
+		// One assembled payload for a projector screen.
+		//
+		// Public on purpose: the unguessable token is the only credential, so
+		// the screen opens on a borrowed laptop without anyone logging in. A
+		// draft tournament is treated as non-existent rather than forbidden,
+		// so the endpoint cannot be used to probe for unpublished events.
+		se.Router.GET("/api/display/{token}", func(e *core.RequestEvent) error {
+			token := e.Request.PathValue("token")
+			if token == "" {
+				return e.NotFoundError("display not found", nil)
+			}
+
+			display, err := e.App.FindFirstRecordByFilter(
+				"displays",
+				"token = {:token} && active = true",
+				map[string]any{"token": token},
+			)
+			if err != nil || display == nil {
+				return e.NotFoundError("display not found", err)
+			}
+
+			payload, err := BuildDisplayPayload(e.App, display)
+			if err != nil {
+				return e.NotFoundError("display not found", err)
+			}
+			if payload.Tournament.Status == "draft" {
+				return e.NotFoundError("display not found", nil)
+			}
+
+			body, err := json.Marshal(payload)
+			if err != nil {
+				return e.InternalServerError("could not encode payload", err)
+			}
+
+			// A screen polls; most polls change nothing. GeneratedAt is
+			// excluded from the tag so an unchanged tournament keeps hitting
+			// the same one.
+			tagged := body
+			if trimmed, err := json.Marshal(withoutTimestamp(payload)); err == nil {
+				tagged = trimmed
+			}
+			etag := payloadETag(tagged)
+			e.Response.Header().Set("ETag", etag)
+			e.Response.Header().Set("Cache-Control", "no-cache")
+
+			if e.Request.Header.Get("If-None-Match") == etag {
+				e.Response.WriteHeader(http.StatusNotModified)
+				return nil
+			}
+
+			e.Response.Header().Set("Content-Type", "application/json")
+			e.Response.WriteHeader(http.StatusOK)
+			_, err = e.Response.Write(body)
+			return err
+		})
+
 		return se.Next()
 	})
 }
@@ -148,4 +205,12 @@ func resolveSourceStages(app core.App, plan *StagePlan) error {
 		}
 	}
 	return nil
+}
+
+// withoutTimestamp copies a payload with GeneratedAt cleared, so the ETag
+// reflects the tournament's state rather than the clock.
+func withoutTimestamp(payload *DisplayPayload) DisplayPayload {
+	copied := *payload
+	copied.GeneratedAt = ""
+	return copied
 }

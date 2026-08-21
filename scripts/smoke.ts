@@ -427,6 +427,99 @@ try {
   check("set totals are accumulated", tieTable.items[0].score_for, 4);
   check("conceded sets are accumulated", tieTable.items[0].score_against, 0);
 
+  // =====================================================================
+  console.log("\n8. the projector payload");
+  // =====================================================================
+  const screenToken = `tok-${Date.now()}`;
+  await create("displays", {
+    tournament: cup.id,
+    name: "Main hall",
+    token: screenToken,
+    mode: "auto",
+    rotate_seconds: 15,
+    active: true,
+    theme: { accent: "#0a7" },
+  });
+
+  // Public: no Authorization header at all.
+  const raw = await fetch(`${BASE}/api/display/${screenToken}`);
+  check("the screen needs no login", raw.status, 200);
+  const screen = await raw.json();
+
+  check("payload names the tournament", screen.tournament.name, "Group Cup");
+  check("payload carries the display config", screen.display.rotate_seconds, 15);
+  check("payload carries the theme", screen.display.theme.accent, "#0a7");
+  check("entries arrive as a lookup map", Object.keys(screen.entries).length, 8);
+  check("both stages are included", screen.stages.length, 2);
+
+  const groupStage = screen.stages.find((s: any) => s.name === "Groups");
+  check("group stage has two pools", groupStage.pools.length, 2);
+  check("pool table is embedded", groupStage.pools[0].standings.length, 4);
+  check("table marks who qualified", groupStage.pools[0].standings[0].qualified, true);
+  check("fixtures are grouped by round", groupStage.pools[0].rounds.length, 3);
+
+  const playoffStage = screen.stages.find((s: any) => s.name === "Playoff");
+  const allPlayoff = playoffStage.pools[0].rounds.flatMap((r: any) => r.fixtures);
+  check(
+    "every fixture side is renderable, resolved or not",
+    allPlayoff.every((f: any) =>
+      (f.home.entry !== "" || f.home.label !== "") &&
+      (f.away.entry !== "" || f.away.label !== "")),
+    true,
+  );
+  const unresolvedFinal = allPlayoff.find((f: any) => f.code === "F");
+  check("an unplayed final shows placeholders", unresolvedFinal.home.label, "Winner SF1");
+
+  check("finished fixtures land in recent", screen.recent.length > 0, true);
+  check("resolved semis land in next up", screen.next_up.length, 2);
+
+  // Polling must be cheap.
+  const etag = raw.headers.get("etag");
+  check("payload is tagged", typeof etag === "string" && etag.length > 0, true);
+  const repeat = await fetch(`${BASE}/api/display/${screenToken}`, {
+    headers: { "If-None-Match": etag as string },
+  });
+  check("an unchanged tournament returns 304", repeat.status, 304);
+
+  // A result must invalidate the tag.
+  const semiToPlay = (await api(
+    "GET", `/api/collections/fixtures/records?filter=(stage='${playoff.id}'%26%26round=0)`)).items[0];
+  await patch("fixtures", semiToPlay.id, {
+    status: "finished", home_score: 2, away_score: 0,
+  });
+  const afterResult = await fetch(`${BASE}/api/display/${screenToken}`, {
+    headers: { "If-None-Match": etag as string },
+  });
+  check("a played fixture invalidates the tag", afterResult.status, 200);
+
+  // =====================================================================
+  console.log("\n9. the projector endpoint does not leak");
+  // =====================================================================
+  const missing = await fetch(`${BASE}/api/display/definitely-not-a-token`);
+  check("unknown token is 404", missing.status, 404);
+
+  const draft = await create("tournaments", {
+    name: "Secret", slug: `secret-${Date.now()}`, status: "draft",
+    owner: organiser.id,
+  });
+  const draftToken = `draft-${Date.now()}`;
+  await create("displays", {
+    tournament: draft.id, token: draftToken, mode: "auto", active: true,
+  });
+  const draftScreen = await fetch(`${BASE}/api/display/${draftToken}`);
+  check("a draft tournament is not exposed", draftScreen.status, 404);
+
+  const offToken = `off-${Date.now()}`;
+  await create("displays", {
+    tournament: cup.id, token: offToken, mode: "auto", active: false,
+  });
+  const offScreen = await fetch(`${BASE}/api/display/${offToken}`);
+  check("a deactivated screen is 404", offScreen.status, 404);
+
+  const listAttempt = await fetch(`${BASE}/api/collections/displays/records`);
+  const listed = await listAttempt.json();
+  check("displays cannot be enumerated without a token", listed.items?.length ?? 0, 0);
+
 } catch (error) {
   console.error("\nsmoke run threw:");
   console.error(error instanceof Error ? error.message : error);

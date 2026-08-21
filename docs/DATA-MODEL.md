@@ -166,10 +166,23 @@ active = true && token = @request.query.token
 `listRule` therefore cannot be used to enumerate screens — without the token it
 returns nothing.
 
-For production, prefer a custom route `GET /api/display/{token}` returning one
-assembled payload (stages, standings, fixtures, theme) over reading the
-collections directly. It saves the screen five realtime subscriptions and gives
-you one place to handle caching.
+Screens read `GET /api/display/{token}` rather than the collections directly:
+one request returns stages, tables, fixtures, courts and theme already
+assembled, instead of five subscriptions joined in the browser.
+
+Three details that matter for a screen:
+
+- **Entries are sent once** as a lookup map keyed by id and referenced from
+  every fixture, so a team's name and logo are not repeated dozens of times.
+- **Unresolved sides carry a label.** A fixture side with no entry yet sends
+  `{ "entry": "", "label": "Winner SF1" }`, so the projector always has
+  something to draw.
+- **Polling is cheap.** The response is tagged; send it back in
+  `If-None-Match` and an unchanged tournament answers 304. The tag excludes
+  the generation timestamp, so it only changes when the tournament does.
+
+A draft tournament returns 404 rather than 403, so the endpoint cannot be used
+to probe for unpublished events.
 
 ## What the model does not solve yet
 
