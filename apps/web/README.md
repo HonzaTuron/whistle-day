@@ -6,6 +6,7 @@ Two public screens, and the two the organiser drives them from.
 |---|---|
 | `/new` | The organiser setting a tournament up, on a phone, in a hall. |
 | `/t/:id` | Running the day: the match list, and a score for each. |
+| `/account` | Claiming the device account, and signing in on another device. |
 | `/display/:token` | The projector: unattended, rotates itself, read from across a hall. |
 | `/m/:token` | A phone: held by one person looking for one thing. |
 | `/` | Start a tournament, or paste a token to open a screen. |
@@ -58,9 +59,20 @@ knowing before changing it.
 `@request.auth.id`, and a signup form in front of someone holding a clipboard
 in a sports hall is where the product would lose them. So `api/organiser.ts`
 creates a user with a random address and password and keeps both in
-localStorage. It follows that the device is the credential: clear the site data
-and the tournament stays live but becomes uneditable. Claiming it with a real
-email is the obvious next screen.
+localStorage.
+
+`/account` is the other half of that bargain, offered late — once there is
+something worth keeping. `POST /api/organiser/claim` puts a real email and
+password on the same user record, which is why the tournament does not move or
+change owner. It sidesteps PocketBase's email-change flow because that sends a
+confirmation link and a hall laptop has no SMTP; the caller is already
+authenticated as the account being claimed, so the request is its own proof. It
+refuses on an account that already has an email, or it would be a way to take
+over any account whose token leaked.
+
+The same screen signs in, because on a second device it is the same question
+from the other end. Opening it never creates an account — only the wizard does
+that, and only when there is a tournament to own.
 
 **It writes as it goes.** The tournament exists as a `draft` from the second
 screen onwards, and every team is saved as it is typed. Twenty names held in a

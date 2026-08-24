@@ -82,7 +82,9 @@ export function DoneStep({ name, tournamentId, result }: Props) {
 
       <p className="done__warning">
         This tournament is managed from this device — this browser is the only
-        one that can change it. Keep the links somewhere safe.
+        one that can change it.{" "}
+        <Link to="/account">Put an email on it</Link> and it will survive a lost
+        phone.
       </p>
     </div>
   );

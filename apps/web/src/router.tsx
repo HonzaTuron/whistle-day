@@ -6,6 +6,7 @@ import {
 } from "@tanstack/react-router";
 import { MobileScreen } from "./components/mobile/MobileScreen";
 import { ProjectorScreen } from "./components/projector/ProjectorScreen";
+import { Account } from "./routes/Account";
 import { Create } from "./routes/Create";
 import { Landing } from "./routes/Landing";
 import { Results } from "./routes/Results";
@@ -23,6 +24,13 @@ const createRouteEntry = createRoute({
   getParentRoute: () => rootRoute,
   path: "/new",
   component: Create,
+});
+
+/** Keeping a tournament that only this browser can reach. */
+const accountRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/account",
+  component: Account,
 });
 
 /** Running the day: the match list, and a score for each. */
@@ -58,6 +66,7 @@ const mobileRoute = createRoute({
 const routeTree = rootRoute.addChildren([
   indexRoute,
   createRouteEntry,
+  accountRoute,
   resultsRoute,
   displayRoute,
   mobileRoute,

@@ -556,6 +556,72 @@ try {
   // its other side is still a placeholder either way.
   check("and it is still waiting on the other semi", refilledFinal.status, "pending");
 
+  // =====================================================================
+  console.log("\n11. claiming a device account");
+  // =====================================================================
+  // The wizard's accounts are anonymous by design; this is the only way one
+  // ever becomes something a person can sign in with, so its refusals matter
+  // as much as its success.
+  const deviceEmail = `organiser-${Date.now()}@device.seedly.local`;
+  const devicePassword = "device-generated-secret";
+  await create("users", {
+    email: deviceEmail,
+    password: devicePassword,
+    passwordConfirm: devicePassword,
+    name: "Organiser",
+  });
+  const deviceAuth = await api("POST", "/api/collections/users/auth-with-password", {
+    identity: deviceEmail, password: devicePassword,
+  });
+
+  const claim = (body: unknown, authToken?: string) =>
+    fetch(`${BASE}/api/organiser/claim`, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        ...(authToken ? { Authorization: authToken } : {}),
+      },
+      body: JSON.stringify(body),
+    });
+
+  const anonymous = await claim({ email: "a@example.com", password: "long-enough" });
+  check("claiming needs an account", anonymous.status, 401);
+
+  const tooShort = await claim({ email: "a@example.com", password: "abc" }, deviceAuth.token);
+  check("a short password is refused", tooShort.status, 400);
+
+  const realEmail = `organiser-${Date.now()}@example.com`;
+  const claimed = await claim({ email: realEmail, password: "long-enough" }, deviceAuth.token);
+  check("a device account can be claimed", claimed.status, 200);
+
+  const signedIn = await fetch(`${BASE}/api/collections/users/auth-with-password`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ identity: realEmail, password: "long-enough" }),
+  });
+  check("and signed into with the new password", signedIn.status, 200);
+  const signedInBody = await signedIn.json();
+  check("as the same account", signedInBody.record.id, deviceAuth.record.id);
+
+  // The old token was minted before the claim. If it still worked, a leaked
+  // one would outlive the claim that was meant to secure the account.
+  const stale = await fetch(`${BASE}/api/collections/users/auth-refresh`, {
+    method: "POST",
+    headers: { Authorization: deviceAuth.token },
+  });
+  check("the pre-claim token stops working", stale.status, 401);
+
+  const secondClaim = await claim(
+    { email: "someone-else@example.com", password: "long-enough" },
+    signedInBody.token,
+  );
+  check("a claimed account cannot be claimed again", secondClaim.status, 400);
+
+  // Staff read their own screens; the public still needs the token.
+  const ownScreens = await api(
+    "GET", `/api/collections/displays/records?filter=(tournament='${cup.id}')`);
+  check("staff can list their tournament's screens", ownScreens.items.length > 0, true);
+
 } catch (error) {
   console.error("\nsmoke run threw:");
   console.error(error instanceof Error ? error.message : error);

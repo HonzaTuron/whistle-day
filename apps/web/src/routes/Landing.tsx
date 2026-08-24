@@ -61,6 +61,10 @@ export function Landing() {
           Phone
         </button>
       </div>
+
+      <Link to="/account" className="landing__account">
+        Sign in, or keep a tournament you set up here
+      </Link>
     </div>
   );
 }

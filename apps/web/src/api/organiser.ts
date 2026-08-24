@@ -204,6 +204,61 @@ const records = <T>(session: Session, collection: string, query: string) =>
     { token: session.token },
   ).then((page) => page.items);
 
+/**
+ * The session this device already has, if any — without making one.
+ *
+ * `ensureOrganiser` creates an account when there is none, which is right in
+ * the wizard and wrong on a screen somebody opened to sign in: it would leave
+ * an empty account behind every time.
+ */
+export const storedSession = (): Session | null => readSession();
+
+/** True while the account is still the throwaway one the wizard made. */
+export const isDeviceAccount = (session: Session) =>
+  session.email.toLowerCase().endsWith("@device.seedly.local");
+
+/**
+ * Put a real email and password on the device account, so it can be signed
+ * into from somewhere else.
+ *
+ * Claiming invalidates every token the anonymous account ever had — including
+ * the one making the request — so this signs in again immediately and keeps
+ * the new session. Nothing else changes: it is the same owner record, now with
+ * a way back to it.
+ */
+export async function claimAccount(
+  session: Session,
+  email: string,
+  password: string,
+): Promise<Session> {
+  await api<{ email: string }>("/api/organiser/claim", {
+    method: "POST",
+    token: session.token,
+    body: { email, password },
+  });
+  return signIn(email, password);
+}
+
+/** Sign in on a device that has never seen this account. */
+export async function signIn(email: string, password: string): Promise<Session> {
+  const auth = await api<{ token: string; record: { id: Id } }>(
+    "/api/collections/users/auth-with-password",
+    { method: "POST", body: { identity: email, password } },
+  );
+  return writeSession({ userId: auth.record.id, email, password, token: auth.token });
+}
+
+/**
+ * The tournaments this account owns, newest first — what a device that has
+ * just signed in needs before it can show anything.
+ */
+export const myTournaments = (session: Session) =>
+  records<TournamentRecord>(
+    session,
+    "tournaments",
+    `filter=(owner='${session.userId}')&sort=-created&perPage=50`,
+  );
+
 /** A URL-safe slug, with a random tail because `tournaments.slug` is unique. */
 function slugify(name: string): string {
   const base = name
@@ -330,6 +385,8 @@ export interface Board {
   pools: Pool[];
   courts: Court[];
   fixtures: BoardFixture[];
+  /** The screen token, so the organiser can always find the wall. */
+  token: string;
 }
 
 /**
@@ -351,7 +408,7 @@ export interface BoardFixture extends Fixture {
 export const stamp = (date: Date) => date.toISOString().replace("T", " ");
 
 export async function loadBoard(session: Session, id: Id): Promise<Board> {
-  const [tournament, entries, stages, pools, courts, fixtures] = await Promise.all([
+  const [tournament, entries, stages, pools, courts, fixtures, screens] = await Promise.all([
     loadTournament(session, id),
     records<Entry>(session, "entries", `filter=(tournament='${id}')&sort=seed&perPage=200`),
     records<Stage>(session, "stages", `filter=(tournament='${id}')&sort=position&perPage=50`),
@@ -363,9 +420,19 @@ export async function loadBoard(session: Session, id: Id): Promise<Board> {
       `filter=(tournament='${id}')&sort=round,position` +
         `&expand=home_slot,away_slot&perPage=500`,
     ),
+    // Staff can read their own screens; the public still needs the token.
+    records<{ token: string }>(session, "displays", `filter=(tournament='${id}')&perPage=5`),
   ]);
 
-  return { tournament, entries, stages, pools, courts, fixtures };
+  return {
+    tournament,
+    entries,
+    stages,
+    pools,
+    courts,
+    fixtures,
+    token: screens[0]?.token ?? "",
+  };
 }
 
 /**

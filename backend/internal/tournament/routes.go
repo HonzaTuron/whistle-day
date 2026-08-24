@@ -2,7 +2,9 @@ package tournament
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/pocketbase/pocketbase/apis"
 	"github.com/pocketbase/pocketbase/core"
@@ -91,6 +93,65 @@ func RegisterRoutes(app core.App) {
 			})
 		}).Bind(apis.RequireAuth())
 
+		// Turn a device account into one somebody can sign in with.
+		//
+		// The wizard creates an account nobody asked for: a random address and
+		// a random password, kept in one browser. That is what lets an
+		// organiser start a tournament without meeting a signup form, and it
+		// is also the thing that loses them the tournament when they clear
+		// their site data. This is where they take it back.
+		//
+		// PocketBase's own email-change flow sends a confirmation link, which
+		// needs SMTP that a hall laptop does not have. Here the caller is
+		// already authenticated as the account being claimed, so there is
+		// nobody to confirm to — the request IS the proof.
+		//
+		// It only ever upgrades an unclaimed device account. Pointed at a real
+		// one it refuses, because otherwise it would be a way to take over any
+		// account whose token leaked.
+		se.Router.POST("/api/organiser/claim", func(e *core.RequestEvent) error {
+			auth := e.Auth
+			if auth == nil || auth.Collection().Name != "users" {
+				return e.UnauthorizedError("sign in first", nil)
+			}
+			if !IsDeviceAccount(auth.Email()) {
+				return e.BadRequestError("this account already has an email", nil)
+			}
+
+			data := struct {
+				Email    string `json:"email"`
+				Password string `json:"password"`
+			}{}
+			if err := e.BindBody(&data); err != nil {
+				return e.BadRequestError("could not read the request", err)
+			}
+			if len(data.Password) < minPasswordLength {
+				return e.BadRequestError(
+					fmt.Sprintf("the password needs at least %d characters", minPasswordLength),
+					nil,
+				)
+			}
+
+			user, err := e.App.FindRecordById("users", auth.Id)
+			if err != nil {
+				return e.NotFoundError("account not found", err)
+			}
+
+			user.SetEmail(data.Email)
+			user.SetPassword(data.Password)
+			// Every token issued to the anonymous account stops working, which
+			// is the point: what was on the old device is no longer a way in.
+			user.RefreshTokenKey()
+
+			if err := e.App.Save(user); err != nil {
+				return e.BadRequestError(claimError(err), err)
+			}
+
+			// The caller signs in again with what it just set; there is no
+			// token to hand back that would still be valid.
+			return e.JSON(http.StatusOK, map[string]any{"email": data.Email})
+		}).Bind(apis.RequireAuth())
+
 		// One assembled payload for a projector screen.
 		//
 		// Public on purpose: the unguessable token is the only credential, so
@@ -149,6 +210,28 @@ func RegisterRoutes(app core.App) {
 
 		return se.Next()
 	})
+}
+
+// DeviceAccountDomain marks an account created by the wizard rather than by a
+// person. Nothing depends on the exact string except the claim endpoint, which
+// uses it to tell "never had an email" from "has one already".
+const DeviceAccountDomain = "@device.seedly.local"
+
+const minPasswordLength = 8
+
+func IsDeviceAccount(email string) bool {
+	return strings.HasSuffix(strings.ToLower(email), DeviceAccountDomain)
+}
+
+// claimError turns PocketBase's validation into something an organiser can act
+// on. The only failure that happens in practice is an address already in use,
+// and "Failed to update record." does not say so.
+func claimError(err error) string {
+	if strings.Contains(strings.ToLower(err.Error()), "unique") ||
+		strings.Contains(err.Error(), "email") {
+		return "that email is already in use, or is not a valid address"
+	}
+	return "could not save the account"
 }
 
 // requireStaff mirrors the staffOnly collection rule for custom routes, which

@@ -166,11 +166,14 @@ are genuinely 1-based — `games.number`, `standings.position` — stay required
 opened on a borrowed laptop without logging in. The read rule is:
 
 ```
-active = true && token = @request.query.token
+active = true && token = @request.query.token || (<the tournament's staff>)
 ```
 
-`listRule` therefore cannot be used to enumerate screens — without the token it
-returns nothing.
+Anonymously, `listRule` therefore cannot be used to enumerate screens — without
+the token it returns nothing. The staff branch was added later, and only
+because it was missing: the owner could not ask which screens their own
+tournament had, which nobody noticed while the only device that could organise
+a tournament was the one that had generated the token in the first place.
 
 Screens read `GET /api/display/{token}` rather than the collections directly:
 one request returns stages, tables, fixtures, courts and theme already

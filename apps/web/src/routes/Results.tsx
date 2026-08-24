@@ -46,13 +46,12 @@ export function Results({ id }: { id: string }) {
       setBoard(loaded);
       setError(null);
       // Keeps the landing page's way back pointing at the tournament actually
-      // being run, including on a device that opened the link rather than
-      // creating it here.
-      const remembered = rememberedTournament();
+      // being run, including on a device that signed in rather than creating
+      // it here — which is also where the screen token comes from now.
       rememberTournament({
         id: loaded.tournament.id,
         name: loaded.tournament.name,
-        token: remembered?.id === id ? remembered.token : "",
+        token: loaded.token,
       });
     } catch (thrown) {
       setError(
@@ -79,7 +78,7 @@ export function Results({ id }: { id: string }) {
   const done = progress(rows);
   const visible = rows.filter((row) => (tab === "done" ? row.settled : !row.settled));
   const open = selected ? rows.find((row) => row.fixture.id === selected) ?? null : null;
-  const token = rememberedTournament()?.token ?? "";
+  const token = board.token;
 
   /**
    * Every write goes the same way: send it, read the whole board back, and
