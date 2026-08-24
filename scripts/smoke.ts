@@ -13,6 +13,10 @@ import { join } from "node:path";
 import { $ } from "bun";
 
 const BACKEND = new URL("../backend/", import.meta.url).pathname;
+// The compiled server, which `bun run smoke` rebuilds first. It used to run
+// whatever binary happened to be lying there: a backend change could pass the
+// smoke run without ever being in it, which is the one thing this script
+// exists to make impossible.
 const BIN = `${BACKEND}pocketbase`;
 const PORT = 8099;
 const BASE = `http://127.0.0.1:${PORT}`;
@@ -519,6 +523,38 @@ try {
   const listAttempt = await fetch(`${BASE}/api/collections/displays/records`);
   const listed = await listAttempt.json();
   check("displays cannot be enumerated without a token", listed.items?.length ?? 0, 0);
+
+  // =====================================================================
+  console.log("\n10. clearing a result unrolls what it filled in");
+  // =====================================================================
+  // Section 8 played a semi-final, so the final knows one of its sides. Taking
+  // that result away has to take the finalist with it: a bracket still naming
+  // a team that has not qualified is the same class of bug as promoting a
+  // provisionally-first team out of a group.
+  const finalOf = async () =>
+    (await api("GET",
+      `/api/collections/fixtures/records?filter=(stage='${playoff.id}'%26%26code='F')`)).items[0];
+
+  const filledFinal = await finalOf();
+  check("the played semi put a team in the final", filledFinal.home_entry !== "", true);
+
+  await patch("fixtures", semiToPlay.id, { status: "ready" });
+  const emptiedFinal = await finalOf();
+  check("clearing the semi empties the finalist", emptiedFinal.home_entry, "");
+
+  const clearedSlot = (await api("GET",
+    `/api/collections/slots/records?filter=(source_fixture='${semiToPlay.id}')`)).items[0];
+  check("the slot it came from is cleared too", clearedSlot.entry, "");
+
+  // And back again: the same result must land in the same place.
+  await patch("fixtures", semiToPlay.id, {
+    status: "finished", home_score: 2, away_score: 0,
+  });
+  const refilledFinal = await finalOf();
+  check("replaying the result refills the final", refilledFinal.home_entry, filledFinal.home_entry);
+  // The final stays "pending" throughout: only one semi has been played, so
+  // its other side is still a placeholder either way.
+  check("and it is still waiting on the other semi", refilledFinal.status, "pending");
 
 } catch (error) {
   console.error("\nsmoke run threw:");

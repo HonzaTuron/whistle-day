@@ -17,7 +17,7 @@
     "pb:serve": "cd backend && go run . serve --http=127.0.0.1:8090",
     "pb:superuser": "cd backend && go run . superuser upsert admin@seedly.local seedlyadmin1",
     "pb:reset": "rm -rf backend/pb_data && bun run pb:migrate",
-    "smoke": "bun run scripts/smoke.ts",
+    "smoke": "bun run pb:build && bun run scripts/smoke.ts",
     "dev": "bun run pb:serve",
     "web": "cd apps/web && bun run dev",
     "seed": "bun run scripts/seed-demo.ts"
