@@ -1,9 +1,11 @@
+import { Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { renderSVG } from "uqr";
 import type { LaunchResult } from "../../api/launch";
 
 interface Props {
   name: string;
+  tournamentId: string;
   result: LaunchResult;
 }
 
@@ -19,7 +21,7 @@ interface Props {
  * into the dark palette scans on roughly half the phones in a hall, which is
  * the worst possible failure: it works when you test it.
  */
-export function DoneStep({ name, result }: Props) {
+export function DoneStep({ name, tournamentId, result }: Props) {
   const [copied, setCopied] = useState<"phone" | "projector" | null>(null);
 
   const qr = renderSVG(result.phoneUrl, {
@@ -59,7 +61,14 @@ export function DoneStep({ name, result }: Props) {
       </button>
 
       <div className="done__actions">
-        <a className="btn btn--primary btn--block" href={result.projectorUrl}>
+        <Link
+          to="/t/$id"
+          params={{ id: tournamentId }}
+          className="btn btn--primary btn--block"
+        >
+          Start entering results
+        </Link>
+        <a className="btn btn--block" href={result.projectorUrl}>
           Open the projector screen
         </a>
         <button

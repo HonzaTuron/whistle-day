@@ -1,10 +1,11 @@
 # @seedly/web
 
-Two public screens and the wizard that fills them.
+Two public screens, and the two the organiser drives them from.
 
 | Route | For |
 |---|---|
 | `/new` | The organiser setting a tournament up, on a phone, in a hall. |
+| `/t/:id` | Running the day: the match list, and a score for each. |
 | `/display/:token` | The projector: unattended, rotates itself, read from across a hall. |
 | `/m/:token` | A phone: held by one person looking for one thing. |
 | `/` | Start a tournament, or paste a token to open a screen. |
@@ -73,6 +74,31 @@ what lets the first screen offer to pick it up again.
 actually entered, because "16 matches, about three hours" is the decision an
 organiser is really making. Pool counts and advancement are derived from the
 team count.
+
+## Entering results
+
+`/t/:id` is the match list and a score sheet, and it makes exactly one kind of
+write: `PATCH /api/collections/fixtures/records/{id}` with a status and two
+numbers. Everything downstream — the winner, the bracket, the tables, the
+playoff slots waiting on a final position — is the server's, and the screen
+reads the whole board back afterwards rather than predicting what changed. One
+result can move two tables and fill four slots a stage away; a client guessing
+at that would be wrong in ways nobody notices until the projector disagrees
+with the hall.
+
+Three consequences worth keeping:
+
+- **A match with an unresolved side is not a disabled button.** It renders as
+  text with the slot labels the server wrote — "Winner SF1", "1. A" — and no
+  affordance at all, because it is waiting for someone rather than refusing to
+  work.
+- **Correcting a result runs the same chain as entering one.** The sheet says
+  so before it saves. Tables are rebuilt from scratch, and a slot whose ranking
+  changed is overwritten, so a score fixed two hours later lands where it would
+  have if it had been right the first time.
+- **There is no "clear this result".** Un-settling a fixture rebuilds the
+  tables but leaves the slots it already fed pointing at the old winner —
+  a backend gap, not a UI omission. Change the score instead.
 
 ## Notes on the projector
 

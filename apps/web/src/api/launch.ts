@@ -1,6 +1,6 @@
 import type { Id } from "@seedly/engine";
 import { presetById, type PresetId } from "../lib/presets";
-import { forgetDraft, randomString, type Session } from "./organiser";
+import { forgetDraft, randomString, rememberTournament, type Session } from "./organiser";
 
 /**
  * Turning a draft into a tournament that is on the wall.
@@ -61,6 +61,7 @@ const list = <T>(path: string, session: Session) =>
 export async function launchTournament(
   session: Session,
   tournament: Id,
+  name: string,
   presetId: PresetId,
   teams: number,
   onStep: (step: LaunchStep) => void,
@@ -142,7 +143,11 @@ export async function launchTournament(
     "PATCH",
   );
 
+  // The draft is finished; what the device keeps now is the tournament it is
+  // running, which is how both the landing page and the results screen find
+  // their way back to it.
   forgetDraft();
+  rememberTournament({ id: tournament, name, token });
 
   const origin = window.location.origin;
   return {

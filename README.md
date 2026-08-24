@@ -3,11 +3,10 @@
 Tournament organiser with arbitrary stage ordering — groups, playoff, Swiss, in
 any sequence — and a public projector view.
 
-**Status: a tournament can be set up on a phone and put on the wall.** Name it,
-add the teams one by one, pick how the day should run, and you get a link and a
-QR code. Generate a group stage, play it, and the playoff seeded from it fills
-itself in — on the wall and on a phone. Entering results still happens over the
-REST API; that screen is not built yet.
+**Status: a whole tournament runs off a phone.** Name it, add the teams one by
+one, pick how the day should run, and you get a link and a QR code. Then enter
+the results as they come in: the tables rebuild, the playoff seeded from them
+fills itself in, and the wall keeps up on its own.
 
 ```
 seedly/
@@ -65,6 +64,7 @@ Re-running `bun run seed` replaces the demo rather than adding a second one.
 | Route | For |
 |---|---|
 | `/new` | The organiser: name, teams, courts, format, and a link for the wall. |
+| `/t/:id` | Running the day: the match list, and a score for each. |
 | `/display/:token` | The projector: unattended, rotates itself, read from across a hall. |
 | `/m/:token` | A phone: tabs, scrolling, one person looking for one thing. |
 
@@ -100,6 +100,7 @@ POST /api/stages/{groups}/generate             # commit it
 POST /api/stages/{playoff}/generate
 
 # 3. play. Nothing else to call — closing a fixture does the rest.
+#    This is the one write /t/:id makes.
 PATCH /api/collections/fixtures/records/{id}
       { "status": "finished", "home_score": 2, "away_score": 0 }
 

@@ -8,6 +8,7 @@ import { MobileScreen } from "./components/mobile/MobileScreen";
 import { ProjectorScreen } from "./components/projector/ProjectorScreen";
 import { Create } from "./routes/Create";
 import { Landing } from "./routes/Landing";
+import { Results } from "./routes/Results";
 
 const rootRoute = createRootRoute({ component: Outlet });
 
@@ -22,6 +23,16 @@ const createRouteEntry = createRoute({
   getParentRoute: () => rootRoute,
   path: "/new",
   component: Create,
+});
+
+/** Running the day: the match list, and a score for each. */
+const resultsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/t/$id",
+  component: function ResultsRoute() {
+    const { id } = resultsRoute.useParams();
+    return <Results id={id} />;
+  },
 });
 
 /** The projector: unattended, rotating, read from across a hall. */
@@ -47,6 +58,7 @@ const mobileRoute = createRoute({
 const routeTree = rootRoute.addChildren([
   indexRoute,
   createRouteEntry,
+  resultsRoute,
   displayRoute,
   mobileRoute,
 ]);

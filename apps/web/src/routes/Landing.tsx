@@ -1,5 +1,6 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
+import { rememberedTournament } from "../api/organiser";
 
 /**
  * Two audiences, in order of who is standing here.
@@ -12,6 +13,9 @@ import { useState } from "react";
 export function Landing() {
   const navigate = useNavigate();
   const [token, setToken] = useState("");
+  // Read once, from localStorage, so the way back to a tournament being run
+  // right now is on screen before any request has been made.
+  const [running] = useState(rememberedTournament);
 
   const open = (to: "/display/$token" | "/m/$token") => {
     const trimmed = token.trim();
@@ -23,7 +27,20 @@ export function Landing() {
       <h1>Seedly</h1>
       <p>Run a tournament off a phone and put it on the wall.</p>
 
-      <Link to="/new" className="btn btn--primary landing__cta">
+      {running ? (
+        <Link
+          to="/t/$id"
+          params={{ id: running.id }}
+          className="btn btn--primary landing__cta"
+        >
+          Back to {running.name}
+        </Link>
+      ) : null}
+
+      <Link
+        to="/new"
+        className={"btn landing__cta" + (running ? "" : " btn--primary")}
+      >
         Set up a tournament
       </Link>
 

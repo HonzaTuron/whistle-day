@@ -1,4 +1,4 @@
-import type { Id } from "@seedly/engine";
+import type { Entry, Fixture, Id, Pool, Slot, Stage } from "@seedly/engine";
 
 /**
  * The organiser's side of the API — the half that writes.
@@ -19,6 +19,7 @@ import type { Id } from "@seedly/engine";
 
 const SESSION_KEY = "seedly.organiser.session";
 const DRAFT_KEY = "seedly.organiser.draft";
+const RUNNING_KEY = "seedly.organiser.running";
 
 export interface Session {
   userId: Id;
@@ -190,7 +191,7 @@ export interface CourtRecord {
   position: number;
 }
 
-export interface DraftTournament {
+export interface TournamentRecord {
   id: Id;
   name: string;
   slug: string;
@@ -216,8 +217,8 @@ function slugify(name: string): string {
   return `${base || "tournament"}-${randomString(5)}`;
 }
 
-export async function createDraft(session: Session, name: string): Promise<DraftTournament> {
-  const tournament = await api<DraftTournament>("/api/collections/tournaments/records", {
+export async function createDraft(session: Session, name: string): Promise<TournamentRecord> {
+  const tournament = await api<TournamentRecord>("/api/collections/tournaments/records", {
     method: "POST",
     token: session.token,
     body: {
@@ -243,14 +244,15 @@ export async function createDraft(session: Session, name: string): Promise<Draft
 }
 
 export const renameDraft = (session: Session, id: Id, name: string) =>
-  api<DraftTournament>(`/api/collections/tournaments/records/${id}`, {
+  api<TournamentRecord>(`/api/collections/tournaments/records/${id}`, {
     method: "PATCH",
     token: session.token,
     body: { name },
   });
 
-export const loadDraft = (session: Session, id: Id) =>
-  api<DraftTournament>(`/api/collections/tournaments/records/${id}`, {
+/** One tournament record, draft or running. */
+export const loadTournament = (session: Session, id: Id) =>
+  api<TournamentRecord>(`/api/collections/tournaments/records/${id}`, {
     token: session.token,
   });
 
@@ -315,6 +317,111 @@ export const removeCourt = (session: Session, id: Id) =>
     method: "DELETE",
     token: session.token,
   });
+
+// ---------------------------------------------------------------------------
+// running a tournament
+// ---------------------------------------------------------------------------
+
+/** Everything the results screen needs, in five requests that run together. */
+export interface Board {
+  tournament: TournamentRecord;
+  entries: Entry[];
+  stages: Stage[];
+  pools: Pool[];
+  fixtures: BoardFixture[];
+}
+
+/**
+ * A fixture with its two slots expanded.
+ *
+ * `home_entry` is a cache of the slot and is null until the slot resolves, so
+ * a bracket match waiting on the groups has nothing to render without the slot
+ * it came from — that is where "Winner SF1" and "1. A" live. The server words
+ * those labels; the client never invents one.
+ */
+export interface BoardFixture extends Fixture {
+  expand?: {
+    home_slot?: Slot;
+    away_slot?: Slot;
+  };
+}
+
+export async function loadBoard(session: Session, id: Id): Promise<Board> {
+  const [tournament, entries, stages, pools, fixtures] = await Promise.all([
+    loadTournament(session, id),
+    records<Entry>(session, "entries", `filter=(tournament='${id}')&sort=seed&perPage=200`),
+    records<Stage>(session, "stages", `filter=(tournament='${id}')&sort=position&perPage=50`),
+    records<Pool>(session, "pools", `filter=(stage.tournament='${id}')&sort=position&perPage=100`),
+    records<BoardFixture>(
+      session,
+      "fixtures",
+      `filter=(tournament='${id}')&sort=round,position` +
+        `&expand=home_slot,away_slot&perPage=500`,
+    ),
+  ]);
+
+  return { tournament, entries, stages, pools, fixtures };
+}
+
+/**
+ * Write a result and let the server do the rest.
+ *
+ * Closing a fixture is the only call the organiser ever makes: the hooks
+ * derive the winner from the score, push it into the slots that name this
+ * fixture as their source, rebuild the pool tables, and fill any playoff slot
+ * waiting on a position in a table that has just become final. A corrected
+ * score runs exactly the same chain — the tables are rebuilt from scratch
+ * rather than adjusted, and a slot whose ranking changed is overwritten.
+ */
+export const saveResult = (
+  session: Session,
+  fixture: Id,
+  homeScore: number,
+  awayScore: number,
+) =>
+  api<Fixture>(`/api/collections/fixtures/records/${fixture}`, {
+    method: "PATCH",
+    token: session.token,
+    body: {
+      status: "finished",
+      home_score: homeScore,
+      away_score: awayScore,
+      finished_at: new Date().toISOString().replace("T", " "),
+    },
+  });
+
+/**
+ * The tournament this device is running, kept so the landing page can offer to
+ * go back to it. The name is stored too — the whole point is to render that
+ * offer without waiting for a request first.
+ *
+ * The screen token is stored for a duller reason: `displays.listRule` is
+ * `active = true && token = @request.query.token`, so not even the owner can
+ * ask which screens a tournament has. The wizard knows the token because it
+ * generated it, and this is where it survives a reload.
+ */
+export interface RunningTournament {
+  id: Id;
+  name: string;
+  token: string;
+}
+
+export function rememberTournament(tournament: RunningTournament) {
+  try {
+    localStorage.setItem(RUNNING_KEY, JSON.stringify(tournament));
+  } catch {
+    /* nothing to remember it with; the link still works */
+  }
+}
+
+export function rememberedTournament(): RunningTournament | null {
+  try {
+    const raw = localStorage.getItem(RUNNING_KEY);
+    return raw ? (JSON.parse(raw) as RunningTournament) : null;
+  } catch {
+    return null;
+  }
+}
 
 // ---------------------------------------------------------------------------
 // the draft this device is in the middle of

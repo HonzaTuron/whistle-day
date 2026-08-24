@@ -12,7 +12,7 @@ import {
   ensureOrganiser,
   forgetDraft,
   loadCourts,
-  loadDraft,
+  loadTournament,
   loadTeams,
   rememberedDraft,
   removeCourt,
@@ -20,7 +20,7 @@ import {
   renameCourt,
   renameDraft,
   type CourtRecord,
-  type DraftTournament,
+  type TournamentRecord,
   type Session,
   type TeamRecord,
 } from "../api/organiser";
@@ -34,7 +34,7 @@ import { defaultPreset, type PresetId } from "../lib/presets";
 type Step = "name" | "teams" | "courts" | "format" | "done";
 
 interface Resumable {
-  tournament: DraftTournament;
+  tournament: TournamentRecord;
   teams: TeamRecord[];
   courts: CourtRecord[];
 }
@@ -55,7 +55,7 @@ interface Resumable {
  */
 export function Create() {
   const [step, setStep] = useState<Step>("name");
-  const [tournament, setTournament] = useState<DraftTournament | null>(null);
+  const [tournament, setTournament] = useState<TournamentRecord | null>(null);
   const [teams, setTeams] = useState<TeamRecord[]>([]);
   const [courts, setCourts] = useState<CourtRecord[]>([]);
   const [preset, setPreset] = useState<PresetId>("groups");
@@ -90,7 +90,7 @@ export function Create() {
         const draftId = rememberedDraft();
         if (!draftId || cancelled) return;
 
-        const draft = await loadDraft(active, draftId);
+        const draft = await loadTournament(active, draftId);
         // A tournament that has already started is not a draft to resume; it
         // is somebody's live event and the wizard has no business in it.
         if (draft.status !== "draft") {
@@ -242,6 +242,7 @@ export function Create() {
         const launched = await launchTournament(
           active,
           tournament.id,
+          tournament.name,
           preset,
           teams.length,
           setLaunching,
@@ -319,7 +320,11 @@ export function Create() {
       ) : null}
 
       {step === "done" && result ? (
-        <DoneStep name={tournament?.name ?? "Your tournament"} result={result} />
+        <DoneStep
+          name={tournament?.name ?? "Your tournament"}
+          tournamentId={tournament?.id ?? ""}
+          result={result}
+        />
       ) : null}
     </>
   );
