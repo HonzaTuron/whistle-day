@@ -284,3 +284,64 @@ func TestHeadToHeadCountsAWalkover(t *testing.T) {
 		t.Fatalf("head-to-head = %v, want b ahead on three", points)
 	}
 }
+
+// ---------------------------------------------------------------------------
+// the result log
+// ---------------------------------------------------------------------------
+
+func TestEventKindClassifiesWhatAPersonDid(t *testing.T) {
+	cases := []struct {
+		name   string
+		before outcome
+		after  outcome
+		kind   string
+		logged bool
+	}{
+		{
+			name:   "a result goes in",
+			before: outcome{Status: "ready"},
+			after:  outcome{Status: "finished", Home: 3, Away: 1, Winner: "a"},
+			kind:   "recorded", logged: true,
+		},
+		{
+			name:   "a result is corrected",
+			before: outcome{Status: "finished", Home: 3, Away: 1, Winner: "a"},
+			after:  outcome{Status: "finished", Home: 2, Away: 3, Winner: "b"},
+			kind:   "corrected", logged: true,
+		},
+		{
+			name:   "a result is taken back off",
+			before: outcome{Status: "finished", Home: 3, Away: 1, Winner: "a"},
+			after:  outcome{Status: "ready"},
+			kind:   "cleared", logged: true,
+		},
+		{
+			name:   "a walkover is a result like any other",
+			before: outcome{Status: "ready"},
+			after:  outcome{Status: "walkover", Winner: "b"},
+			kind:   "recorded", logged: true,
+		},
+		{
+			name:   "putting a match on court is not history",
+			before: outcome{Status: "ready"},
+			after:  outcome{Status: "live"},
+		},
+		{
+			name:   "and neither is saving the same result twice",
+			before: outcome{Status: "finished", Home: 3, Away: 1, Winner: "a"},
+			after:  outcome{Status: "finished", Home: 3, Away: 1, Winner: "a"},
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			kind, logged := eventKind(tc.before, tc.after)
+			if logged != tc.logged {
+				t.Fatalf("logged = %v, want %v", logged, tc.logged)
+			}
+			if kind != tc.kind {
+				t.Fatalf("kind = %q, want %q", kind, tc.kind)
+			}
+		})
+	}
+}

@@ -8,6 +8,7 @@ import {
   timeValue,
   type BoardRow,
 } from "../../lib/board";
+import { MatchHistory } from "./MatchHistory";
 
 interface Props {
   row: BoardRow;
@@ -227,6 +228,8 @@ export function MatchSheet({
                 seeded from them are rebuilt.
               </p>
             ) : null}
+
+            <MatchHistory fixture={row.fixture.id} />
 
             <div className="sheet__actions">
               <button

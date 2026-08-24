@@ -160,5 +160,6 @@ a draw without a round trip. They are now Go only, and preview goes through
    when a team is already down for another match at the same time; nothing
    stops them going ahead, because reshuffling a schedule passes through
    states that are briefly wrong on purpose.
-4. **Result history.** An overwritten score is gone; there is no audit trail of
-   who changed what.
+4. **Nobody can be added once a stage is generated.** The wizard takes the
+   teams and the generator takes them all; a late arrival means starting the
+   draw again.

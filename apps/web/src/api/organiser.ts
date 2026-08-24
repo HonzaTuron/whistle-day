@@ -1,4 +1,13 @@
-import type { Court, Entry, Fixture, Id, Pool, Slot, Stage } from "@seedly/engine";
+import type {
+  Court,
+  Entry,
+  Fixture,
+  FixtureEvent,
+  Id,
+  Pool,
+  Slot,
+  Stage,
+} from "@seedly/engine";
 
 /**
  * The organiser's side of the API — the half that writes.
@@ -461,6 +470,20 @@ export const saveResult = (
       finished_at: stamp(new Date()),
     },
   });
+
+/**
+ * What has been done to one match, oldest first.
+ *
+ * Loaded when the sheet opens rather than with the board: most matches are
+ * entered once and never touched, so this is a request that usually returns
+ * one row and only matters for the ones that get argued about.
+ */
+export const loadHistory = (session: Session, fixture: Id) =>
+  records<FixtureEvent>(
+    session,
+    "fixture_events",
+    `filter=(fixture='${fixture}')&sort=created&perPage=50`,
+  );
 
 /**
  * Take a result back off a match.

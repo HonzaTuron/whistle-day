@@ -125,6 +125,11 @@ Three consequences worth keeping:
   from it — the brackets unroll. Change the score instead, or flip the status
   and the slots follow.
 
+Every change to a result is logged, and the sheet shows the log for the match
+it is open on — but only when there is something to say. A match entered once
+and left alone shows nothing, because the row above it already says what the
+score is. The line that matters is the second one: "changed 3–1 to 2–4".
+
 ## Notes on the projector
 
 - **Empty panels are dropped, not shown blank.** A hall with no live match

@@ -248,6 +248,32 @@ export interface Fixture {
   notes: string;
 }
 
+/**
+ * An append-only note of somebody changing a result.
+ *
+ * A fixture holds one score and overwriting it destroys the previous one; the
+ * tables are rebuilt from scratch every time precisely so that a correction
+ * leaves no trace in them. This is where the trace lives instead.
+ */
+export interface FixtureEvent {
+  id: Id;
+  fixture: Id;
+  actor: Id | null;
+  kind: "recorded" | "corrected" | "cleared";
+  status: FixtureStatus | "";
+  home_score: number | null;
+  away_score: number | null;
+  winner: Id | null;
+  /** What it was before this change. */
+  previous: {
+    status?: string;
+    home_score?: number;
+    away_score?: number;
+    winner?: string;
+  } | null;
+  created: IsoDate;
+}
+
 /** One set / leg / map inside a fixture. */
 export interface Game {
   id: Id;

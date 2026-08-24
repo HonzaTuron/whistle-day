@@ -622,6 +622,37 @@ try {
     "GET", `/api/collections/displays/records?filter=(tournament='${cup.id}')`);
   check("staff can list their tournament's screens", ownScreens.items.length > 0, true);
 
+  // =====================================================================
+  console.log("\n12. the result log");
+  // =====================================================================
+  // Section 8 played this semi-final, section 10 cleared it and played it
+  // again. All three are somebody changing a result, and all three should be
+  // recoverable the morning after.
+  const history = await api("GET",
+    `/api/collections/fixture_events/records?filter=(fixture='${semiToPlay.id}')&sort=created`);
+  check("every change to a result is logged", history.items.length, 3);
+  check(
+    "in the order they happened",
+    history.items.map((e: any) => e.kind).join(","),
+    "recorded,cleared,recorded",
+  );
+  check("each one keeps what it replaced", history.items[1].previous.home_score, 2);
+
+  // Putting a match on a court is not a claim about what happened in it.
+  const scheduled = (await api("GET",
+    `/api/collections/fixtures/records?filter=(stage='${playoff.id}'%26%26round=0)`)).items[1];
+  await patch("fixtures", scheduled.id, { status: "live" });
+  const afterLive = await api("GET",
+    `/api/collections/fixture_events/records?filter=(fixture='${scheduled.id}')`);
+  check("going on court is not history", afterLive.items.length, 0);
+
+  const forged = await fetch(`${BASE}/api/collections/fixture_events/records`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ fixture: semiToPlay.id, kind: "recorded" }),
+  });
+  check("the log cannot be written to over the API", forged.ok, false);
+
 } catch (error) {
   console.error("\nsmoke run threw:");
   console.error(error instanceof Error ? error.message : error);

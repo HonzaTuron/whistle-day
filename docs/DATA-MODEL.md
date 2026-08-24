@@ -51,6 +51,7 @@ erDiagram
 | `games` | Sets / legs / maps inside a fixture. |
 | `standings` | A table. Materialised, not a SQL view. |
 | `displays` | A projector screen. |
+| `fixture_events` | Append-only: who changed a result, to what, and from what. |
 
 ## How a playoff hangs off a group stage
 
@@ -203,5 +204,6 @@ to probe for unpublished events.
 - **Schedule conflicts are a warning, not a constraint.** The organiser screen
   says when a team is already down for another match within the hour and a
   half; the database will happily store it either way.
-- **Result history.** An overwritten score is gone. When that starts to matter,
-  add an append-only `fixture_events` collection.
+- ~~**Result history.**~~ Done: `fixture_events` is append-only and written
+  only by the request hooks, so it records what a *person* did — the resolver
+  rewrites fixtures constantly and none of that is somebody changing a result.

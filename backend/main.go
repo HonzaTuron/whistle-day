@@ -23,6 +23,7 @@ func main() {
 	})
 
 	tournament.RegisterHooks(app)
+	tournament.RegisterHistory(app)
 	tournament.RegisterRoutes(app)
 
 	if err := app.Start(); err != nil {

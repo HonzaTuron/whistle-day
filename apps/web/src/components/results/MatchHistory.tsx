@@ -1,0 +1,73 @@
+import type { FixtureEvent } from "@seedly/engine";
+import { useEffect, useState } from "react";
+import { ensureOrganiser, loadHistory } from "../../api/organiser";
+import { timeOfDay } from "../../lib/format";
+
+/**
+ * What has already been done to this match.
+ *
+ * It only appears once there is something to say — a match entered once and
+ * left alone shows nothing, because the row above it already says what the
+ * score is. The point of the list is the second line: a corrected result, and
+ * what it used to be.
+ */
+export function MatchHistory({ fixture }: { fixture: string }) {
+  const [events, setEvents] = useState<FixtureEvent[] | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      try {
+        const loaded = await loadHistory(await ensureOrganiser(), fixture);
+        if (!cancelled) setEvents(loaded);
+      } catch {
+        // A missing history is not worth an error on a screen whose job is to
+        // enter the next score.
+        if (!cancelled) setEvents([]);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [fixture]);
+
+  if (!events || events.length === 0) return null;
+
+  return (
+    <ol className="history">
+      {events.map((event) => (
+        <li key={event.id}>
+          <span className="history__when">{timeOfDay(event.created)}</span>
+          <span className="history__what">{describe(event)}</span>
+        </li>
+      ))}
+    </ol>
+  );
+}
+
+const score = (home: number | null | undefined, away: number | null | undefined) =>
+  `${home ?? 0}–${away ?? 0}`;
+
+function describe(event: FixtureEvent): string {
+  const now =
+    event.status === "walkover" ? "walkover" : score(event.home_score, event.away_score);
+
+  switch (event.kind) {
+    case "recorded":
+      return `entered ${now}`;
+    case "corrected": {
+      const was =
+        event.previous?.status === "walkover"
+          ? "walkover"
+          : score(event.previous?.home_score, event.previous?.away_score);
+      return `changed ${was} to ${now}`;
+    }
+    case "cleared": {
+      const was =
+        event.previous?.status === "walkover"
+          ? "a walkover"
+          : score(event.previous?.home_score, event.previous?.away_score);
+      return `cleared ${was}`;
+    }
+  }
+}
