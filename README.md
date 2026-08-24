@@ -155,9 +155,9 @@ a draw without a round trip. They are now Go only, and preview goes through
 2. **`stage_rank` slot resolution.** `pool_rank` works. `stage_rank` needs a
    stage-wide table, which does not exist yet — pools are ranked, stages are
    not.
-3. **The frontend.** React + Vite + TanStack Router/Query, with the projector
-   as a `/display/:token` route in the same app.
-5. **Schedule conflict detection.** `scheduled_at` and `court` exist, but
-   nothing stops a team being booked onto two courts at once.
-6. **Result history.** An overwritten score is gone; there is no audit trail of
+3. **Schedule conflicts are surfaced, not prevented.** The organiser is warned
+   when a team is already down for another match at the same time; nothing
+   stops them going ahead, because reshuffling a schedule passes through
+   states that are briefly wrong on purpose.
+4. **Result history.** An overwritten score is gone; there is no audit trail of
    who changed what.

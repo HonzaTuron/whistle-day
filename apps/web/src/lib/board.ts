@@ -1,4 +1,4 @@
-import type { Entry, Id, Pool, Stage } from "@seedly/engine";
+import type { Court, Entry, Id, Pool, Stage } from "@seedly/engine";
 import type { Board, BoardFixture } from "../api/organiser";
 
 /**
@@ -139,6 +139,73 @@ export function atTime(scheduledAt: string, value: string): string {
   if (Number.isNaN(base.getTime())) return "";
   base.setHours(hours, minutes, 0, 0);
   return base.toISOString().replace("T", " ");
+}
+
+export interface ScheduleConflict {
+  fixtureId: Id;
+  code: string;
+  team: string;
+  court: string;
+  time: string;
+}
+
+/**
+ * A team cannot be in two places at once — but the organiser can put it there,
+ * and this is what notices.
+ *
+ * It warns rather than refuses. Reshuffling a schedule passes through states
+ * that are briefly wrong on purpose, and a rejection in the middle of that is
+ * worse than a line of text saying what is about to go wrong.
+ */
+export function scheduleConflicts(
+  fixture: BoardFixture,
+  allFixtures: BoardFixture[],
+  entries: Map<Id, Entry>,
+  courts: Court[],
+): ScheduleConflict[] {
+  const time = fixture.scheduled_at;
+  if (!time) return [];
+  const teams = [fixture.home_entry, fixture.away_entry].filter(Boolean) as Id[];
+  if (teams.length === 0) return [];
+
+  const conflicts: ScheduleConflict[] = [];
+  for (const other of allFixtures) {
+    if (other.id === fixture.id) continue;
+    const otherTime = other.scheduled_at;
+    if (!otherTime) continue;
+    if (!timesOverlap(time, otherTime)) continue;
+
+    const otherTeams = [other.home_entry, other.away_entry].filter(Boolean) as Id[];
+    for (const teamId of teams) {
+      if (!otherTeams.includes(teamId)) continue;
+      conflicts.push({
+        fixtureId: other.id,
+        code: other.code,
+        team: entries.get(teamId)?.name ?? teamId,
+        court: courts.find((court) => court.id === other.court)?.name ?? "",
+        time: timeValue(otherTime),
+      });
+    }
+  }
+  return conflicts;
+}
+
+/**
+ * Close enough to be the same slot.
+ *
+ * `scheduled_at` is a start time, not a booking window, so two matches clash
+ * when they start close together rather than when they are set to the same
+ * minute — nobody schedules a team at 10:00 and 10:15 on purpose either.
+ * MATCH_MINUTES in lib/presets.ts is the same estimate seen from the other
+ * end: how long a court slot takes.
+ */
+const CLASH_MINUTES = 90;
+
+function timesOverlap(a: string, b: string): boolean {
+  const first = new Date(a.replace(" ", "T")).getTime();
+  const second = new Date(b.replace(" ", "T")).getTime();
+  if (Number.isNaN(first) || Number.isNaN(second)) return false;
+  return Math.abs(first - second) < CLASH_MINUTES * 60_000;
 }
 
 export interface Progress {

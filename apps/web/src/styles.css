@@ -1853,3 +1853,19 @@ th,
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+/* A warning, not a refusal: the organiser may well know, and is mid-reshuffle. */
+.sheet__clash {
+  display: grid;
+  gap: 0.25rem;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--live);
+  border-radius: 0.6rem;
+}
+
+.sheet__clash p {
+  margin: 0;
+  color: var(--live);
+  font-size: 0.8rem;
+  line-height: 1.4;
+}

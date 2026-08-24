@@ -178,6 +178,8 @@ export function Results({ id }: { id: string }) {
         <MatchSheet
           row={open}
           courts={board.courts}
+          allFixtures={board.fixtures}
+          entries={entries}
           saving={saving}
           onSave={(home, away) =>
             void write(

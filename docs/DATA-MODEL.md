@@ -197,7 +197,8 @@ to probe for unpublished events.
   stages are not.
 - **Swiss pairing** and **double elimination** generators. `pools.kind` already
   has `winners`/`losers`; the code does not exist.
-- **Schedule conflicts.** `scheduled_at` and `court` exist, but nothing stops a
-  team being booked onto two courts at once.
+- **Schedule conflicts are a warning, not a constraint.** The organiser screen
+  says when a team is already down for another match within the hour and a
+  half; the database will happily store it either way.
 - **Result history.** An overwritten score is gone. When that starts to matter,
   add an append-only `fixture_events` collection.

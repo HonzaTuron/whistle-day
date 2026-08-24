@@ -1,10 +1,19 @@
-import type { Court } from "@seedly/engine";
+import type { Court, Entry, Id } from "@seedly/engine";
 import { useEffect, useState } from "react";
-import { atTime, sideName, timeValue, type BoardRow } from "../../lib/board";
+import type { BoardFixture } from "../../api/organiser";
+import {
+  atTime,
+  scheduleConflicts,
+  sideName,
+  timeValue,
+  type BoardRow,
+} from "../../lib/board";
 
 interface Props {
   row: BoardRow;
   courts: Court[];
+  allFixtures: BoardFixture[];
+  entries: Map<Id, Entry>;
   saving: boolean;
   onSave: (home: number, away: number) => void;
   onWalkover: (winner: string) => void;
@@ -32,6 +41,8 @@ const MAX_SCORE = 999;
 export function MatchSheet({
   row,
   courts,
+  allFixtures,
+  entries,
   saving,
   onSave,
   onWalkover,
@@ -52,6 +63,7 @@ export function MatchSheet({
   }, [onClose]);
 
   const clamp = (value: number) => Math.min(Math.max(value, 0), MAX_SCORE);
+  const clashes = scheduleConflicts(row.fixture, allFixtures, entries, courts);
 
   return (
     <div className="sheet" role="dialog" aria-modal="true" aria-label="Match">
@@ -153,6 +165,17 @@ export function MatchSheet({
                 </button>
               )}
             </div>
+
+            {clashes.length > 0 ? (
+              <div className="sheet__clash" role="alert">
+                {clashes.map((clash) => (
+                  <p key={clash.fixtureId + clash.team}>
+                    {clash.team} is also down for {clash.code} at {clash.time}
+                    {clash.court ? ` on ${clash.court}` : ""}.
+                  </p>
+                ))}
+              </div>
+            ) : null}
 
             <Score
               name={sideName(row.home)}
