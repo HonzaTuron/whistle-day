@@ -396,6 +396,28 @@ export const saveResult = (
   });
 
 /**
+ * Take a result back off a match.
+ *
+ * The server unrolls what it had filled in: the slots this fixture fed are
+ * cleared, and the fixtures those slots feed lose the side they were given. A
+ * match whose own sides are still known goes back to "ready"; one that was
+ * only ever playable because of a result upstream goes back to "pending".
+ */
+export const clearResult = (session: Session, fixture: BoardFixture) =>
+  api<Fixture>(`/api/collections/fixtures/records/${fixture.id}`, {
+    method: "PATCH",
+    token: session.token,
+    body: {
+      status: fixture.home_entry && fixture.away_entry ? "ready" : "pending",
+      home_score: 0,
+      away_score: 0,
+      winner: "",
+      loser: "",
+      finished_at: "",
+    },
+  });
+
+/**
  * A match nobody played, won by the side that turned up.
  *
  * The winner is named rather than derived, because there is no score to derive

@@ -17,6 +17,7 @@ interface Props {
   saving: boolean;
   onSave: (home: number, away: number) => void;
   onWalkover: (winner: string) => void;
+  onClear: () => void;
   onSchedule: (schedule: { court?: string | null; scheduled_at?: string }) => void;
   onLive: (live: boolean) => void;
   onClose: () => void;
@@ -46,13 +47,19 @@ export function MatchSheet({
   saving,
   onSave,
   onWalkover,
+  onClear,
   onSchedule,
   onLive,
   onClose,
 }: Props) {
   const [home, setHome] = useState(row.fixture.home_score ?? 0);
   const [away, setAway] = useState(row.fixture.away_score ?? 0);
-  const [askingWalkover, setAskingWalkover] = useState(false);
+  /**
+   * "score" is the sheet; the other two are questions it steps aside for.
+   * Both are one tap from destroying a result, so neither happens on the tap
+   * that opened them.
+   */
+  const [asking, setAsking] = useState<"none" | "walkover" | "clear">("none");
 
   useEffect(() => {
     const escape = (event: KeyboardEvent) => {
@@ -81,7 +88,33 @@ export function MatchSheet({
           {row.live ? " · live" : ""}
         </p>
 
-        {askingWalkover ? (
+        {asking === "clear" ? (
+          <>
+            <p className="sheet__question">Take this result off?</p>
+            <p className="sheet__note">
+              {sideName(row.home)} {row.fixture.home_score ?? 0}–
+              {row.fixture.away_score ?? 0} {sideName(row.away)} is deleted, and
+              anything it put into a later round goes back to waiting.
+            </p>
+            <div className="sheet__actions">
+              <button
+                type="button"
+                className="btn btn--danger btn--block"
+                disabled={saving}
+                onClick={onClear}
+              >
+                {saving ? "Clearing…" : "Clear the result"}
+              </button>
+              <button
+                type="button"
+                className="btn btn--quiet btn--block"
+                onClick={() => setAsking("none")}
+              >
+                Keep it
+              </button>
+            </div>
+          </>
+        ) : asking === "walkover" ? (
           <>
             <p className="sheet__question">Who takes the win?</p>
             <div className="sheet__actions">
@@ -104,7 +137,7 @@ export function MatchSheet({
               <button
                 type="button"
                 className="btn btn--quiet btn--block"
-                onClick={() => setAskingWalkover(false)}
+                onClick={() => setAsking("none")}
               >
                 Back
               </button>
@@ -208,10 +241,20 @@ export function MatchSheet({
                 type="button"
                 className="btn btn--quiet btn--block"
                 disabled={saving}
-                onClick={() => setAskingWalkover(true)}
+                onClick={() => setAsking("walkover")}
               >
                 Somebody didn't turn up
               </button>
+              {row.settled ? (
+                <button
+                  type="button"
+                  className="btn btn--quiet btn--block"
+                  disabled={saving}
+                  onClick={() => setAsking("clear")}
+                >
+                  Clear the result
+                </button>
+              ) : null}
               <button
                 type="button"
                 className="btn btn--quiet btn--block"

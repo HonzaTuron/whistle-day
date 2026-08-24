@@ -2,6 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ensureOrganiser,
+  clearResult,
   loadBoard,
   rememberedTournament,
   rememberTournament,
@@ -189,6 +190,9 @@ export function Results({ id }: { id: string }) {
           }
           onWalkover={(winner) =>
             void write((active) => saveWalkover(active, open.fixture.id, winner), true)
+          }
+          onClear={() =>
+            void write((active) => clearResult(active, open.fixture), true)
           }
           onSchedule={(schedule) =>
             void write(

@@ -1869,3 +1869,10 @@ th,
   font-size: 0.8rem;
   line-height: 1.4;
 }
+
+/* Destructive, and quiet until it is the thing being asked about. */
+.btn--danger {
+  background: transparent;
+  border-color: var(--live);
+  color: var(--live);
+}
