@@ -119,7 +119,10 @@ function Section({
         {title}
         {subtitle && <small>{subtitle}</small>}
       </h2>
-      {children ?? <p className="phone__empty">{empty}</p>}
+      {/* `||`, not `??`: every caller guards its content with `length > 0 &&`,
+          which yields `false` rather than undefined for an empty section — and
+          `??` passes `false` straight through, so the message never appeared. */}
+      {children || <p className="phone__empty">{empty}</p>}
     </section>
   );
 }
