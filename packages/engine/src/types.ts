@@ -30,6 +30,11 @@ export interface ScoringConfig {
   pointsWin: number;
   pointsDraw: number;
   pointsLoss: number;
+  /**
+   * Credited to whoever turned up when the other side did not. Zero unless a
+   * rulebook says otherwise, so an absence never flatters a goal difference.
+   */
+  walkoverScore?: number;
   /** Ordered tiebreak criteria, applied left to right. */
   tiebreakers: Tiebreaker[];
 }

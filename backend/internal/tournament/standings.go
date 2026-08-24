@@ -12,10 +12,14 @@ import (
 // ScoringConfig comes from tournaments.scoring. Zero values fall back to the
 // football-style default: 3 for a win, 1 for a draw.
 type ScoringConfig struct {
-	PointsWin   int      `json:"pointsWin"`
-	PointsDraw  int      `json:"pointsDraw"`
-	PointsLoss  int      `json:"pointsLoss"`
-	Tiebreakers []string `json:"tiebreakers"`
+	PointsWin  int `json:"pointsWin"`
+	PointsDraw int `json:"pointsDraw"`
+	PointsLoss int `json:"pointsLoss"`
+	// Credited to whoever turned up when the other side did not. Zero unless a
+	// rulebook says otherwise — most award a nominal 3-0 or 2-0, and leaving it
+	// at 0 at least keeps an absence from flattering anyone's goal difference.
+	WalkoverScore int      `json:"walkoverScore"`
+	Tiebreakers   []string `json:"tiebreakers"`
 }
 
 // DefaultTiebreakers is what most rulebooks say, in the order they say it.
@@ -133,14 +137,22 @@ func computePoolTable(app core.App, stage, pool *core.Record, cfg ScoringConfig)
 
 	played := make([]*core.Record, 0, len(fixtures))
 	for _, f := range fixtures {
-		if f.GetString("status") != "finished" {
-			continue // a walkover or bye carries no score to accumulate
+		status := f.GetString("status")
+		// A bye is deliberately excluded: it is settled, but nobody played it,
+		// so counting it would give a team a win for an empty half of a draw.
+		if status != "finished" && status != "walkover" {
+			continue
 		}
 		home, away := rows[f.GetString("home_entry")], rows[f.GetString("away_entry")]
 		if home == nil || away == nil {
 			continue
 		}
 		played = append(played, f)
+
+		if status == "walkover" {
+			accumulateWalkover(home, away, f.GetString("winner"), cfg)
+			continue // no score, and no sets to total
+		}
 
 		hs, as := f.GetInt("home_score"), f.GetInt("away_score")
 		accumulate(home, away, hs, as, cfg)
@@ -163,6 +175,33 @@ func computePoolTable(app core.App, stage, pool *core.Record, cfg ScoringConfig)
 
 	advance := pool.GetInt("advance_count")
 	return writeTable(app, stage.Id, pool.Id, ranked, advance)
+}
+
+// accumulateWalkover awards a match nobody played.
+//
+// It cannot go through accumulate: with the default WalkoverScore of 0 the two
+// sides would come out level and be counted as a draw, which is the opposite of
+// what a walkover is. The winner is named by the organiser rather than derived,
+// because there is no score to derive it from.
+func accumulateWalkover(home, away *standingRow, winner string, cfg ScoringConfig) {
+	var won, lost *standingRow
+	switch winner {
+	case home.Entry:
+		won, lost = home, away
+	case away.Entry:
+		won, lost = away, home
+	default:
+		return // nobody named; awarding it to a guess would be worse
+	}
+
+	won.Played++
+	lost.Played++
+	won.Won++
+	lost.Lost++
+	won.Points += cfg.PointsWin
+	lost.Points += cfg.PointsLoss
+	won.ScoreFor += cfg.WalkoverScore
+	lost.ScoreAgainst += cfg.WalkoverScore
 }
 
 func accumulate(home, away *standingRow, hs, as int, cfg ScoringConfig) {
@@ -296,17 +335,19 @@ func headToHead(rows []*standingRow, fixtures []*core.Record) map[string]int {
 		inGroup[r.Entry] = true
 	}
 
+	// Read the winner rather than the scores: a walkover has an outcome and no
+	// score, and comparing 0 with 0 would file it as a draw between the team
+	// that turned up and the team that did not.
 	points := make(map[string]int, len(rows))
 	for _, f := range fixtures {
 		home, away := f.GetString("home_entry"), f.GetString("away_entry")
 		if !inGroup[home] || !inGroup[away] {
 			continue
 		}
-		hs, as := f.GetInt("home_score"), f.GetInt("away_score")
-		switch {
-		case hs > as:
+		switch f.GetString("winner") {
+		case home:
 			points[home] += 3
-		case as > hs:
+		case away:
 			points[away] += 3
 		default:
 			points[home]++

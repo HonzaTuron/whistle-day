@@ -6,20 +6,45 @@ import (
 	"github.com/pocketbase/pocketbase/core"
 )
 
-// fakeFixture builds an in-memory finished fixture for the ranking tests.
-func fakeFixture(home, away string, hs, as int) *core.Record {
+// fixtureCollection mirrors the fields the ranking code reads.
+func fixtureCollection() *core.Collection {
 	c := core.NewBaseCollection("fixtures")
 	c.Fields.Add(
+		&core.TextField{Name: "status"},
 		&core.TextField{Name: "home_entry"},
 		&core.TextField{Name: "away_entry"},
 		&core.NumberField{Name: "home_score", OnlyInt: true},
 		&core.NumberField{Name: "away_score", OnlyInt: true},
+		&core.TextField{Name: "winner"},
+		&core.TextField{Name: "loser"},
 	)
-	r := core.NewRecord(c)
+	return c
+}
+
+// fakeFixture builds an in-memory finished fixture for the ranking tests.
+//
+// The outcome is derived rather than set, because that is what the server does
+// on every write — head-to-head reads `winner`, and a fixture built by hand
+// without one would quietly test nothing.
+func fakeFixture(home, away string, hs, as int) *core.Record {
+	r := core.NewRecord(fixtureCollection())
+	r.Set("status", "finished")
 	r.Set("home_entry", home)
 	r.Set("away_entry", away)
 	r.Set("home_score", hs)
 	r.Set("away_score", as)
+	deriveOutcome(r)
+	return r
+}
+
+// fakeWalkover builds a match nobody played, won by the side that turned up.
+func fakeWalkover(home, away, winner string) *core.Record {
+	r := core.NewRecord(fixtureCollection())
+	r.Set("status", "walkover")
+	r.Set("home_entry", home)
+	r.Set("away_entry", away)
+	r.Set("winner", winner)
+	deriveOutcome(r)
 	return r
 }
 
@@ -180,5 +205,82 @@ func TestAccumulate(t *testing.T) {
 	}
 	if home.ScoreFor != 3 || home.ScoreAgainst != 1 {
 		t.Errorf("home score = %d:%d, want 3:1", home.ScoreFor, home.ScoreAgainst)
+	}
+}
+
+// ---------------------------------------------------------------------------
+// walkovers
+// ---------------------------------------------------------------------------
+
+func TestWalkoverAwardsTheWinToWhoeverTurnedUp(t *testing.T) {
+	cfg := ScoringConfig{PointsWin: 3, PointsDraw: 1}
+	home := &standingRow{Entry: "a"}
+	away := &standingRow{Entry: "b"}
+
+	accumulateWalkover(home, away, "b", cfg)
+
+	if away.Won != 1 || away.Points != 3 || away.Played != 1 {
+		t.Fatalf("winner = %+v, want one win worth three points", away)
+	}
+	if home.Lost != 1 || home.Points != 0 || home.Played != 1 {
+		t.Fatalf("loser = %+v, want one loss", home)
+	}
+	if home.Drawn != 0 || away.Drawn != 0 {
+		t.Fatalf("a walkover is not a draw: %+v %+v", home, away)
+	}
+}
+
+// The default of 0 must not read as "level", which is what going through
+// accumulate() would have made it.
+func TestWalkoverWithNoNominalScoreIsStillAWin(t *testing.T) {
+	cfg := ScoringConfig{PointsWin: 3, PointsDraw: 1}
+	home := &standingRow{Entry: "a"}
+	away := &standingRow{Entry: "b"}
+
+	accumulateWalkover(home, away, "a", cfg)
+
+	if home.Points != 3 || away.Points != 0 {
+		t.Fatalf("points = %d/%d, want 3/0", home.Points, away.Points)
+	}
+	if home.ScoreFor != 0 || away.ScoreAgainst != 0 {
+		t.Fatalf("score = %d/%d, want nothing credited", home.ScoreFor, away.ScoreAgainst)
+	}
+}
+
+func TestWalkoverScoreIsCreditedWhenTheRulebookSaysSo(t *testing.T) {
+	cfg := ScoringConfig{PointsWin: 3, WalkoverScore: 3}
+	home := &standingRow{Entry: "a"}
+	away := &standingRow{Entry: "b"}
+
+	accumulateWalkover(home, away, "a", cfg)
+
+	if home.ScoreFor != 3 || away.ScoreAgainst != 3 {
+		t.Fatalf("score = %d:%d, want 3:3 credited one way", home.ScoreFor, away.ScoreAgainst)
+	}
+	if home.ScoreAgainst != 0 || away.ScoreFor != 0 {
+		t.Fatalf("the absent side conceded but did not score: %+v %+v", home, away)
+	}
+}
+
+func TestWalkoverWithNobodyNamedAwardsNothing(t *testing.T) {
+	cfg := ScoringConfig{PointsWin: 3}
+	home := &standingRow{Entry: "a"}
+	away := &standingRow{Entry: "b"}
+
+	accumulateWalkover(home, away, "", cfg)
+
+	if home.Played != 0 || away.Played != 0 {
+		t.Fatalf("nothing should be recorded without a winner: %+v %+v", home, away)
+	}
+}
+
+// Head-to-head reads the outcome, not the score, or a walkover would rank as a
+// draw between the team that turned up and the team that did not.
+func TestHeadToHeadCountsAWalkover(t *testing.T) {
+	rows := []*standingRow{{Entry: "a"}, {Entry: "b"}}
+	points := headToHead(rows, []*core.Record{fakeWalkover("a", "b", "b")})
+
+	if points["b"] != 3 || points["a"] != 0 {
+		t.Fatalf("head-to-head = %v, want b ahead on three", points)
 	}
 }

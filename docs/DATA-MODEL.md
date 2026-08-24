@@ -106,11 +106,17 @@ were applied in which order. When somebody disputes a qualification after the
 tournament, that field ends the argument. Write rules are nil: only hooks and
 superusers touch it.
 
-Two consequences of how ranking works, in `backend/internal/tournament/standings.go`:
+Three consequences of how ranking works, in `backend/internal/tournament/standings.go`:
 
 - **Tables are rebuilt from scratch, never accumulated.** A score corrected two
   hours later has to yield the same table as if it had been right the first
   time, and incremental accumulation is precisely where that guarantee breaks.
+- **A walkover is an outcome without a score.** The table counts `finished`
+  and `walkover` and deliberately skips `bye`: a bye is settled, but nobody
+  played it. The organiser names the winner, who takes the points for a win and
+  `scoring.walkoverScore` (0 by default) as a nominal score — head-to-head
+  therefore reads `winner` rather than comparing scores, or a walkover would
+  rank as a draw between the team that turned up and the team that did not.
 - **Ranking is recursive, not a comparator chain.** Head-to-head is computed
   only among the entries that are actually tied, from the fixtures they played
   against each other. A global comparator cannot see that context, so the
