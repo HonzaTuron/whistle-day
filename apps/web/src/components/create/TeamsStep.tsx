@@ -56,10 +56,16 @@ export function TeamsStep({ teams, busy, onAdd, onRemove, onBack, onDone }: Prop
    * thing that waits for the server is putting a name back after a failure,
    * and even then only if the field is still untouched.
    */
-  const add = () => {
-    if (!ready) return;
-    const name = trimmed;
-    const short = suggestion.trim().slice(0, SHORT_NAME_MAX);
+  const add = (typed = name) => {
+    const entered = typed.trim();
+    // The submitted form is the truth, not the state: onChange is queued, and
+    // a fast Enter can be handled before React has re-rendered. Reading state
+    // there would add an empty team, or silently drop the one just typed.
+    if (entered.length === 0 || isDuplicateName(entered, teams)) return;
+    const name = entered;
+    const short = (touchedShort ? shortName : suggestShortName(entered))
+      .trim()
+      .slice(0, SHORT_NAME_MAX);
 
     setName("");
     setShortName("");
@@ -83,7 +89,7 @@ export function TeamsStep({ teams, busy, onAdd, onRemove, onBack, onDone }: Prop
             type="button"
             className="btn btn--primary btn--block"
             disabled={!ready}
-            onClick={add}
+            onClick={() => add()}
           >
             Add team
           </button>
@@ -104,10 +110,12 @@ export function TeamsStep({ teams, busy, onAdd, onRemove, onBack, onDone }: Prop
         className="wiz__field"
         onSubmit={(event) => {
           event.preventDefault();
-          add();
+          const field = event.currentTarget.elements.namedItem("team");
+          add(field instanceof HTMLInputElement ? field.value : undefined);
         }}
       >
         <input
+          name="team"
           ref={input}
           className="wiz__input"
           value={name}
