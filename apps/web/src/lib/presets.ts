@@ -66,7 +66,9 @@ const roundName = (teams: number) =>
   teams <= 8 ? "quarter-finals" :
   `a round of ${2 ** Math.ceil(Math.log2(teams))}`;
 
-const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
+/** "5 matches", not "5 matchs". */
+const plural = (n: number, word: string) =>
+  `${n} ${word}${n === 1 ? "" : /[sxz]$|[cs]h$/.test(word) ? "es" : "s"}`;
 
 export const PRESETS: Preset[] = [
   {
