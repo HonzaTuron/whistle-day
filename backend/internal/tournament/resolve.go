@@ -213,6 +213,25 @@ func PropagateFixture(app core.App, fixture *core.Record) error {
 				continue
 			}
 
+			// A match nobody had to play has a winner and no loser. In a single
+			// elimination nothing is waiting on that loser; a losers bracket
+			// is, and it would wait for ever. Turning the slot into a declared
+			// bye lets settleBye decide the match it feeds, which is what
+			// happens on paper: the other side walks through.
+			if entry == "" && slot.GetString("source_type") == "fixture_loser" &&
+				fixture.GetString("status") == "bye" {
+				if slot.GetString("source_type") == "bye" {
+					continue
+				}
+				slot.Set("source_type", "bye")
+				slot.Set("label", "Bye")
+				if err := tx.Save(slot); err != nil {
+					return err
+				}
+				touched = append(touched, slot)
+				continue
+			}
+
 			if entry == "" || slot.GetString("entry") == entry {
 				continue
 			}

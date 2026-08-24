@@ -338,3 +338,118 @@ func TestPlanSingleEliminationThirdPlaceInASmallBracket(t *testing.T) {
 	}
 	assertPlanIsConsistent(t, plan)
 }
+
+// ---------------------------------------------------------------------------
+// double elimination
+// ---------------------------------------------------------------------------
+
+func fixtureByCode(plan *StagePlan, code string) *FixtureDraft {
+	for i := range plan.Fixtures {
+		if plan.Fixtures[i].Code == code {
+			return &plan.Fixtures[i]
+		}
+	}
+	return nil
+}
+
+func slotByKey(plan *StagePlan, key string) *SlotDraft {
+	for i := range plan.Slots {
+		if plan.Slots[i].Key == key {
+			return &plan.Slots[i]
+		}
+	}
+	return nil
+}
+
+// Everyone but the winner loses twice, which is the whole definition of the
+// format and the easiest thing to get wrong by one.
+func TestDoubleEliminationHasTwoLessThanTwiceTheBracket(t *testing.T) {
+	for _, size := range []int{4, 8, 16} {
+		plan := PlanDoubleElimination(directSeeds(size), StageConfig{})
+		if len(plan.Fixtures) != 2*size-2 {
+			t.Fatalf("size %d: %d fixtures, want %d", size, len(plan.Fixtures), 2*size-2)
+		}
+	}
+}
+
+func TestDoubleEliminationWiresTheGrandFinalToBothBrackets(t *testing.T) {
+	plan := PlanDoubleElimination(directSeeds(8), StageConfig{})
+
+	grandFinal := fixtureByCode(plan, "GF")
+	if grandFinal == nil {
+		t.Fatal("no grand final")
+	}
+
+	home := slotByKey(plan, grandFinal.HomeSlotKey)
+	away := slotByKey(plan, grandFinal.AwaySlotKey)
+	if home == nil || away == nil {
+		t.Fatal("the grand final has no sides")
+	}
+	if home.SourceType != "fixture_winner" || away.SourceType != "fixture_winner" {
+		t.Fatalf("both sides are winners: %q and %q", home.SourceType, away.SourceType)
+	}
+
+	winnersFinal := fixtureByCode(plan, "WF")
+	losersFinal := fixtureByCode(plan, "LF")
+	if winnersFinal == nil || losersFinal == nil {
+		t.Fatal("missing a bracket final")
+	}
+	if home.SourceFixtureKey != winnersFinal.Key {
+		t.Fatalf("home comes from %q, want the winners final", home.SourceFixtureKey)
+	}
+	if away.SourceFixtureKey != losersFinal.Key {
+		t.Fatalf("away comes from %q, want the losers final", away.SourceFixtureKey)
+	}
+}
+
+// Every match in the winners bracket must drop its loser somewhere, or a team
+// is eliminated by one defeat in a format whose promise is two.
+func TestEveryWinnersMatchDropsItsLoserIntoTheLosersBracket(t *testing.T) {
+	plan := PlanDoubleElimination(directSeeds(8), StageConfig{})
+
+	dropped := map[string]bool{}
+	for _, slot := range plan.Slots {
+		if slot.SourceType == "fixture_loser" {
+			dropped[slot.SourceFixtureKey] = true
+		}
+	}
+
+	for _, fixture := range plan.Fixtures {
+		if fixture.PoolKey != "pool:winners" {
+			continue
+		}
+		if !dropped[fixture.Key] {
+			t.Fatalf("%s eliminates its loser outright", fixture.Code)
+		}
+	}
+}
+
+// Every fixture must point at slots that exist, no two slots may occupy the
+// same (pool, round, position), and every source must name a real fixture —
+// the same bar the other generators are held to.
+func TestDoubleEliminationPlansAreConsistent(t *testing.T) {
+	for _, size := range []int{2, 3, 4, 5, 8, 11, 16} {
+		plan := PlanDoubleElimination(directSeeds(size), StageConfig{})
+		assertPlanIsConsistent(t, plan)
+	}
+}
+
+// A four-team double elimination is small enough to check by hand, and the
+// losers bracket is where the round arithmetic goes wrong.
+func TestFourTeamDoubleEliminationHasTheRightShape(t *testing.T) {
+	plan := PlanDoubleElimination(directSeeds(4), StageConfig{})
+
+	got := map[string]bool{}
+	for _, f := range plan.Fixtures {
+		got[f.Code] = true
+	}
+
+	for _, code := range []string{"W1.1", "W1.2", "WF", "L1.1", "LF", "GF"} {
+		if !got[code] {
+			t.Fatalf("no %s; codes are %v", code, got)
+		}
+	}
+	if len(got) != 6 {
+		t.Fatalf("codes = %v, want exactly the six above", got)
+	}
+}

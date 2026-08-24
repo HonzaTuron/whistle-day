@@ -653,6 +653,75 @@ try {
   });
   check("the log cannot be written to over the API", forged.ok, false);
 
+  // =====================================================================
+  console.log("\n13. a double elimination plays itself out");
+  // =====================================================================
+  // Six teams, so the bracket of eight has two byes in it — which is where a
+  // losers bracket goes wrong. A bye has a winner and no loser, and the match
+  // waiting on that loser waits for ever unless somebody notices.
+  const deCup = await create("tournaments", {
+    name: "Double Cup",
+    slug: `double-${Date.now()}`,
+    status: "published",
+    owner: organiser.id,
+    scoring: { pointsWin: 3, pointsDraw: 1, pointsLoss: 0 },
+  });
+  for (let i = 1; i <= 6; i++) {
+    await create("entries", {
+      tournament: deCup.id, name: `D${i}`, seed: i, status: "active",
+    });
+  }
+  const deStage = await create("stages", {
+    tournament: deCup.id, position: 0, name: "Double elimination",
+    format: "double_elim", status: "draft", config: {},
+  });
+  const generated = await api("POST", `/api/stages/${deStage.id}/generate`);
+
+  // Everyone but the winner loses twice: 2·8 − 2 matches in a bracket of eight.
+  check("the bracket has both halves and a final", generated.fixtures, 14);
+  check("and three pools to draw them in", generated.pools, 3);
+
+  const deFixtures = () =>
+    api("GET",
+      `/api/collections/fixtures/records?filter=(stage='${deStage.id}')&perPage=100`);
+
+  // Play whatever is playable, over and over. A deadlock — a losers bracket
+  // waiting on a loser a bye never produced — shows up as a round that never
+  // becomes ready, and the loop runs out before the grand final is decided.
+  let matchesPlayed = 0;
+  for (let pass = 0; pass < 30; pass++) {
+    const ready = (await deFixtures()).items.filter((f: any) => f.status === "ready");
+    if (ready.length === 0) break;
+    for (const fixture of ready) {
+      await patch("fixtures", fixture.id, {
+        status: "finished", home_score: 2, away_score: 1,
+      });
+      matchesPlayed++;
+    }
+  }
+
+  const settled = (await deFixtures()).items;
+  const grandFinal = settled.find((f: any) => f.code === "GF");
+  check("the grand final was reached", grandFinal.status, "finished");
+  check("and it has a winner", grandFinal.winner !== "", true);
+  check(
+    "nothing was left waiting",
+    settled.filter((f: any) => f.status === "pending" || f.status === "ready").length,
+    0,
+  );
+  // Six teams in a bracket of eight means two first-round byes, and the two
+  // losers-bracket matches waiting on those non-existent losers inherit them.
+  // Before that was handled they simply never became playable.
+  const byes = settled.filter((f: any) => f.status === "bye");
+  check("the top seeds get a first-round bye", byes.filter((f: any) => f.code.startsWith("W")).length, 2);
+  check(
+    "and the losers bracket inherits the gap rather than deadlocking",
+    byes.filter((f: any) => f.code.startsWith("L")).length,
+    2,
+  );
+  check("every match with two teams in it was played", matchesPlayed, 10);
+  check("which is the whole bracket", byes.length + matchesPlayed, 14);
+
 } catch (error) {
   console.error("\nsmoke run threw:");
   console.error(error instanceof Error ? error.message : error);

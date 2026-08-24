@@ -11,11 +11,11 @@
  * launch, in `lib/launch.ts`.
  */
 
-export type PresetId = "knockout" | "groups" | "everyone";
+export type PresetId = "knockout" | "double" | "groups" | "everyone";
 
 export interface StageSpec {
   name: string;
-  format: "round_robin" | "single_elim";
+  format: "round_robin" | "single_elim" | "double_elim";
   config: Record<string, unknown>;
   /**
    * A playoff is seeded from the stage before it. The id does not exist until
@@ -81,6 +81,21 @@ export const PRESETS: Preset[] = [
     matches: knockoutMatches,
     stages: () => [
       { name: "Playoff", format: "single_elim", config: { thirdPlace: true } },
+    ],
+  },
+  {
+    id: "double",
+    title: "Double elimination",
+    tag: "Two lives",
+    blurb:
+      "Lose once and you drop into the losers bracket; lose twice and you are out. Nobody goes home on one bad game, and the day still ends with one winner.",
+    minTeams: 4,
+    shape: () =>
+      "a winners bracket, the losers bracket that catches everyone it knocks out, and a grand final between them",
+    // Everybody but the winner loses twice.
+    matches: (teams) => Math.max(2 * teams - 2, 1),
+    stages: () => [
+      { name: "Double elimination", format: "double_elim", config: {} },
     ],
   },
   {

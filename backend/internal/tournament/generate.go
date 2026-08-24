@@ -469,12 +469,16 @@ func PlanStage(app core.App, stage *core.Record) (*StagePlan, error) {
 
 	// A stage fed by an earlier stage never touches the entry list.
 	if cfg.SeedFrom != nil {
-		if format != "single_elim" {
-			return nil, fmt.Errorf("seedFrom is only supported for single_elim, got %q", format)
+		if format != "single_elim" && format != "double_elim" {
+			return nil, fmt.Errorf(
+				"seedFrom is only supported for knockout stages, got %q", format)
 		}
 		seeds, err := qualifierSeeds(app, *cfg.SeedFrom)
 		if err != nil {
 			return nil, err
+		}
+		if format == "double_elim" {
+			return PlanDoubleElimination(seeds, cfg), nil
 		}
 		return PlanSingleElimination(seeds, cfg), nil
 	}
@@ -491,7 +495,7 @@ func PlanStage(app core.App, stage *core.Record) (*StagePlan, error) {
 	switch format {
 	case "round_robin":
 		return PlanRoundRobin(ids, cfg), nil
-	case "single_elim":
+	case "single_elim", "double_elim":
 		seeds := make([]bracketSeed, len(ids))
 		for i, id := range ids {
 			seeds[i] = bracketSeed{
@@ -499,6 +503,9 @@ func PlanStage(app core.App, stage *core.Record) (*StagePlan, error) {
 				SourceType: "direct",
 				Label:      entries[i].GetString("name"),
 			}
+		}
+		if format == "double_elim" {
+			return PlanDoubleElimination(seeds, cfg), nil
 		}
 		return PlanSingleElimination(seeds, cfg), nil
 	default:
@@ -591,11 +598,23 @@ func CommitPlan(app core.App, stage *core.Record, plan *StagePlan) error {
 			r.Set("code", draft.Code)
 			r.Set("home_slot", slotIDs[draft.HomeSlotKey])
 			r.Set("away_slot", slotIDs[draft.AwaySlotKey])
-			r.Set("status", draft.Status)
-
 			// Denormalise the entries the slots already know about.
-			r.Set("home_entry", entryOfSlot(tx, slotIDs[draft.HomeSlotKey]))
-			r.Set("away_entry", entryOfSlot(tx, slotIDs[draft.AwaySlotKey]))
+			home := entryOfSlot(tx, slotIDs[draft.HomeSlotKey])
+			away := entryOfSlot(tx, slotIDs[draft.AwaySlotKey])
+			r.Set("home_entry", home)
+			r.Set("away_entry", away)
+
+			// A match with both sides already known is playable, and has to say
+			// so: "ready" is what the projector's Next up panel reads and what
+			// tells the organiser which matches can start. A bracket drawn
+			// straight from the entry list knows every first-round pairing at
+			// the moment it is written — nothing later comes along to promote
+			// it, because nothing later resolves.
+			status := draft.Status
+			if status == "pending" && home != "" && away != "" {
+				status = "ready"
+			}
+			r.Set("status", status)
 
 			if err := tx.Save(r); err != nil {
 				return err
@@ -657,4 +676,252 @@ func clearStage(app core.App, stageID string, fixtures []*core.Record) error {
 		}
 	}
 	return nil
+}
+
+// ---------------------------------------------------------------------------
+// double elimination
+// ---------------------------------------------------------------------------
+
+// PlanDoubleElimination builds a winners bracket, the losers bracket that
+// catches everyone it knocks out, and the grand final between the two.
+//
+// The shape is the standard one. The winners bracket is an ordinary knockout.
+// The losers bracket alternates:
+//
+//	minor round — the survivors of the losers bracket play each other
+//	major round — each survivor meets somebody just dropped by the winners
+//
+// so a team eliminated from the winners bracket always lands in the next major
+// round, and the losers bracket halves itself in between. With a bracket of
+// size S that is 2·log2(S) − 2 losers rounds, and 2S − 2 matches in total.
+//
+// Losers are fed into major rounds in reverse order. That is a heuristic, not
+// a guarantee: it makes an immediate rematch between two teams that just
+// played in the winners bracket unlikely rather than impossible. Doing it
+// properly means tracking who has met whom, which is the pairing problem the
+// Swiss generator has to solve anyway — not this one.
+func PlanDoubleElimination(seeds []bracketSeed, cfg StageConfig) *StagePlan {
+	size := nextPowerOfTwo(max(len(seeds), 2))
+
+	rounds := 0
+	for 1<<rounds < size {
+		rounds++
+	}
+
+	const winners = "pool:winners"
+	const losers = "pool:losers"
+	const final = "pool:final"
+
+	plan := &StagePlan{Pools: []PoolDraft{
+		{Key: winners, Name: "Winners", Position: 0, Kind: "winners", AdvanceCount: 1},
+		{Key: losers, Name: "Losers", Position: 1, Kind: "losers", AdvanceCount: 1},
+		{Key: final, Name: "Final", Position: 2, Kind: "final", AdvanceCount: 1},
+	}}
+
+	wbSlot := func(round, position int) string {
+		return fmt.Sprintf("slot:w:%d:%d", round, position)
+	}
+	lbSlot := func(round, position int) string {
+		return fmt.Sprintf("slot:l:%d:%d", round, position)
+	}
+
+	// --- the winners bracket, seeded exactly like a single elimination ---
+	for position, seed := range seedOrder(size) {
+		draft := SlotDraft{
+			Key:            wbSlot(0, position),
+			PoolKey:        winners,
+			Round:          0,
+			Position:       position,
+			SourceType:     "bye",
+			Label:          "Bye",
+			SourcePosition: seed,
+		}
+		if seed-1 < len(seeds) {
+			s := seeds[seed-1]
+			draft.Entry = s.Entry
+			draft.SourceType = s.SourceType
+			draft.Label = s.Label
+			if s.SourcePool != "" {
+				draft.SourcePool = s.SourcePool
+				draft.SourcePosition = s.SourceRank
+			}
+		}
+		plan.Slots = append(plan.Slots, draft)
+	}
+
+	// wbFixtures[r] holds the keys of round r, so the losers bracket can name
+	// the matches it collects its entrants from.
+	wbFixtures := make([][]string, rounds)
+
+	for round := 0; round < rounds; round++ {
+		count := size >> (round + 1)
+		wbFixtures[round] = make([]string, count)
+
+		for i := 0; i < count; i++ {
+			key := fmt.Sprintf("fixture:w:%d:%d", round, i)
+			wbFixtures[round][i] = key
+			code := fmt.Sprintf("W%d.%d", round+1, i+1)
+			if count == 1 {
+				code = "WF" // the winners final; its loser drops to the LB final
+			}
+
+			plan.Fixtures = append(plan.Fixtures, FixtureDraft{
+				Key:         key,
+				PoolKey:     winners,
+				Round:       round,
+				Position:    i,
+				Code:        code,
+				HomeSlotKey: wbSlot(round, i*2),
+				AwaySlotKey: wbSlot(round, i*2+1),
+				Status:      "pending",
+			})
+
+			plan.Slots = append(plan.Slots, SlotDraft{
+				Key:              wbSlot(round+1, i),
+				PoolKey:          winners,
+				Round:            round + 1,
+				Position:         i,
+				Label:            "Winner " + code,
+				SourceType:       "fixture_winner",
+				SourceFixtureKey: key,
+			})
+		}
+	}
+
+	// --- the losers bracket ---
+	//
+	// Round 0 is a minor round fed entirely by the first winners round; every
+	// odd round after it is a major round, and every even one a minor.
+	lbRounds := 2*rounds - 2
+	lbFixtures := make([][]string, max(lbRounds, 0))
+
+	for round := 0; round < lbRounds; round++ {
+		major := round%2 == 1
+		var count int
+
+		switch {
+		case round == 0:
+			count = size / 4
+		case major:
+			count = len(lbFixtures[round-1])
+		default:
+			count = len(lbFixtures[round-1]) / 2
+		}
+		if count == 0 {
+			break
+		}
+		lbFixtures[round] = make([]string, count)
+
+		for i := 0; i < count; i++ {
+			// Where this match's two sides come from.
+			switch {
+			case round == 0:
+				// Two fresh losers out of the first winners round.
+				for side := 0; side < 2; side++ {
+					source := wbFixtures[0][i*2+side]
+					plan.Slots = append(plan.Slots, SlotDraft{
+						Key:              lbSlot(0, i*2+side),
+						PoolKey:          losers,
+						Round:            0,
+						Position:         i*2 + side,
+						Label:            "Loser W1." + fmt.Sprint(i*2+side+1),
+						SourceType:       "fixture_loser",
+						SourceFixtureKey: source,
+					})
+				}
+			case major:
+				// A survivor, and somebody just dropped by the winners bracket.
+				wbRound := (round + 1) / 2
+				dropped := wbFixtures[wbRound][count-1-i] // reversed: see above
+				droppedCode := fmt.Sprintf("W%d.%d", wbRound+1, count-i)
+				if len(wbFixtures[wbRound]) == 1 {
+					droppedCode = "WF"
+				}
+
+				plan.Slots = append(plan.Slots,
+					SlotDraft{
+						Key:              lbSlot(round, i*2),
+						PoolKey:          losers,
+						Round:            round,
+						Position:         i * 2,
+						Label:            "Winner " + lbCode(round-1, i, len(lbFixtures[round-1]), lbRounds),
+						SourceType:       "fixture_winner",
+						SourceFixtureKey: lbFixtures[round-1][i],
+					},
+					SlotDraft{
+						Key:              lbSlot(round, i*2+1),
+						PoolKey:          losers,
+						Round:            round,
+						Position:         i*2 + 1,
+						Label:            "Loser " + droppedCode,
+						SourceType:       "fixture_loser",
+						SourceFixtureKey: dropped,
+					},
+				)
+			default:
+				// Two survivors of the round before.
+				for side := 0; side < 2; side++ {
+					previous := i*2 + side
+					plan.Slots = append(plan.Slots, SlotDraft{
+						Key:      lbSlot(round, previous),
+						PoolKey:  losers,
+						Round:    round,
+						Position: previous,
+						Label: "Winner " + lbCode(
+							round-1, previous, len(lbFixtures[round-1]), lbRounds),
+						SourceType:       "fixture_winner",
+						SourceFixtureKey: lbFixtures[round-1][previous],
+					})
+				}
+			}
+
+			key := fmt.Sprintf("fixture:l:%d:%d", round, i)
+			lbFixtures[round][i] = key
+			plan.Fixtures = append(plan.Fixtures, FixtureDraft{
+				Key:         key,
+				PoolKey:     losers,
+				Round:       round,
+				Position:    i,
+				Code:        lbCode(round, i, count, lbRounds),
+				HomeSlotKey: lbSlot(round, i*2),
+				AwaySlotKey: lbSlot(round, i*2+1),
+				Status:      "pending",
+			})
+		}
+	}
+
+	// --- the grand final ---
+	if rounds > 0 && lbRounds > 0 && len(lbFixtures[lbRounds-1]) > 0 {
+		winnersFinal := wbFixtures[rounds-1][0]
+		losersFinal := lbFixtures[lbRounds-1][0]
+
+		plan.Slots = append(plan.Slots,
+			SlotDraft{
+				Key: "slot:gf:0", PoolKey: final, Round: 0, Position: 0,
+				Label: "Winner WF", SourceType: "fixture_winner",
+				SourceFixtureKey: winnersFinal,
+			},
+			SlotDraft{
+				Key: "slot:gf:1", PoolKey: final, Round: 0, Position: 1,
+				Label: "Winner LF", SourceType: "fixture_winner",
+				SourceFixtureKey: losersFinal,
+			},
+		)
+		plan.Fixtures = append(plan.Fixtures, FixtureDraft{
+			Key: "fixture:gf", PoolKey: final, Round: 0, Position: 0,
+			Code: "GF", HomeSlotKey: "slot:gf:0", AwaySlotKey: "slot:gf:1",
+			Status: "pending",
+		})
+	}
+
+	return plan
+}
+
+// lbCode is the handle for a losers-bracket match: "L2.3", or "LF" for the one
+// that decides who meets the winners bracket in the grand final.
+func lbCode(round, index, inRound, lbRounds int) string {
+	if round == lbRounds-1 && inRound == 1 {
+		return "LF"
+	}
+	return fmt.Sprintf("L%d.%d", round+1, index+1)
 }
