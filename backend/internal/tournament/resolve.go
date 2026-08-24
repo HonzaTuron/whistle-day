@@ -161,6 +161,10 @@ func deriveOutcome(f *core.Record) {
 // PropagateFixture pushes a settled fixture's outcome into every slot that
 // names it as a source, then refreshes the fixtures those slots feed.
 //
+// When the fixture is no longer settled (a result was cleared), every slot that
+// sourced its entry from this fixture is cleared instead — the old winner is
+// no longer valid.
+//
 // It is idempotent: re-running it on an already-propagated fixture writes
 // nothing, so a corrected score can safely be replayed.
 func PropagateFixture(app core.App, fixture *core.Record) error {
@@ -176,7 +180,7 @@ func PropagateFixture(app core.App, fixture *core.Record) error {
 	}
 
 	if !isSettled(fixture.GetString("status")) {
-		return nil
+		return unpropagateFixture(app, fixture)
 	}
 
 	winner := fixture.GetString("winner")
@@ -228,6 +232,55 @@ func PropagateFixture(app core.App, fixture *core.Record) error {
 	})
 }
 
+// unpropagateFixture clears every slot that sourced its entry from this
+// fixture, and re-refreshes the fixtures that depend on those slots. Called
+// when a settled fixture has been unsettled (e.g. a result was cleared), so
+// downstream brackets do not keep pointing at an invalid winner.
+func unpropagateFixture(app core.App, fixture *core.Record) error {
+	// The filter asks one thing — which slots this fixture feeds — and the rest
+	// is decided in Go. A slot left holding a stale winner is precisely the bug
+	// this function exists to prevent, so it is not worth resting on how a
+	// relation field compares against '' inside a filter string.
+	slots, err := app.FindRecordsByFilter(
+		"slots",
+		"source_fixture = {:fixture}",
+		"",
+		0, 0,
+		dbx.Params{"fixture": fixture.Id},
+	)
+	if err != nil {
+		return err
+	}
+	if len(slots) == 0 {
+		return nil
+	}
+
+	return app.RunInTransaction(func(tx core.App) error {
+		touched := make([]*core.Record, 0, len(slots))
+		for _, slot := range slots {
+			if slot.GetString("entry") == "" {
+				continue
+			}
+			if slot.GetString("source_type") != "fixture_winner" &&
+				slot.GetString("source_type") != "fixture_loser" {
+				continue
+			}
+			slot.Set("entry", "")
+			if err := tx.Save(slot); err != nil {
+				return err
+			}
+			touched = append(touched, slot)
+		}
+
+		for _, slot := range touched {
+			if err := refreshDependentFixtures(tx, slot); err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+}
+
 // refreshDependentFixtures copies a resolved slot's entry into the denormalised
 // home_entry/away_entry of every fixture that uses it, and promotes a fixture
 // to "ready" once both of its sides are known.
@@ -257,10 +310,16 @@ func refreshDependentFixtures(app core.App, slot *core.Record) error {
 			changed = true
 		}
 
-		// A fixture becomes playable the moment both sides are known.
-		if f.GetString("status") == "pending" &&
-			f.GetString("home_entry") != "" && f.GetString("away_entry") != "" {
+		// A fixture becomes playable the moment both sides are known — and
+		// stops being playable the moment one of them is taken away again,
+		// which is what happens when a result upstream is cleared.
+		known := f.GetString("home_entry") != "" && f.GetString("away_entry") != ""
+		switch {
+		case f.GetString("status") == "pending" && known:
 			f.Set("status", "ready")
+			changed = true
+		case f.GetString("status") == "ready" && !known:
+			f.Set("status", "pending")
 			changed = true
 		}
 

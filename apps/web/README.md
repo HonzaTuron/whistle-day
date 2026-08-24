@@ -108,9 +108,10 @@ Three consequences worth keeping:
   as "w/o" through `lib/format.ts` — which exists because each of them used to
   format scores by hand, and the projector duly announced a 0:0 for a match
   nobody played.
-- **There is no "clear this result".** Un-settling a fixture rebuilds the
-  tables but leaves the slots it already fed pointing at the old winner —
-  a backend gap, not a UI omission. Change the score instead.
+- **Un-settling a fixture clears propagation.** Changing a settled fixture back
+  to "ready" or "pending" clears every downstream slot that sourced its entry
+  from it — the brackets unroll. Change the score instead, or flip the status
+  and the slots follow.
 
 ## Notes on the projector
 
