@@ -1,5 +1,5 @@
 import type { DisplayFixture, DisplayPayload } from "@seedly/engine";
-import { courtName, sideName, timeOfDay } from "../../lib/format";
+import { courtName, sideName, sideScore, timeOfDay } from "../../lib/format";
 
 export function MobileFixtures({
   payload,
@@ -39,7 +39,7 @@ export function MobileFixtures({
                     {sideName(side, payload.entries)}
                   </span>
                   <span className="card__score">
-                    {live || showScore ? side.score : ""}
+                    {live || showScore ? sideScore(fixture, which) : ""}
                   </span>
                 </div>
               );

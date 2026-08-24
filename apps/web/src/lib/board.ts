@@ -25,6 +25,8 @@ export interface BoardRow {
   /** Both sides known, so a result can actually be entered. */
   playable: boolean;
   settled: boolean;
+  live: boolean;
+  walkover: boolean;
 }
 
 export interface BoardSection {
@@ -56,6 +58,8 @@ export function toRow(fixture: BoardFixture, entries: Map<Id, Entry>): BoardRow 
     away,
     playable: home.entry !== null && away.entry !== null,
     settled: SETTLED.includes(fixture.status),
+    live: fixture.status === "live",
+    walkover: fixture.status === "walkover",
   };
 }
 
@@ -71,6 +75,14 @@ export function sections(board: Board, rows: BoardRow[]): BoardSection[] {
   const pools = new Map<Id, Pool>(board.pools.map((pool) => [pool.id, pool]));
   const grouped = new Map<string, BoardSection>();
 
+  // A stage with one group is just the stage. Labelling it "Group · Group A"
+  // says the same thing twice; the letter only earns its place once there is a
+  // B to tell it from.
+  const poolsInStage = new Map<Id, number>();
+  for (const pool of board.pools) {
+    poolsInStage.set(pool.stage, (poolsInStage.get(pool.stage) ?? 0) + 1);
+  }
+
   for (const row of rows) {
     const stage = stages.get(row.fixture.stage);
     const pool = row.fixture.pool ? pools.get(row.fixture.pool) : undefined;
@@ -81,8 +93,10 @@ export function sections(board: Board, rows: BoardRow[]): BoardSection[] {
       section = {
         key,
         stage: stage?.name ?? "",
-        // A bracket's single "Main" pool is noise; a group's letter is not.
-        pool: pool && pool.kind === "group" ? `Group ${pool.name}` : "",
+        pool:
+          pool && pool.kind === "group" && (poolsInStage.get(pool.stage) ?? 0) > 1
+            ? `Group ${pool.name}`
+            : "",
         rows: [],
       };
       grouped.set(key, section);
@@ -101,6 +115,31 @@ export function sections(board: Board, rows: BoardRow[]): BoardSection[] {
 }
 
 export const sideName = (side: FixtureSide) => side.entry?.name ?? side.label;
+
+/**
+ * The scheduled time as an <input type="time"> value, and back again.
+ *
+ * The input speaks local wall-clock time and the record stores UTC, so the
+ * conversion has to go through a Date either way. Times are what a hall runs
+ * on; the date comes from whatever the fixture already had, or today.
+ */
+export function timeValue(scheduledAt: string): string {
+  if (!scheduledAt) return "";
+  const parsed = new Date(scheduledAt.replace(" ", "T"));
+  if (Number.isNaN(parsed.getTime())) return "";
+  return `${String(parsed.getHours()).padStart(2, "0")}:${String(
+    parsed.getMinutes(),
+  ).padStart(2, "0")}`;
+}
+
+export function atTime(scheduledAt: string, value: string): string {
+  if (!value) return "";
+  const [hours, minutes] = value.split(":").map(Number);
+  const base = scheduledAt ? new Date(scheduledAt.replace(" ", "T")) : new Date();
+  if (Number.isNaN(base.getTime())) return "";
+  base.setHours(hours, minutes, 0, 0);
+  return base.toISOString().replace("T", " ");
+}
 
 export interface Progress {
   played: number;

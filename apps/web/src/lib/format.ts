@@ -50,9 +50,33 @@ export function timeOfDay(iso: string): string {
   return parsed.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 }
 
+/**
+ * The scoreline for a whole fixture, as one string.
+ *
+ * A walkover carries an outcome and no score, so it says so. Printing the 0:0
+ * it stores would put a scoreline on the wall for a match nobody played — and
+ * every screen drew its own scores by hand until one did exactly that.
+ */
 export function scoreline(fixture: DisplayFixture): string {
   if (!isDecided(fixture)) return "";
-  return `${fixture.home.score}:${fixture.away.score}`;
+  if (fixture.status === "walkover") return "w/o";
+  return `${fixture.home.score} : ${fixture.away.score}`;
+}
+
+/**
+ * The same question for one side of a fixture, which is how a bracket cell and
+ * a phone card are laid out. The side that took a walkover is marked; nothing
+ * is invented for the side that did not turn up.
+ */
+export function sideScore(
+  fixture: DisplayFixture,
+  which: "home" | "away",
+): string {
+  const side = fixture[which];
+  if (fixture.status === "walkover") {
+    return side.entry !== "" && fixture.winner === side.entry ? "w/o" : "";
+  }
+  return String(side.score);
 }
 
 export function isDecided(fixture: DisplayFixture): boolean {

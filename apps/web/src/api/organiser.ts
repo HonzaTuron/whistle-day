@@ -1,4 +1,4 @@
-import type { Entry, Fixture, Id, Pool, Slot, Stage } from "@seedly/engine";
+import type { Court, Entry, Fixture, Id, Pool, Slot, Stage } from "@seedly/engine";
 
 /**
  * The organiser's side of the API — the half that writes.
@@ -328,6 +328,7 @@ export interface Board {
   entries: Entry[];
   stages: Stage[];
   pools: Pool[];
+  courts: Court[];
   fixtures: BoardFixture[];
 }
 
@@ -346,12 +347,16 @@ export interface BoardFixture extends Fixture {
   };
 }
 
+/** The shape PocketBase stores dates in: "2026-08-24 14:30:00.000Z". */
+export const stamp = (date: Date) => date.toISOString().replace("T", " ");
+
 export async function loadBoard(session: Session, id: Id): Promise<Board> {
-  const [tournament, entries, stages, pools, fixtures] = await Promise.all([
+  const [tournament, entries, stages, pools, courts, fixtures] = await Promise.all([
     loadTournament(session, id),
     records<Entry>(session, "entries", `filter=(tournament='${id}')&sort=seed&perPage=200`),
     records<Stage>(session, "stages", `filter=(tournament='${id}')&sort=position&perPage=50`),
     records<Pool>(session, "pools", `filter=(stage.tournament='${id}')&sort=position&perPage=100`),
+    records<Court>(session, "courts", `filter=(tournament='${id}')&sort=position&perPage=50`),
     records<BoardFixture>(
       session,
       "fixtures",
@@ -360,7 +365,7 @@ export async function loadBoard(session: Session, id: Id): Promise<Board> {
     ),
   ]);
 
-  return { tournament, entries, stages, pools, fixtures };
+  return { tournament, entries, stages, pools, courts, fixtures };
 }
 
 /**
@@ -386,8 +391,65 @@ export const saveResult = (
       status: "finished",
       home_score: homeScore,
       away_score: awayScore,
-      finished_at: new Date().toISOString().replace("T", " "),
+      finished_at: stamp(new Date()),
     },
+  });
+
+/**
+ * A match nobody played, won by the side that turned up.
+ *
+ * The winner is named rather than derived, because there is no score to derive
+ * it from — and the scores are cleared, so a walkover recorded over an earlier
+ * result does not leave that result's numbers behind it. The server credits
+ * `scoring.walkoverScore` (0 by default) in the table; what is stored on the
+ * fixture is an outcome, not a scoreline.
+ */
+export const saveWalkover = (session: Session, fixture: Id, winner: Id) =>
+  api<Fixture>(`/api/collections/fixtures/records/${fixture}`, {
+    method: "PATCH",
+    token: session.token,
+    body: {
+      status: "walkover",
+      winner,
+      home_score: 0,
+      away_score: 0,
+      finished_at: stamp(new Date()),
+    },
+  });
+
+/**
+ * Where and when. Both are written the moment they are tapped rather than with
+ * the result: putting a match on a court is a decision that has already
+ * happened by the time it is recorded, and the score may be an hour away.
+ */
+export const setSchedule = (
+  session: Session,
+  fixture: Id,
+  schedule: { court?: Id | null; scheduled_at?: string },
+) =>
+  api<Fixture>(`/api/collections/fixtures/records/${fixture}`, {
+    method: "PATCH",
+    token: session.token,
+    body: {
+      ...(schedule.court === undefined ? {} : { court: schedule.court ?? "" }),
+      ...(schedule.scheduled_at === undefined
+        ? {}
+        : { scheduled_at: schedule.scheduled_at }),
+    },
+  });
+
+/**
+ * On or off court. `live` is what the projector's "Now playing" panel reads —
+ * every live fixture appears on it, so this is the switch that puts a match on
+ * the wall.
+ */
+export const setLive = (session: Session, fixture: Id, live: boolean) =>
+  api<Fixture>(`/api/collections/fixtures/records/${fixture}`, {
+    method: "PATCH",
+    token: session.token,
+    body: live
+      ? { status: "live", started_at: stamp(new Date()) }
+      : { status: "ready", started_at: "" },
   });
 
 /**

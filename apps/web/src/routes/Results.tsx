@@ -6,12 +6,15 @@ import {
   rememberedTournament,
   rememberTournament,
   saveResult,
+  saveWalkover,
+  setLive,
+  setSchedule,
   type Board,
   type Session,
 } from "../api/organiser";
 import { FixtureRow } from "../components/results/FixtureRow";
-import { ScoreSheet } from "../components/results/ScoreSheet";
-import { progress, sections, toRow, type BoardRow } from "../lib/board";
+import { MatchSheet } from "../components/results/MatchSheet";
+import { progress, sections, toRow } from "../lib/board";
 
 type Tab = "todo" | "done";
 
@@ -77,15 +80,24 @@ export function Results({ id }: { id: string }) {
   const open = selected ? rows.find((row) => row.fixture.id === selected) ?? null : null;
   const token = rememberedTournament()?.token ?? "";
 
-  const save = async (row: BoardRow, home: number, away: number) => {
+  /**
+   * Every write goes the same way: send it, read the whole board back, and
+   * only then decide whether the sheet should close. `close` is what separates
+   * recording a result from putting a match on a court — one ends the
+   * interaction, the other is in the middle of it.
+   */
+  const write = async (
+    work: (active: Session) => Promise<unknown>,
+    close: boolean,
+  ) => {
     setSaving(true);
     setError(null);
     try {
-      await saveResult(await getSession(), row.fixture.id, home, away);
+      await work(await getSession());
       await refresh();
-      setSelected(null);
+      if (close) setSelected(null);
     } catch (thrown) {
-      setError(thrown instanceof Error ? thrown.message : "Could not save the result.");
+      setError(thrown instanceof Error ? thrown.message : "Could not save that.");
     } finally {
       setSaving(false);
     }
@@ -152,6 +164,7 @@ export function Results({ id }: { id: string }) {
                   <FixtureRow
                     key={row.fixture.id}
                     row={row}
+                    courts={board.courts}
                     onOpen={() => setSelected(row.fixture.id)}
                   />
                 ))}
@@ -162,10 +175,28 @@ export function Results({ id }: { id: string }) {
       </main>
 
       {open ? (
-        <ScoreSheet
+        <MatchSheet
           row={open}
+          courts={board.courts}
           saving={saving}
-          onSave={(home, away) => void save(open, home, away)}
+          onSave={(home, away) =>
+            void write(
+              (active) => saveResult(active, open.fixture.id, home, away),
+              true,
+            )
+          }
+          onWalkover={(winner) =>
+            void write((active) => saveWalkover(active, open.fixture.id, winner), true)
+          }
+          onSchedule={(schedule) =>
+            void write(
+              (active) => setSchedule(active, open.fixture.id, schedule),
+              false,
+            )
+          }
+          onLive={(live) =>
+            void write((active) => setLive(active, open.fixture.id, live), false)
+          }
           onClose={() => setSelected(null)}
         />
       ) : null}

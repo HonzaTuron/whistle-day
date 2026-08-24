@@ -1,6 +1,6 @@
 import type { DisplayFixture, DisplayPayload, DisplayStage } from "@seedly/engine";
 import { bracketRounds } from "../../lib/bracket";
-import { isPlaceholder, sideName } from "../../lib/format";
+import { isPlaceholder, sideName, sideScore } from "../../lib/format";
 
 export function BracketPanel({
   payload,
@@ -69,7 +69,7 @@ function Match({
               {sideName(side, payload.entries, "short")}
             </span>
             <span className="bracket__score">
-              {decided || live ? side.score : ""}
+              {decided || live ? sideScore(fixture, which) : ""}
             </span>
           </div>
         );

@@ -1,5 +1,5 @@
 import type { DisplayFixture, DisplayPayload } from "@seedly/engine";
-import { courtName, sideName, timeOfDay } from "../../lib/format";
+import { courtName, scoreline, sideName, timeOfDay } from "../../lib/format";
 
 /** The shared shape behind "Next up" and "Latest results". */
 export function FixtureListPanel({
@@ -32,7 +32,7 @@ export function FixtureListPanel({
             </span>
 
             <span className="fixtures__score">
-              {showScore ? `${fixture.home.score} : ${fixture.away.score}` : "v"}
+              {showScore ? scoreline(fixture) : "v"}
             </span>
 
             <span className={winnerIsAway ? "fixtures__team is-winner" : "fixtures__team"}>

@@ -1,30 +1,47 @@
+import type { Court } from "@seedly/engine";
 import { useEffect, useState } from "react";
-import { sideName, type BoardRow } from "../../lib/board";
+import { atTime, sideName, timeValue, type BoardRow } from "../../lib/board";
 
 interface Props {
   row: BoardRow;
+  courts: Court[];
   saving: boolean;
   onSave: (home: number, away: number) => void;
+  onWalkover: (winner: string) => void;
+  onSchedule: (schedule: { court?: string | null; scheduled_at?: string }) => void;
+  onLive: (live: boolean) => void;
   onClose: () => void;
 }
 
 const MAX_SCORE = 999;
 
 /**
- * The score, as a sheet over the list rather than a row that expands.
+ * Everything you can do to one match, as a sheet over the list.
  *
  * An expanding row pushes everything below it, which on a phone means the
  * match you were looking at moves under your thumb as you reach for it. A
  * sheet also gives the two scores the whole width, and they need it: this is
- * tapped with one hand, at the side of a court, by someone being told the
- * score rather than reading it.
+ * tapped one-handed, at the side of a court, by someone being told the score
+ * rather than reading it.
  *
- * There is a number field between the two buttons because a 21-point set is
- * twenty-one taps otherwise.
+ * The order is the order of the day. Court and time are decisions already made
+ * by the time they are recorded, so they save on tap and sit at the top out of
+ * the way. The score is the reason the sheet was opened, so it is at the
+ * bottom, under the thumb.
  */
-export function ScoreSheet({ row, saving, onSave, onClose }: Props) {
+export function MatchSheet({
+  row,
+  courts,
+  saving,
+  onSave,
+  onWalkover,
+  onSchedule,
+  onLive,
+  onClose,
+}: Props) {
   const [home, setHome] = useState(row.fixture.home_score ?? 0);
   const [away, setAway] = useState(row.fixture.away_score ?? 0);
+  const [askingWalkover, setAskingWalkover] = useState(false);
 
   useEffect(() => {
     const escape = (event: KeyboardEvent) => {
@@ -37,7 +54,7 @@ export function ScoreSheet({ row, saving, onSave, onClose }: Props) {
   const clamp = (value: number) => Math.min(Math.max(value, 0), MAX_SCORE);
 
   return (
-    <div className="sheet" role="dialog" aria-modal="true" aria-label="Enter the result">
+    <div className="sheet" role="dialog" aria-modal="true" aria-label="Match">
       <button
         type="button"
         className="sheet__backdrop"
@@ -48,45 +65,141 @@ export function ScoreSheet({ row, saving, onSave, onClose }: Props) {
       <div className="sheet__panel">
         <p className="sheet__meta">
           {row.fixture.code}
-          {row.settled ? " · already recorded" : ""}
+          {row.walkover ? " · walkover" : row.settled ? " · already recorded" : ""}
+          {row.live ? " · live" : ""}
         </p>
 
-        <Score
-          name={sideName(row.home)}
-          value={home}
-          onChange={(value) => setHome(clamp(value))}
-        />
-        <Score
-          name={sideName(row.away)}
-          value={away}
-          onChange={(value) => setAway(clamp(value))}
-        />
+        {askingWalkover ? (
+          <>
+            <p className="sheet__question">Who takes the win?</p>
+            <div className="sheet__actions">
+              <button
+                type="button"
+                className="btn btn--block"
+                disabled={saving}
+                onClick={() => onWalkover(row.home.entry?.id ?? "")}
+              >
+                {sideName(row.home)}
+              </button>
+              <button
+                type="button"
+                className="btn btn--block"
+                disabled={saving}
+                onClick={() => onWalkover(row.away.entry?.id ?? "")}
+              >
+                {sideName(row.away)}
+              </button>
+              <button
+                type="button"
+                className="btn btn--quiet btn--block"
+                onClick={() => setAskingWalkover(false)}
+              >
+                Back
+              </button>
+            </div>
+            <p className="sheet__note">
+              No score is recorded. In a group the winner takes the points for a
+              win and nothing else.
+            </p>
+          </>
+        ) : (
+          <>
+            {courts.length > 0 ? (
+              <div className="chips" role="group" aria-label="Court">
+                {courts.map((court) => (
+                  <button
+                    key={court.id}
+                    type="button"
+                    className={
+                      "chip" + (row.fixture.court === court.id ? " is-on" : "")
+                    }
+                    onClick={() =>
+                      onSchedule({
+                        court: row.fixture.court === court.id ? null : court.id,
+                      })
+                    }
+                  >
+                    {court.name}
+                  </button>
+                ))}
+              </div>
+            ) : null}
 
-        {row.settled ? (
-          <p className="sheet__note">
-            Saving replaces the recorded result. The tables and anything seeded
-            from them are rebuilt.
-          </p>
-        ) : null}
+            <div className="sheet__row">
+              <label className="sheet__time">
+                <span>Starts</span>
+                <input
+                  type="time"
+                  value={timeValue(row.fixture.scheduled_at)}
+                  onChange={(event) =>
+                    onSchedule({
+                      scheduled_at: atTime(
+                        row.fixture.scheduled_at,
+                        event.target.value,
+                      ),
+                    })
+                  }
+                />
+              </label>
 
-        <div className="sheet__actions">
-          <button
-            type="button"
-            className="btn btn--primary btn--block"
-            disabled={saving}
-            onClick={() => onSave(home, away)}
-          >
-            {saving ? "Saving…" : "Save result"}
-          </button>
-          <button
-            type="button"
-            className="btn btn--quiet btn--block"
-            onClick={onClose}
-            disabled={saving}
-          >
-            Cancel
-          </button>
-        </div>
+              {row.settled ? null : (
+                <button
+                  type="button"
+                  className={"btn btn--live" + (row.live ? " is-on" : "")}
+                  disabled={saving}
+                  onClick={() => onLive(!row.live)}
+                >
+                  {row.live ? "Take it off" : "On court now"}
+                </button>
+              )}
+            </div>
+
+            <Score
+              name={sideName(row.home)}
+              value={home}
+              onChange={(value) => setHome(clamp(value))}
+            />
+            <Score
+              name={sideName(row.away)}
+              value={away}
+              onChange={(value) => setAway(clamp(value))}
+            />
+
+            {row.settled ? (
+              <p className="sheet__note">
+                Saving replaces the recorded result. The tables and anything
+                seeded from them are rebuilt.
+              </p>
+            ) : null}
+
+            <div className="sheet__actions">
+              <button
+                type="button"
+                className="btn btn--primary btn--block"
+                disabled={saving}
+                onClick={() => onSave(home, away)}
+              >
+                {saving ? "Saving…" : "Save result"}
+              </button>
+              <button
+                type="button"
+                className="btn btn--quiet btn--block"
+                disabled={saving}
+                onClick={() => setAskingWalkover(true)}
+              >
+                Somebody didn't turn up
+              </button>
+              <button
+                type="button"
+                className="btn btn--quiet btn--block"
+                onClick={onClose}
+                disabled={saving}
+              >
+                Cancel
+              </button>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
@@ -114,6 +227,7 @@ function Score({
         >
           −
         </button>
+        {/* A field, not a label: a 21-point set is twenty-one taps otherwise. */}
         <input
           className="score__value"
           type="number"

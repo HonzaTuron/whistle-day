@@ -4,9 +4,10 @@ Tournament organiser with arbitrary stage ordering — groups, playoff, Swiss, i
 any sequence — and a public projector view.
 
 **Status: a whole tournament runs off a phone.** Name it, add the teams one by
-one, pick how the day should run, and you get a link and a QR code. Then enter
-the results as they come in: the tables rebuild, the playoff seeded from them
-fills itself in, and the wall keeps up on its own.
+one, pick how the day should run, and you get a link and a QR code. Then run
+the day: put matches on courts, mark what is being played, and enter results as
+they come in. The tables rebuild, the playoff seeded from them fills itself in,
+and the wall keeps up on its own.
 
 ```
 seedly/
@@ -64,7 +65,7 @@ Re-running `bun run seed` replaces the demo rather than adding a second one.
 | Route | For |
 |---|---|
 | `/new` | The organiser: name, teams, courts, format, and a link for the wall. |
-| `/t/:id` | Running the day: the match list, and a score for each. |
+| `/t/:id` | Running the day: courts, times, what is live, and a score for each. |
 | `/display/:token` | The projector: unattended, rotates itself, read from across a hall. |
 | `/m/:token` | A phone: tabs, scrolling, one person looking for one thing. |
 

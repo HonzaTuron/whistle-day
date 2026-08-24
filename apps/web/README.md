@@ -86,6 +86,13 @@ result can move two tables and fill four slots a stage away; a client guessing
 at that would be wrong in ways nobody notices until the projector disagrees
 with the hall.
 
+What a row can carry besides a score: a court, a start time, and whether it is
+on court right now. `live` is what the projector's "Now playing" panel reads —
+every live fixture appears on it, however many there are — so that switch is
+what puts a match on the wall. Court and time save on tap rather than with the
+result: putting a match on a court is a decision that has already happened by
+the time it is recorded, and the score may be an hour away.
+
 Three consequences worth keeping:
 
 - **A match with an unresolved side is not a disabled button.** It renders as
@@ -96,6 +103,11 @@ Three consequences worth keeping:
   so before it saves. Tables are rebuilt from scratch, and a slot whose ranking
   changed is overwritten, so a score fixed two hours later lands where it would
   have if it had been right the first time.
+- **A walkover is an outcome with no score.** The organiser names the winner;
+  nothing is invented for the side that did not turn up. Every screen draws it
+  as "w/o" through `lib/format.ts` — which exists because each of them used to
+  format scores by hand, and the projector duly announced a 0:0 for a match
+  nobody played.
 - **There is no "clear this result".** Un-settling a fixture rebuilds the
   tables but leaves the slots it already fed pointing at the old winner —
   a backend gap, not a UI omission. Change the score instead.
