@@ -6,6 +6,7 @@ import {
 } from "@tanstack/react-router";
 import { MobileScreen } from "./components/mobile/MobileScreen";
 import { ProjectorScreen } from "./components/projector/ProjectorScreen";
+import { Create } from "./routes/Create";
 import { Landing } from "./routes/Landing";
 
 const rootRoute = createRootRoute({ component: Outlet });
@@ -14,6 +15,13 @@ const indexRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/",
   component: Landing,
+});
+
+/** The organiser: name, teams, courts, format, and a link for the wall. */
+const createRouteEntry = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/new",
+  component: Create,
 });
 
 /** The projector: unattended, rotating, read from across a hall. */
@@ -36,7 +44,12 @@ const mobileRoute = createRoute({
   },
 });
 
-const routeTree = rootRoute.addChildren([indexRoute, displayRoute, mobileRoute]);
+const routeTree = rootRoute.addChildren([
+  indexRoute,
+  createRouteEntry,
+  displayRoute,
+  mobileRoute,
+]);
 
 export const router = createRouter({ routeTree });
 

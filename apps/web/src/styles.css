@@ -921,3 +921,533 @@ th,
   border-color: var(--accent);
   color: #06210f;
 }
+
+/* ==========================================================================
+   Setting a tournament up
+   --------------------------------------------------------------------------
+   Sized in rem, not vmin: unlike the projector this is held in one hand, and
+   everything tappable is at least 44px because it is tapped with a thumb,
+   often while holding something else. The action that moves you forward is
+   pinned to the bottom of the screen and stays there — a "next" button you
+   have to scroll to find is a step people get stuck on.
+   ========================================================================== */
+
+/* Capped and centred: the wizard is designed for a phone, and a phone layout
+   stretched across a laptop reads as a broken page rather than a wide one. */
+.wiz {
+  min-height: 100%;
+  max-width: 32rem;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+}
+
+.wiz__bar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: calc(env(safe-area-inset-top) + 0.75rem) 0.75rem 0.5rem;
+}
+
+.wiz__back {
+  min-width: 44px;
+  min-height: 44px;
+  border: 0;
+  border-radius: 0.6rem;
+  background: transparent;
+  color: var(--text);
+  font-size: 1.25rem;
+  cursor: pointer;
+}
+
+.wiz__back--empty {
+  pointer-events: none;
+}
+
+.wiz__progress {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  gap: 0.3rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.wiz__pip {
+  width: 1.6rem;
+  height: 0.25rem;
+  border-radius: 999px;
+  background: var(--surface-2);
+}
+
+.wiz__pip.is-done {
+  background: var(--line);
+}
+
+.wiz__pip.is-current {
+  background: var(--accent);
+}
+
+.wiz__body {
+  flex: 1;
+  display: grid;
+  align-content: start;
+  gap: 1rem;
+  padding: 0.75rem 1.25rem 1.5rem;
+}
+
+.wiz__title {
+  margin: 0;
+  font-size: 1.75rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.wiz__hint,
+.wiz__note {
+  margin: -0.5rem 0 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+.wiz__note {
+  margin: 0.25rem 0 0;
+  font-size: 0.8rem;
+}
+
+.wiz__field {
+  display: grid;
+  gap: 0.6rem;
+}
+
+/* 1.1rem is above the 16px below which iOS zooms the whole page on focus. */
+.wiz__input {
+  width: 100%;
+  min-height: 56px;
+  padding: 0 1rem;
+  border: 1px solid var(--line);
+  border-radius: 0.75rem;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 1.1rem;
+}
+
+.wiz__input:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.wiz__input--sub,
+.wiz__input--row {
+  min-height: 48px;
+  font-size: 1rem;
+}
+
+.wiz__sub {
+  display: grid;
+  gap: 0.3rem;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.wiz__warning {
+  margin: 0;
+  color: var(--live);
+  font-size: 0.85rem;
+}
+
+.wiz__footer {
+  position: sticky;
+  bottom: 0;
+  display: grid;
+  gap: 0.4rem;
+  padding: 0.75rem 1.25rem calc(0.75rem + env(safe-area-inset-bottom));
+  background: linear-gradient(transparent, var(--bg) 40%);
+}
+
+.wiz__resume {
+  display: grid;
+  gap: 0.75rem;
+  padding: 1rem;
+  border: 1px solid var(--line);
+  border-radius: 0.9rem;
+  background: var(--surface);
+}
+
+.wiz__resume p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+.wiz__resume strong {
+  color: var(--text);
+}
+
+.wiz__resume-actions {
+  display: grid;
+  gap: 0.4rem;
+}
+
+/* Floats over the step rather than shifting it: an error that moves the
+   button out from under a thumb causes the next mistake. */
+.wiz__error {
+  position: fixed;
+  z-index: 10;
+  top: calc(env(safe-area-inset-top) + 0.5rem);
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(30rem, calc(100% - 1.5rem));
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 0.5rem 0.6rem 0.9rem;
+  border: 1px solid var(--live);
+  border-radius: 0.75rem;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 0.85rem;
+  line-height: 1.4;
+}
+
+.wiz__error span {
+  flex: 1;
+}
+
+.wiz__error button {
+  min-width: 36px;
+  min-height: 36px;
+  border: 0;
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+/* --- buttons -------------------------------------------------------------- */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  padding: 0 1.25rem;
+  border: 1px solid var(--line);
+  border-radius: 0.75rem;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-weight: 650;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.btn--primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #06210f;
+}
+
+.btn--quiet {
+  background: transparent;
+  border-color: transparent;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.btn--block {
+  width: 100%;
+}
+
+.btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+/* --- the roster ----------------------------------------------------------- */
+
+.roster {
+  list-style: none;
+  margin: 0.25rem 0 0;
+  padding: 0;
+  display: grid;
+  gap: 0.25rem;
+}
+
+.roster__row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.35rem 0.35rem 0.35rem 0.75rem;
+  border-radius: 0.6rem;
+  background: var(--surface);
+}
+
+.roster__seed {
+  min-width: 1.5rem;
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.roster__name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.roster__remove {
+  min-width: 44px;
+  min-height: 44px;
+  border: 0;
+  background: none;
+  color: var(--muted);
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+/* --- courts --------------------------------------------------------------- */
+
+.stepper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1.5rem;
+  padding: 0.5rem 0;
+}
+
+.stepper__button {
+  width: 56px;
+  height: 56px;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.stepper__button:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.stepper__value {
+  min-width: 2ch;
+  text-align: center;
+  font-size: 2.5rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.courts {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.4rem;
+}
+
+/* --- format presets ------------------------------------------------------- */
+
+.presets {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.preset {
+  position: relative;
+  display: grid;
+  gap: 0.3rem;
+  padding: 1rem;
+  border: 1px solid var(--line);
+  border-radius: 0.9rem;
+  background: var(--surface);
+  cursor: pointer;
+}
+
+/* The radio stays in the DOM and stays focusable — it is what makes arrow
+   keys work in the group — but the whole card is the target. */
+.preset input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.preset:has(input:focus-visible) {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.preset.is-selected {
+  border-color: var(--accent);
+  background: var(--surface-2);
+}
+
+.preset.is-disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.preset__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.preset__title {
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+.preset__tag {
+  padding: 0.15rem 0.5rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--muted);
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+}
+
+.preset.is-selected .preset__tag {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.preset__cost {
+  color: var(--accent);
+  font-size: 0.95rem;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+}
+
+.preset__shape {
+  color: var(--text);
+  font-size: 0.85rem;
+}
+
+.preset__blurb {
+  color: var(--muted);
+  font-size: 0.8rem;
+  line-height: 1.45;
+}
+
+/* --- the link and the code ------------------------------------------------ */
+
+.done {
+  min-height: 100%;
+  max-width: 32rem;
+  margin: 0 auto;
+  display: grid;
+  align-content: start;
+  justify-items: center;
+  gap: 0.9rem;
+  padding: calc(env(safe-area-inset-top) + 2rem) 1.25rem
+    calc(2rem + env(safe-area-inset-bottom));
+  text-align: center;
+}
+
+.done__eyebrow {
+  margin: 0;
+  color: var(--accent);
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+}
+
+.done__title {
+  margin: 0 0 0.5rem;
+  font-size: 1.75rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+/* White, always. A QR inverted into the dark palette scans on about half the
+   phones in a hall — which is the worst kind of bug, because it works when
+   you test it. */
+.done__qr {
+  width: min(17rem, 72vw);
+  padding: 0.75rem;
+  border-radius: 1rem;
+  background: #fff;
+  line-height: 0;
+}
+
+.done__qr svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.done__caption {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.done__link {
+  width: 100%;
+  max-width: 26rem;
+  display: grid;
+  gap: 0.2rem;
+  padding: 0.75rem 1rem;
+  border: 1px dashed var(--line);
+  border-radius: 0.75rem;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+}
+
+.done__link span {
+  font-family: var(--numeric);
+  font-size: 0.9rem;
+  word-break: break-all;
+}
+
+.done__link small {
+  color: var(--muted);
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.done__actions {
+  width: 100%;
+  max-width: 26rem;
+  display: grid;
+  gap: 0.4rem;
+  margin-top: 0.5rem;
+}
+
+.done__warning {
+  max-width: 26rem;
+  margin: 0.5rem 0 0;
+  color: var(--muted);
+  font-size: 0.8rem;
+  line-height: 1.5;
+}
+
+.landing__cta {
+  width: min(22rem, 100%);
+  margin-top: 0.5rem;
+}
+
+.landing__divider {
+  margin-top: 1.5rem;
+  font-size: 0.8rem;
+}

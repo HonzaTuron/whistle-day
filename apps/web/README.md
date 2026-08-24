@@ -1,12 +1,13 @@
 # @seedly/web
 
-Two public screens, one data source.
+Two public screens and the wizard that fills them.
 
 | Route | For |
 |---|---|
+| `/new` | The organiser setting a tournament up, on a phone, in a hall. |
 | `/display/:token` | The projector: unattended, rotates itself, read from across a hall. |
 | `/m/:token` | A phone: held by one person looking for one thing. |
-| `/` | Paste a token to open either. |
+| `/` | Start a tournament, or paste a token to open a screen. |
 
 ## Why two routes and not one responsive layout
 
@@ -43,7 +44,35 @@ bun run seed       # terminal 2 — a tournament worth looking at
 bun run web        # terminal 3 — http://localhost:5173
 ```
 
-Then open `http://localhost:5173/display/hala-1` or `/m/hala-1`.
+Then open `http://localhost:5173/display/hala-1` or `/m/hala-1` — or
+`/new` to set a tournament up from scratch.
+
+## Setting a tournament up
+
+`/new` is four questions and a QR code: a name, the teams one at a time, how
+many courts, and how the day should run. Three things about it are worth
+knowing before changing it.
+
+**The account is created behind the organiser's back.** Every write rule needs
+`@request.auth.id`, and a signup form in front of someone holding a clipboard
+in a sports hall is where the product would lose them. So `api/organiser.ts`
+creates a user with a random address and password and keeps both in
+localStorage. It follows that the device is the credential: clear the site data
+and the tournament stays live but becomes uneditable. Claiming it with a real
+email is the obvious next screen.
+
+**It writes as it goes.** The tournament exists as a `draft` from the second
+screen onwards, and every team is saved as it is typed. Twenty names held in a
+tab that a locked screen can discard is a betrayal that only shows up at the
+worst possible moment. A draft answers 404 on `/api/display/{token}`, so
+nothing half-built can reach a projector, and the draft id on the device is
+what lets the first screen offer to pick it up again.
+
+**The format screen asks about time, not about pools.** The three presets in
+`lib/presets.ts` are quoted in matches and hours against the teams and courts
+actually entered, because "16 matches, about three hours" is the decision an
+organiser is really making. Pool counts and advancement are derived from the
+team count.
 
 ## Notes on the projector
 

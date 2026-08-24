@@ -3,9 +3,11 @@
 Tournament organiser with arbitrary stage ordering — groups, playoff, Swiss, in
 any sequence — and a public projector view.
 
-**Status: backend and both public screens work end to end.** Generate a group
-stage, play it, and the playoff seeded from it fills itself in — on the wall and
-on a phone. The organiser UI is not built yet.
+**Status: a tournament can be set up on a phone and put on the wall.** Name it,
+add the teams one by one, pick how the day should run, and you get a link and a
+QR code. Generate a group stage, play it, and the playoff seeded from it fills
+itself in — on the wall and on a phone. Entering results still happens over the
+REST API; that screen is not built yet.
 
 ```
 seedly/
@@ -52,6 +54,7 @@ bun run seed       # a demo tournament: 8 teams, groups, a live semi-final
 bun run web        # screens on :5173
 ```
 
+- Set one up — <http://localhost:5173/new>
 - Projector — <http://localhost:5173/display/hala-1>
 - Phone — <http://localhost:5173/m/hala-1>
 
@@ -61,6 +64,7 @@ Re-running `bun run seed` replaces the demo rather than adding a second one.
 
 | Route | For |
 |---|---|
+| `/new` | The organiser: name, teams, courts, format, and a link for the wall. |
 | `/display/:token` | The projector: unattended, rotates itself, read from across a hall. |
 | `/m/:token` | A phone: tabs, scrolling, one person looking for one thing. |
 
