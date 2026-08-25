@@ -1,5 +1,5 @@
 /**
- * Three ways to run a day, and what each one costs in matches.
+ * The ways to run a day, and what each one costs in matches.
  *
  * The wizard never asks "how many pools" or "how many advance" — those are
  * answers to a question an organiser has not asked yet. It asks how long the
@@ -11,11 +11,11 @@
  * launch, in `lib/launch.ts`.
  */
 
-export type PresetId = "knockout" | "double" | "groups" | "everyone";
+export type PresetId = "knockout" | "double" | "groups" | "swiss" | "everyone";
 
 export interface StageSpec {
   name: string;
-  format: "round_robin" | "single_elim" | "double_elim";
+  format: "round_robin" | "single_elim" | "double_elim" | "swiss";
   config: Record<string, unknown>;
   /**
    * A playoff is seeded from the stage before it. The id does not exist until
@@ -59,6 +59,15 @@ function poolSizes(teams: number): number[] {
  * bracket size, plus the third-place match when there are semi-finals.
  */
 const knockoutMatches = (teams: number) => Math.max(teams - 1, 0) + (teams >= 4 ? 1 : 0);
+
+/**
+ * Swiss rounds: ceil(log2(teams)), the fewest that can leave one team
+ * unbeaten, never below three and never above what there are opponents for.
+ * It has to agree with swissRoundCount in backend/internal/tournament/swiss.go,
+ * or the day would be a round longer than the screen said it would be.
+ */
+export const swissRounds = (teams: number) =>
+  Math.min(Math.max(3, Math.ceil(Math.log2(Math.max(teams, 2)))), Math.max(teams - 1, 1));
 
 const roundName = (teams: number) =>
   teams <= 2 ? "a final" :
@@ -129,6 +138,33 @@ export const PRESETS: Preset[] = [
         config: { thirdPlace: true },
         seedFromPrevious: true,
         advancePerPool: 2,
+      },
+    ],
+  },
+  {
+    id: "swiss",
+    title: "Swiss rounds",
+    tag: "Big fields",
+    blurb:
+      "No groups and nobody knocked out. Everyone plays the same number of matches, each one against a team on the same record — win and you meet a winner, lose and you meet somebody who lost. The table sorts itself out, and the top four play it off.",
+    minTeams: 8,
+    shape: (teams) =>
+      `${plural(swissRounds(teams), "round")} for all ${teams}, then semi-finals for the top four`,
+    // Each round is half the field, rounded down: an odd team sits out and
+    // takes the win for it.
+    matches: (teams) => swissRounds(teams) * Math.floor(teams / 2) + knockoutMatches(4),
+    stages: (teams) => [
+      {
+        name: "Swiss",
+        format: "swiss",
+        config: { rounds: swissRounds(teams), advancePerPool: 4 },
+      },
+      {
+        name: "Playoff",
+        format: "single_elim",
+        config: { thirdPlace: true },
+        seedFromPrevious: true,
+        advancePerPool: 4,
       },
     ],
   },

@@ -81,11 +81,12 @@ worst possible moment. A draft answers 404 on `/api/display/{token}`, so
 nothing half-built can reach a projector, and the draft id on the device is
 what lets the first screen offer to pick it up again.
 
-**The format screen asks about time, not about pools.** The three presets in
+**The format screen asks about time, not about pools.** The presets in
 `lib/presets.ts` are quoted in matches and hours against the teams and courts
 actually entered, because "16 matches, about three hours" is the decision an
-organiser is really making. Pool counts and advancement are derived from the
-team count.
+organiser is really making. Pool counts, Swiss rounds and advancement are
+derived from the team count, and a preset only appears once there are enough
+teams for it to mean anything.
 
 ## Entering results
 
