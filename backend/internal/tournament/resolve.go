@@ -100,6 +100,11 @@ func afterFixtureWrite(app core.App, fixture *core.Record, previousStatus string
 	if err := ComputeStandings(app, stageID); err != nil {
 		return err
 	}
+	// A Swiss stage draws its next round here: it is a function of the table,
+	// so this is the first moment the table it depends on exists.
+	if _, err := PairNextRound(app, stageID); err != nil {
+		return err
+	}
 	_, err := ResolvePoolRanks(app, stageID)
 	return err
 }

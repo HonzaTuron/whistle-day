@@ -63,11 +63,13 @@ type SeedSource struct {
 }
 
 type StageConfig struct {
-	PoolCount      int         `json:"poolCount"`
-	AdvancePerPool int         `json:"advancePerPool"`
-	Legs           int         `json:"legs"`
-	ThirdPlace     bool        `json:"thirdPlace"`
-	SeedFrom       *SeedSource `json:"seedFrom"`
+	PoolCount      int  `json:"poolCount"`
+	AdvancePerPool int  `json:"advancePerPool"`
+	Legs           int  `json:"legs"`
+	ThirdPlace     bool `json:"thirdPlace"`
+	// swiss. Zero means "work it out from the number of entries".
+	Rounds   int         `json:"rounds"`
+	SeedFrom *SeedSource `json:"seedFrom"`
 }
 
 func stageConfig(stage *core.Record) (StageConfig, error) {
@@ -495,6 +497,8 @@ func PlanStage(app core.App, stage *core.Record) (*StagePlan, error) {
 	switch format {
 	case "round_robin":
 		return PlanRoundRobin(ids, cfg), nil
+	case "swiss":
+		return PlanSwiss(ids, cfg), nil
 	case "single_elim", "double_elim":
 		seeds := make([]bracketSeed, len(ids))
 		for i, id := range ids {

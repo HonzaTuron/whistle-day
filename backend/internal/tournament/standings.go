@@ -98,7 +98,34 @@ func ComputeStandings(app core.App, stageID string) error {
 	})
 }
 
+// allRounds asks tallyPool for the table as it finally stands, as opposed to
+// as it stood at the end of some round.
+const allRounds = math.MaxInt
+
 func computePoolTable(app core.App, stage, pool *core.Record, cfg ScoringConfig) error {
+	rows, played, err := tallyPool(app, stage, pool, cfg, allRounds)
+	if err != nil {
+		return err
+	}
+	rankGroup(rows, cfg.Tiebreakers, 0, played)
+
+	advance := pool.GetInt("advance_count")
+	return writeTable(app, stage.Id, pool.Id, rows, advance)
+}
+
+// tallyPool builds one pool's rows from the fixtures that have been played in
+// it, in slot order and unranked. It also returns those fixtures, which is what
+// the head-to-head tiebreak reads.
+//
+// throughRound stops the tally at a round: `allRounds` counts everything, 1
+// gives the table as it stood at the end of round 2, and anything negative
+// gives everybody nothing. The Swiss pairing needs those, because a round has
+// to be drawn from the rounds behind it and never from a table that already
+// includes the round being drawn — which, once the bye in it has settled
+// itself, would redraw the round it is standing in, for ever.
+func tallyPool(
+	app core.App, stage, pool *core.Record, cfg ScoringConfig, throughRound int,
+) ([]*standingRow, []*core.Record, error) {
 	// The participant set comes from the slots, not the fixtures, so an entry
 	// that has not played yet still appears in the table on zero.
 	slots, err := app.FindRecordsByFilter(
@@ -106,7 +133,7 @@ func computePoolTable(app core.App, stage, pool *core.Record, cfg ScoringConfig)
 		dbx.Params{"pool": pool.Id},
 	)
 	if err != nil {
-		return err
+		return nil, nil, err
 	}
 
 	rows := map[string]*standingRow{}
@@ -132,14 +159,34 @@ func computePoolTable(app core.App, stage, pool *core.Record, cfg ScoringConfig)
 		dbx.Params{"pool": pool.Id},
 	)
 	if err != nil {
-		return err
+		return nil, nil, err
 	}
+
+	// A bye counts for nothing in a bracket and for a win in a Swiss. The two
+	// byes look identical in the database and mean opposite things: one is a
+	// free pass to the next round, the other IS the round, and scoring it zero
+	// would drop whoever sat out to the bottom of the table for having been
+	// odd one out.
+	swissBye := stage.GetString("format") == "swiss"
 
 	played := make([]*core.Record, 0, len(fixtures))
 	for _, f := range fixtures {
+		if f.GetInt("round") > throughRound {
+			continue
+		}
 		status := f.GetString("status")
-		// A bye is deliberately excluded: it is settled, but nobody played it,
-		// so counting it would give a team a win for an empty half of a draw.
+
+		if status == "bye" {
+			if !swissBye {
+				continue
+			}
+			// Not appended to `played`: there is no opponent in it, so
+			// head-to-head has nothing to read from it either way.
+			if row := rows[f.GetString("winner")]; row != nil {
+				accumulateBye(row, cfg)
+			}
+			continue
+		}
 		if status != "finished" && status != "walkover" {
 			continue
 		}
@@ -159,7 +206,7 @@ func computePoolTable(app core.App, stage, pool *core.Record, cfg ScoringConfig)
 
 		subHome, subAway, err := gameTotals(app, f.Id)
 		if err != nil {
-			return err
+			return nil, nil, err
 		}
 		home.SubFor += subHome
 		home.SubAgainst += subAway
@@ -171,10 +218,20 @@ func computePoolTable(app core.App, stage, pool *core.Record, cfg ScoringConfig)
 	for _, id := range order {
 		ranked = append(ranked, rows[id])
 	}
-	rankGroup(ranked, cfg.Tiebreakers, 0, played)
+	return ranked, played, nil
+}
 
-	advance := pool.GetInt("advance_count")
-	return writeTable(app, stage.Id, pool.Id, ranked, advance)
+// accumulateBye credits the entry that sat a Swiss round out.
+//
+// It is a win on the sheet and nothing else: the points for a win, the round
+// counted as played, and cfg.WalkoverScore as a nominal score, which is 0
+// unless a rulebook says an unplayed win is 2-0. Nobody is charged the goals
+// against, because nobody was there to concede them.
+func accumulateBye(row *standingRow, cfg ScoringConfig) {
+	row.Played++
+	row.Won++
+	row.Points += cfg.PointsWin
+	row.ScoreFor += cfg.WalkoverScore
 }
 
 // accumulateWalkover awards a match nobody played.
@@ -448,7 +505,19 @@ func PoolComplete(app core.App, poolID string) (bool, error) {
 			return false, nil
 		}
 	}
-	return true, nil
+
+	// A Swiss pool holds only the rounds drawn so far, so "every fixture is
+	// settled" is true after round one and means nothing. Its table is final
+	// once the rounds it owes have all been drawn AND played.
+	pool, err := app.FindRecordById("pools", poolID)
+	if err != nil {
+		return false, err
+	}
+	outstanding, err := SwissRoundsOutstanding(app, pool)
+	if err != nil {
+		return false, err
+	}
+	return !outstanding, nil
 }
 
 // ResolvePoolRanks fills in every slot that waits on a table position in one of

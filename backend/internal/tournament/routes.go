@@ -38,6 +38,42 @@ func RegisterRoutes(app core.App) {
 			})
 		}).Bind(apis.RequireAuth())
 
+		// Draw a Swiss stage's next round.
+		//
+		// Rounds normally draw themselves: entering the last result of a round
+		// is what produces the next one. This is the repair path — the same
+		// thing /resolve is for a bracket — and it is idempotent, because the
+		// pairing depends only on rounds that are complete.
+		se.Router.POST("/api/stages/{stage}/pair", func(e *core.RequestEvent) error {
+			stageID := e.Request.PathValue("stage")
+
+			stage, err := e.App.FindRecordById("stages", stageID)
+			if err != nil {
+				return e.NotFoundError("stage not found", err)
+			}
+			if err := requireStaff(e, stage.GetString("tournament")); err != nil {
+				return err
+			}
+			if stage.GetString("format") != "swiss" {
+				return e.BadRequestError("only a Swiss stage draws rounds as it goes", nil)
+			}
+
+			drawn, err := PairNextRound(e.App, stage.Id)
+			if err != nil {
+				return e.InternalServerError("pairing failed", err)
+			}
+
+			return e.JSON(http.StatusOK, map[string]any{
+				"stage": stage.Id,
+				// -1 when there was nothing to draw: the round in progress is
+				// not finished, or the stage has played out.
+				"round": drawn.Round,
+				// True when the field ran out of fresh opponents and the round
+				// repeats a meeting. Nothing is wrong; somebody should know.
+				"rematch": drawn.Rematch,
+			})
+		}).Bind(apis.RequireAuth())
+
 		// Generate a stage's pools, slots and fixtures.
 		//
 		// ?dry_run=1 returns the plan without writing anything, which is how

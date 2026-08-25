@@ -142,7 +142,11 @@ export interface StageConfig {
   /** single_elim / double_elim */
   thirdPlace?: boolean;
   consolation?: boolean;
-  /** swiss */
+  /**
+   * swiss — how many rounds everybody plays. Omitted means ceil(log2(teams)),
+   * worked out by the server. Only round one is generated up front; the rest
+   * are drawn as the results come in.
+   */
   rounds?: number;
   /** Seed this stage from an earlier stage's tables. */
   seedFrom?: SeedSource;
@@ -384,6 +388,19 @@ export interface StagePlan {
   pools: PoolDraft[];
   slots: SlotDraft[];
   fixtures: FixtureDraft[];
+}
+
+/** The wire format of POST /api/stages/{stage}/pair. */
+export interface PairResponse {
+  stage: Id;
+  /** The round drawn, or -1 when there was nothing to draw. */
+  round: number;
+  /**
+   * The field ran out of fresh opponents and this round repeats a meeting.
+   * Nothing is wrong — it is what happens when a Swiss runs long against a
+   * small field — but somebody should be told.
+   */
+  rematch: boolean;
 }
 
 export interface GenerateDryRunResponse {

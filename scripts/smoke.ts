@@ -722,6 +722,169 @@ try {
   check("every match with two teams in it was played", matchesPlayed, 10);
   check("which is the whole bracket", byes.length + matchesPlayed, 14);
 
+  // =====================================================================
+  console.log("\n14. a Swiss stage draws its own rounds as the results come in");
+  // =====================================================================
+  // Nine teams, so somebody sits out every round — and a Swiss bye is the
+  // opposite of a bracket bye: it is the round, so it has to score.
+  const swissCup = await create("tournaments", {
+    name: "Swiss Cup",
+    slug: `swiss-${Date.now()}`,
+    status: "published",
+    owner: organiser.id,
+    scoring: { pointsWin: 3, pointsDraw: 1, pointsLoss: 0 },
+  });
+  const swissTeams: Record<string, string> = {};
+  for (let i = 1; i <= 9; i++) {
+    const record = await create("entries", {
+      tournament: swissCup.id, name: `S${i}`, seed: i, status: "active",
+    });
+    swissTeams[record.id] = `S${i}`;
+  }
+  const swissName = (id: string) => (id ? swissTeams[id] ?? "?" : "bye");
+
+  const swissStage = await create("stages", {
+    tournament: swissCup.id, position: 0, name: "Swiss",
+    // No rounds configured: ceil(log2(9)) = 4 is worked out from the field.
+    format: "swiss", status: "draft", config: { advancePerPool: 4 },
+  });
+  const swissPlan = await api("POST", `/api/stages/${swissStage.id}/generate`);
+
+  check("a Swiss stage is one table", swissPlan.pools, 1);
+  check("with a slot each, plus the empty chair", swissPlan.slots, 10);
+  check("and only round one drawn", swissPlan.fixtures, 5);
+
+  const swissFixtures = async () =>
+    (await api("GET",
+      `/api/collections/fixtures/records?filter=(stage='${swissStage.id}')&sort=round,position&perPage=100`)
+    ).items;
+
+  const roundPairs = (fixtures: any[], round: number) =>
+    fixtures
+      .filter((f: any) => f.round === round)
+      .map((f: any) => `${swissName(f.home_entry)}-${swissName(f.away_entry)}`);
+
+  // Round one has no table to read, so the fold runs on the seeding alone:
+  // the top half meets the bottom half in order, and the seed nobody is left
+  // to play sits out.
+  check("round one folds the seeding",
+    roundPairs(await swissFixtures(), 0),
+    ["S1-S5", "S2-S6", "S3-S7", "S4-S8", "S9-bye"]);
+
+  const swissPool = (await api(
+    "GET", `/api/collections/pools/records?filter=(stage='${swissStage.id}')`)).items[0];
+  const swissTable = async () =>
+    (await api("GET",
+      `/api/collections/standings/records?filter=(pool='${swissPool.id}')&sort=position`)).items;
+
+  check("the team that sat out is credited with the win, not punished for it",
+    (await swissTable()).find((r: any) => swissName(r.entry) === "S9").points, 3);
+
+  // A playoff hangs off the table. It must stay empty until the Swiss has
+  // played every round it owes — "all its fixtures are settled" is true after
+  // round one and means nothing here.
+  const swissPlayoff = await create("stages", {
+    tournament: swissCup.id, position: 1, name: "Playoff",
+    format: "single_elim", status: "draft",
+    config: { seedFrom: { stage: swissStage.id, advancePerPool: 4 }, thirdPlace: true },
+  });
+  await api("POST", `/api/stages/${swissPlayoff.id}/generate`);
+  const playoffSemis = async () =>
+    (await api("GET",
+      `/api/collections/fixtures/records?filter=(stage='${swissPlayoff.id}'%26%26round=0)&sort=position`)).items;
+
+  const playRound = async (round: number) => {
+    for (const f of (await swissFixtures()).filter((x: any) => x.round === round)) {
+      if (f.status === "bye") continue;
+      await patch("fixtures", f.id, {
+        status: "finished", home_score: 2, away_score: 0,
+      });
+    }
+  };
+
+  await playRound(0);
+
+  check("the top four are not promoted off one round",
+    (await playoffSemis()).every((f: any) => f.home_entry === "" && f.away_entry === ""),
+    true);
+
+  let drawn = await swissFixtures();
+  check("finishing round one draws round two", roundPairs(drawn, 1).length, 5);
+
+  // Everyone who won plays somebody who won. The one exception is the odd
+  // score group's bottom team, which floats down a group to find an opponent.
+  const winsAfterRoundOne: Record<string, number> = {};
+  for (const row of await swissTable()) winsAfterRoundOne[swissName(row.entry)] = row.won;
+  const mismatched = drawn
+    .filter((f: any) => f.round === 1 && f.away_entry !== "")
+    .filter((f: any) =>
+      winsAfterRoundOne[swissName(f.home_entry)] !== winsAfterRoundOne[swissName(f.away_entry)]);
+  check("round two pairs like with like, bar one float", mismatched.length <= 1, true);
+
+  // A result corrected while the next round is still unplayed redraws it: the
+  // table it was drawn from was wrong.
+  const beforeCorrection = roundPairs(drawn, 1).sort().join(",");
+  const upset = drawn.find((f: any) => f.code === "R1.1");
+  await patch("fixtures", upset.id, {
+    status: "finished", home_score: 0, away_score: 2,
+  });
+  drawn = await swissFixtures();
+  check("correcting a result redraws the round it fed",
+    roundPairs(drawn, 1).sort().join(",") !== beforeCorrection, true);
+  check("and the redrawn round is still a full one", roundPairs(drawn, 1).length, 5);
+
+  // A round that carries history is never redrawn, even when the fixtures look
+  // untouched. A score entered and then taken back off is a match that was
+  // almost certainly played, and redrawing over it would delete the log of it
+  // along with the fixture.
+  const scratched = (await swissFixtures()).find((f: any) => f.round === 1 && f.away_entry !== "");
+  await patch("fixtures", scratched.id, { status: "finished", home_score: 2, away_score: 1 });
+  await patch("fixtures", scratched.id, { status: "ready" });
+
+  const settledRound = roundPairs(await swissFixtures(), 1).sort().join(",");
+  const secondUpset = (await swissFixtures()).find((f: any) => f.code === "R1.2");
+  await patch("fixtures", secondUpset.id, {
+    status: "finished", home_score: 0, away_score: 2,
+  });
+  check("a round somebody has already scored is left alone",
+    roundPairs(await swissFixtures(), 1).sort().join(","), settledRound);
+
+  for (let round = 1; round < 4; round++) {
+    await playRound(round);
+  }
+
+  const swissPlayed = await swissFixtures();
+  const rounds = new Set(swissPlayed.map((f: any) => f.round));
+  check("four rounds were drawn in all", rounds.size, 4);
+  check("five matches in each", swissPlayed.length, 20);
+  check("and nothing is still waiting",
+    swissPlayed.filter((f: any) => !["finished", "walkover", "bye"].includes(f.status)).length,
+    0);
+
+  // The one hard constraint. Everything else in the pairing is a preference.
+  const meetings = swissPlayed
+    .filter((f: any) => f.away_entry !== "")
+    .map((f: any) => [swissName(f.home_entry), swissName(f.away_entry)].sort().join("-"));
+  check("nobody played the same opponent twice",
+    meetings.length, new Set(meetings).size);
+
+  const satOut = swissPlayed.filter((f: any) => f.status === "bye").map((f: any) => swissName(f.winner));
+  check("a different team sat out each round", satOut.length, new Set(satOut).size);
+
+  const finalTable = await swissTable();
+  check("everybody played every round",
+    finalTable.every((r: any) => r.played === 4), true);
+  check("the table qualifies exactly four",
+    finalTable.filter((r: any) => r.qualified).length, 4);
+
+  const swissSemis = await playoffSemis();
+  check("the played-out table promotes the top four",
+    swissSemis.flatMap((f: any) => [swissName(f.home_entry), swissName(f.away_entry)]).sort().join(","),
+    finalTable.slice(0, 4).map((r: any) => swissName(r.entry)).sort().join(","));
+  check("first plays fourth", 
+    [swissName(swissSemis[0].home_entry), swissName(swissSemis[0].away_entry)],
+    [swissName(finalTable[0].entry), swissName(finalTable[3].entry)]);
+
 } catch (error) {
   console.error("\nsmoke run threw:");
   console.error(error instanceof Error ? error.message : error);

@@ -7,7 +7,7 @@ any sequence — and a public projector view.
 one, pick how the day should run, and you get a link and a QR code. Then run
 the day: put matches on courts, mark what is being played, and enter results as
 they come in. The tables rebuild, the playoff seeded from them fills itself in,
-and the wall keeps up on its own.
+the next Swiss round draws itself, and the wall keeps up on its own.
 
 ```
 seedly/
@@ -82,13 +82,15 @@ bun run check   # typecheck + go vet/test + smoke
 | Command | What it covers |
 |---|---|
 | `bun run typecheck` | TypeScript 7 |
-| `bun run pb:test` | `go vet` + 22 unit tests: generators, tiebreaks, outcomes |
-| `bun run smoke` | 63 assertions against a real PocketBase on a temp data dir |
+| `bun run pb:test` | `go vet` + 51 unit tests: generators, pairing, tiebreaks, outcomes |
+| `bun run smoke` | 110 assertions against a real PocketBase on a temp data dir |
 
 The smoke run is the one that matters. It boots the server, generates a
 two-pool group stage and a playoff seeded from it, plays every group fixture
 over the REST API, and asserts that the tables, the bracket and the projector
-payload all come out right.
+payload all come out right. It then plays a double elimination and a Swiss
+stage out to the end, which is the only way to find out whether a bracket
+deadlocks or a round ever fails to draw itself.
 
 ## How a tournament runs
 
@@ -101,7 +103,8 @@ POST /api/stages/{groups}/generate             # commit it
 #    stages.config = { "seedFrom": { "stage": "<groups>", "advancePerPool": 2 } }
 POST /api/stages/{playoff}/generate
 
-# 3. play. Nothing else to call — closing a fixture does the rest.
+# 3. play. Nothing else to call — closing a fixture does the rest, including
+#    drawing the next round of a Swiss stage.
 #    This is the one write /t/:id makes.
 PATCH /api/collections/fixtures/records/{id}
       { "status": "finished", "home_score": 2, "away_score": 0 }
@@ -121,6 +124,7 @@ its final positions.
 |---|---|
 | `POST /api/stages/{stage}/generate` | Generate pools, slots and fixtures. `?dry_run=1` returns the plan without writing, so preview and commit run the same generator. Refuses to overwrite played fixtures. |
 | `POST /api/stages/{stage}/resolve` | Re-resolve a stage. The repair path for corrected scores and for slots written after the fixture they source from. Idempotent. |
+| `POST /api/stages/{stage}/pair` | Draw a Swiss stage's next round. Normally unnecessary — finishing a round is what draws the next one — so this is the repair path. Idempotent; answers `{"round": -1}` when there is nothing to draw, and `rematch: true` when the field had run out of fresh opponents. |
 | `GET /api/display/{token}` | The whole projector screen in one response. Public — the token is the only credential. Poll it with `If-None-Match`; an unchanged tournament answers 304. |
 
 ## Behaviour worth knowing about
@@ -132,6 +136,16 @@ its final positions.
 - **Byes settle themselves.** A fixture whose opponent slot is a *declared* bye
   is decided as soon as the other side is known. A slot merely waiting on an
   earlier result looks identical, so the distinction is explicit.
+- **A Swiss round draws itself when the one before it finishes**, from the
+  table as it stood at that moment and never from the round being drawn. Only
+  round one is written up front, because the rest of them are not knowable yet.
+  Correcting a result redraws the round it fed — but only while nothing from
+  that round onwards has been played, since matches cannot be unplayed to match
+  a corrected table.
+- **A Swiss bye scores; a bracket bye does not.** They are the same record and
+  mean opposite things: a free pass to the next round, versus the round itself.
+  Scoring the second one zero would send whoever sat out to the bottom of the
+  table for having been the odd one out, so it takes the points for a win.
 - **Playoff slots wait for a complete pool.** A table is provisional until
   every fixture in the pool is settled, and promoting a provisionally-first
   team into the bracket would be the worst bug this system could have.
@@ -151,8 +165,8 @@ a draw without a round trip. They are now Go only, and preview goes through
 
 ## What is not built yet
 
-1. **Swiss pairing** and **double elimination** generators. The model is ready
-   (`pools.kind` has `winners`/`losers`); the code is not.
+1. **Ladder.** `stages.format` accepts it and nothing generates it. Round
+   robin, single and double elimination and Swiss all do.
 2. **`stage_rank` slot resolution.** `pool_rank` works. `stage_rank` needs a
    stage-wide table, which does not exist yet — pools are ranked, stages are
    not.

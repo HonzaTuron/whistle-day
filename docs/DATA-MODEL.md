@@ -91,6 +91,48 @@ Qualifiers are ordered by rank first, then by pool — A1 B1 C1 D1 A2 B2 C2 D2 �
 which, combined with standard bracket seeding, guarantees no two entries from
 the same pool meet in round 1.
 
+## The one format that cannot be written up front
+
+A bracket and a round robin are generated once and played to the end. A Swiss
+round is a function of the table, and the table is a function of the rounds
+already played — so `PlanSwiss` writes one pool, one slot per entry and round
+one, and stops. The rest is drawn by `PairNextRound` as the results come in,
+off the back of the same hook that rebuilds the tables.
+
+Three consequences, all in `backend/internal/tournament/swiss.go`:
+
+- **A round is drawn from the rounds behind it, never from the one it is in.**
+  The pairing reads the table as it stood at the end of the last complete
+  round, which makes it a pure function of finished rounds — so drawing it
+  twice produces the same round twice. That matters more than it sounds: an
+  odd field means a bye, a bye settles itself the instant it is written, and
+  that write re-enters the hook that draws rounds. Let the table include the
+  round being drawn and the stage redraws itself for ever.
+- **Avoiding a rematch is the hard constraint; the fold is the preference.**
+  Each score group is split in half and the top half plays the bottom half,
+  with an odd group floating its last team down. Where that repeats a meeting
+  the pair is transposed, and where a whole group is stuck the search
+  backtracks into the groups above it. A repeat is only allowed once no
+  rematch-free round exists at all, and the pairing says so when it happens.
+- **A Swiss bye is not a bracket bye.** They are the same record — settled,
+  one side empty — and mean opposite things. In a bracket it is a free pass to
+  the next round and counts for nothing, which is why the tables skip it. In a
+  Swiss it *is* the round, and scoring it zero would drop whoever sat out to
+  the bottom for having been the odd one out, so it takes the points for a
+  win. `standings.go` tells them apart by the stage's format, and the bye goes
+  to the lowest-ranked team that has not already had one.
+
+The knock-on for slot resolution is that **a Swiss pool is not complete when
+its fixtures are.** After round one every fixture in it is settled and the pool
+still owes three rounds; `PoolComplete` therefore also asks whether the rounds
+have all been drawn, or a playoff seeded from the table would take the top four
+of a table two rounds short.
+
+A round already on the wall is redrawn when a result behind it is corrected —
+but only while neither it nor anything after it has been played. A corrected
+score has to produce the table it would have produced at the time; matches
+already played cannot be unplayed to match it.
+
 ## Deliberate impurities
 
 **`fixtures.home_entry` / `away_entry` are denormalised from the slots.**
@@ -113,8 +155,9 @@ Three consequences of how ranking works, in `backend/internal/tournament/standin
   hours later has to yield the same table as if it had been right the first
   time, and incremental accumulation is precisely where that guarantee breaks.
 - **A walkover is an outcome without a score.** The table counts `finished`
-  and `walkover` and deliberately skips `bye`: a bye is settled, but nobody
-  played it. The organiser names the winner, who takes the points for a win and
+  and `walkover` and skips `bye` — a bye is settled, but nobody played it —
+  except in a Swiss stage, where the bye *is* somebody's round and scores as a
+  win. The organiser names the winner, who takes the points for a win and
   `scoring.walkoverScore` (0 by default) as a nominal score — head-to-head
   therefore reads `winner` rather than comparing scores, or a walkover would
   rank as a draw between the team that turned up and the team that did not.
@@ -199,8 +242,8 @@ to probe for unpublished events.
 - **`stage_rank` resolution.** `pool_rank` works. `stage_rank` needs a
   stage-wide table across pools, which nothing computes — pools are ranked,
   stages are not.
-- **Swiss pairing** and **double elimination** generators. `pools.kind` already
-  has `winners`/`losers`; the code does not exist.
+- **The ladder generator.** `stages.format` accepts `ladder` and nothing
+  builds one. Round robin, single and double elimination and Swiss all do.
 - **Schedule conflicts are a warning, not a constraint.** The organiser screen
   says when a team is already down for another match within the hour and a
   half; the database will happily store it either way.
