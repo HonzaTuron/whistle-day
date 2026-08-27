@@ -1,7 +1,7 @@
 import type { DisplayPayload } from "@seedly/engine";
 import { bracketStages, tablePools } from "../../lib/format";
 
-export type PanelKind = "now_playing" | "standings" | "bracket" | "next_up" | "results";
+export type PanelKind = "now_playing" | "standings" | "bracket" | "next_up" | "results" | "court_schedule" | "stage_progress";
 
 export interface Panel {
   kind: PanelKind;
@@ -50,6 +50,18 @@ export function buildPanels(payload: DisplayPayload): Panel[] {
       panels.push({ kind: "next_up", title: "Next up", index: 0 });
     }
   };
+  const addCourtSchedule = () => {
+    if (payload.courts.length > 0) {
+      panels.push({ kind: "court_schedule", title: "Court schedule", index: 0 });
+    }
+  };
+
+  const addStageProgress = () => {
+    if (payload.stages.length > 0) {
+      panels.push({ kind: "stage_progress", title: "Stage progress", index: 0 });
+    }
+  };
+
   const addResults = () => {
     if (payload.recent.length > 0) {
       panels.push({ kind: "results", title: "Latest results", index: 0 });
@@ -72,8 +84,16 @@ export function buildPanels(payload: DisplayPayload): Panel[] {
     case "results":
       addResults();
       break;
+    case "court_schedule":
+      addCourtSchedule();
+      break;
+    case "stage_progress":
+      addStageProgress();
+      break;
     default:
       addNowPlaying();
+      addStageProgress();
+      addCourtSchedule();
       addStandings();
       addBracket();
       addNextUp();

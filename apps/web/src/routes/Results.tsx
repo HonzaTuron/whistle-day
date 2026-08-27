@@ -15,6 +15,7 @@ import {
 } from "../api/organiser";
 import { FixtureRow } from "../components/results/FixtureRow";
 import { MatchSheet } from "../components/results/MatchSheet";
+import { StageProgress } from "../components/results/StageProgress";
 import { progress, sections, toRow } from "../lib/board";
 
 type Tab = "todo" | "done";
@@ -127,6 +128,8 @@ export function Results({ id }: { id: string }) {
           </Link>
         ) : null}
       </header>
+
+      <StageProgress stages={board.stages} pools={board.pools} fixtures={board.fixtures} />
 
       <nav className="results__tabs">
         <button

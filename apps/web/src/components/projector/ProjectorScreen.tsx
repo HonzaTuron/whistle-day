@@ -2,8 +2,10 @@ import { useEffect, useMemo, useState } from "react";
 import { useDisplayPayload } from "../../api/display";
 import { bracketStages, tablePools } from "../../lib/format";
 import { BracketPanel } from "./BracketPanel";
+import { CourtSchedulePanel } from "./CourtSchedulePanel";
 import { FixtureListPanel } from "./FixtureListPanel";
 import { NowPlayingPanel } from "./NowPlayingPanel";
+import { StageProgressPanel } from "./StageProgressPanel";
 import { StandingsPanel } from "./StandingsPanel";
 import { buildPanels } from "./panels";
 
@@ -129,5 +131,9 @@ function PanelBody({
       return (
         <FixtureListPanel payload={payload} fixtures={payload.recent} showScore />
       );
+    case "court_schedule":
+      return <CourtSchedulePanel payload={payload} />;
+    case "stage_progress":
+      return <StageProgressPanel payload={payload} />;
   }
 }
