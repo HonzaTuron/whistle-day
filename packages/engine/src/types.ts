@@ -324,7 +324,9 @@ export type DisplayMode =
   | "standings"
   | "schedule"
   | "now_playing"
-  | "results";
+  | "results"
+  | "court_schedule"
+  | "stage_progress";
 
 export interface Display {
   id: Id;
