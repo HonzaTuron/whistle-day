@@ -8,6 +8,7 @@ import (
 	"github.com/pocketbase/pocketbase"
 	"github.com/pocketbase/pocketbase/plugins/migratecmd"
 
+	"seedly/backend/internal/mcp"
 	"seedly/backend/internal/tournament"
 	_ "seedly/backend/migrations"
 )
@@ -25,6 +26,7 @@ func main() {
 	tournament.RegisterHooks(app)
 	tournament.RegisterHistory(app)
 	tournament.RegisterRoutes(app)
+	mcp.RegisterMCPServer(app)
 
 	if err := app.Start(); err != nil {
 		log.Fatal(err)
