@@ -2155,3 +2155,262 @@ th,
   font-family: var(--numeric);
   font-variant-numeric: tabular-nums;
 }
+
+/* ==========================================================================
+   Court schedule (projector)
+   ========================================================================== */
+
+.courtschedule {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(36vmin, 1fr));
+  gap: 2vmin;
+  align-content: center;
+  height: 100%;
+}
+
+.courtschedule__court {
+  background: var(--surface);
+  border: 0.2vmin solid var(--line);
+  border-radius: var(--radius);
+  padding: 1.8vmin;
+  display: grid;
+  gap: 0.8vmin;
+  align-content: start;
+}
+
+.courtschedule__court-name {
+  margin: 0;
+  font-size: 2vmin;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--accent);
+  padding-bottom: 0.6vmin;
+  border-bottom: 0.2vmin solid var(--line);
+}
+
+.courtschedule__matches {
+  display: grid;
+  gap: 0.6vmin;
+}
+
+.courtschedule__fixture {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.3vmin 1vmin;
+  padding: 0.8vmin 1vmin;
+  border-radius: 0.4vmin;
+  background: var(--surface-2);
+  font-size: 2.2vmin;
+}
+
+.courtschedule__fixture.is-live {
+  border-left: 0.4vmin solid var(--live);
+  background: color-mix(in srgb, var(--live) 8%, var(--surface));
+}
+
+.courtschedule__code {
+  color: var(--muted);
+  font-size: 1.5vmin;
+  letter-spacing: 0.06em;
+}
+
+.courtschedule__live {
+  font-size: 1.4vmin;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--live);
+}
+
+.courtschedule__teams {
+  display: contents;
+}
+
+.courtschedule__teams > span {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.courtschedule__teams > span:nth-child(1) {
+  text-align: left;
+}
+
+.courtschedule__teams > span:nth-child(3) {
+  text-align: right;
+}
+
+.courtschedule__teams .is-winner {
+  font-weight: 800;
+  color: var(--accent);
+}
+
+.courtschedule__vs {
+  text-align: center;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.courtschedule__fixture.is-live .courtschedule__vs {
+  color: var(--live);
+}
+
+/* ==========================================================================
+   Stage progress (projector)
+   ========================================================================== */
+
+.stageprogress {
+  display: grid;
+  gap: 3vmin;
+  align-content: center;
+  height: 100%;
+  max-width: 90vmin;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.stageprogress__stage {
+  display: grid;
+  gap: 1vmin;
+}
+
+.stageprogress__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+.stageprogress__name {
+  margin: 0;
+  font-size: 3.2vmin;
+  font-weight: 700;
+}
+
+.stageprogress__count {
+  font-size: 2.2vmin;
+  color: var(--muted);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.stageprogress__live {
+  color: var(--live);
+}
+
+.stageprogress__bar {
+  height: 2vmin;
+  border-radius: 999px;
+  background: var(--surface-2);
+  overflow: hidden;
+  position: relative;
+}
+
+.stageprogress__fill {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--accent);
+  transition: width 0.3s ease;
+}
+
+.stageprogress__livebar {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  background: var(--live);
+  border-radius: 999px;
+  transition: left 0.3s ease, width 0.3s ease;
+}
+
+.stageprogress__pools {
+  display: flex;
+  gap: 1.5vmin;
+  flex-wrap: wrap;
+}
+
+.stageprogress__pool {
+  font-size: 1.7vmin;
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  gap: 0.4vmin;
+}
+
+.stageprogress__pool small {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.stageprogress__qualified {
+  display: inline-grid;
+  place-items: center;
+  width: 1.8vmin;
+  height: 1.8vmin;
+  border-radius: 999px;
+  background: var(--accent);
+  color: #06210f;
+  font-size: 1.1vmin;
+  font-weight: 800;
+}
+
+/* ==========================================================================
+   Stage progress (organiser)
+   ========================================================================== */
+
+.prog {
+  display: grid;
+  gap: 0.5rem;
+  padding: 0 0.75rem 0.5rem;
+}
+
+.prog__stage {
+  display: grid;
+  gap: 0.3rem;
+}
+
+.prog__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+.prog__name {
+  font-size: 0.85rem;
+  font-weight: 650;
+}
+
+.prog__count {
+  font-size: 0.75rem;
+  color: var(--muted);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.prog__live {
+  color: var(--live);
+}
+
+.prog__bar {
+  height: 0.4rem;
+  border-radius: 999px;
+  background: var(--surface-2);
+  overflow: hidden;
+}
+
+.prog__fill {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--accent);
+  transition: width 0.3s ease;
+}
+
+.prog__pools {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.prog__pool {
+  font-size: 0.7rem;
+  color: var(--muted);
+}
