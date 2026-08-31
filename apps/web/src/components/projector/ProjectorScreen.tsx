@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useDisplayPayload } from "../../api/display";
 import { bracketStages, tablePools } from "../../lib/format";
 import { BracketPanel } from "./BracketPanel";
+import { BrandingPanel } from "./BrandingPanel";
 import { CourtSchedulePanel } from "./CourtSchedulePanel";
 import { FixtureListPanel } from "./FixtureListPanel";
 import { NowPlayingPanel } from "./NowPlayingPanel";
@@ -140,5 +141,7 @@ function PanelBody({
       const stage = payload.stages[panel.index];
       return stage ? <StageTablePanel payload={payload} stage={stage} /> : null;
     }
+    case "branding":
+      return <BrandingPanel payload={payload} />;
   }
 }

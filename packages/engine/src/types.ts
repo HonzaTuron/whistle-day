@@ -344,8 +344,29 @@ export interface Display {
   mode: DisplayMode;
   rotate_seconds: number;
   scope: { stage?: Id; pool?: Id; court?: Id };
-  theme: { accent?: string; logo?: string; sponsors?: string[] };
+  theme: DisplayTheme;
   active: boolean;
+}
+
+/**
+ * One sponsor slot on the projector's closing panel.
+ *
+ * `logo` is a URL; `name` is what the screen draws when there is no logo, and
+ * the image's alt text when there is. A slot with neither is dropped by the
+ * server — a blank box is not a sponsor.
+ */
+export interface DisplaySponsor {
+  name: string;
+  logo: string;
+  /** The line underneath — "Main partner", "Official ball". */
+  tier?: string;
+}
+
+export interface DisplayTheme {
+  accent?: string;
+  logo?: string;
+  /** Shown only while the tournament's owner has a subscription. */
+  sponsors?: DisplaySponsor[];
 }
 
 // ---------------------------------------------------------------------------
@@ -532,12 +553,6 @@ export interface DisplayStage {
   stage_table?: DisplayStanding[];
 }
 
-export interface DisplayTheme {
-  accent?: string;
-  logo?: string;
-  sponsors?: string[];
-}
-
 export interface DisplayPayload {
   generated_at: IsoDate;
   tournament: {
@@ -563,4 +578,11 @@ export interface DisplayPayload {
   now_playing: DisplayFixture[];
   next_up: DisplayFixture[];
   recent: DisplayFixture[];
+  /**
+   * The closing panel's sponsor slots, already filtered by what the
+   * tournament's owner is paying for: an unsubscribed tournament sends an
+   * empty list. The screen never learns anyone's plan, and there is nothing
+   * on this public endpoint for it to un-hide.
+   */
+  sponsors: DisplaySponsor[];
 }

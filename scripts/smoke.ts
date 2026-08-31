@@ -442,7 +442,14 @@ try {
     mode: "auto",
     rotate_seconds: 15,
     active: true,
-    theme: { accent: "#0a7" },
+    theme: {
+      accent: "#0a7",
+      sponsors: [
+        { name: "Hall Sponsor", logo: "https://example.test/hall.svg", tier: "Main partner" },
+        { name: "Ball Sponsor", logo: "" },
+        { name: "", logo: "" },
+      ],
+    },
   });
 
   // Public: no Authorization header at all.
@@ -495,6 +502,77 @@ try {
     headers: { "If-None-Match": etag as string },
   });
   check("a played fixture invalidates the tag", afterResult.status, 200);
+
+  // The sponsor slots are the one thing on this endpoint somebody pays for, so
+  // the gate has to hold from the outside: the screen is public, the plan is
+  // the owner's, and the only way to keep one off the other is to send
+  // nothing. `theme.sponsors` is set on this screen throughout — what changes
+  // below is only what the owner is paying for.
+  const sponsorsOf = async () =>
+    (await (await fetch(`${BASE}/api/display/${screenToken}`)).json()).sponsors;
+
+  check("a free tournament sends no sponsors", await sponsorsOf(), []);
+
+  const inAYear = new Date(Date.now() + 365 * 24 * 3600 * 1000)
+    .toISOString().replace("T", " ").replace(/\..*/, "Z");
+
+  await patch("users", organiser.id, { subscription_until: inAYear });
+  const paid = await sponsorsOf();
+  check("a subscription opens the slots", paid.length, 2);
+  check("and carries what the screen draws", paid[0].tier, "Main partner");
+  // Neither a logo nor a name is a blank box, not a sponsor.
+  check("an empty slot is dropped", paid.map((s: any) => s.name), ["Hall Sponsor", "Ball Sponsor"]);
+
+  await patch("users", organiser.id, { subscription_until: "2020-01-01 00:00:00Z" });
+  check("a lapsed subscription closes them again", await sponsorsOf(), []);
+
+  await patch("users", organiser.id, { subscription_until: inAYear });
+  check("and paying again reopens them", (await sponsorsOf()).length, 2);
+
+  // The fields live on a record their owner may write — that is what lets an
+  // organiser put their own email on a device account — so nothing but a hook
+  // stands between an account and a free upgrade.
+  const freeloader = {
+    email: `freeloader-${Date.now()}@example.com`,
+    password: "long-enough",
+  };
+  const signup = await fetch(`${BASE}/api/collections/users/records`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      email: freeloader.email,
+      password: freeloader.password,
+      passwordConfirm: freeloader.password,
+      subscription_until: inAYear,
+    }),
+  });
+  check(
+    "signing up asking for a subscription does not grant one",
+    (await signup.json()).subscription_until,
+    "",
+  );
+
+  const freeloaderAuth = await api("POST", "/api/collections/users/auth-with-password", {
+    identity: freeloader.email, password: freeloader.password,
+  });
+  const asFreeloader = (body: unknown) =>
+    fetch(`${BASE}/api/collections/users/records/${freeloaderAuth.record.id}`, {
+      method: "PATCH",
+      headers: {
+        "content-type": "application/json",
+        Authorization: freeloaderAuth.token,
+      },
+      body: JSON.stringify(body),
+    });
+
+  check(
+    "nor does asking again afterwards",
+    (await asFreeloader({ subscription_until: inAYear })).status,
+    403,
+  );
+  // A guard that blocks the whole record instead of two fields would pass every
+  // check above and break the account screen.
+  check("the rest of the record is still their own", (await asFreeloader({ name: "Someone" })).status, 200);
 
   // =====================================================================
   console.log("\n9. the projector endpoint does not leak");

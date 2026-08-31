@@ -160,6 +160,13 @@ its final positions.
   stage *are* the third places. Within a tier, results against anyone finishing
   below the smallest pool's last place are disregarded, so teams out of a pool
   of four and a pool of three are compared over the same number of matches.
+- **The rotation closes on a credit.** Every screen ends on a "Powered by
+  Seedly" panel, and on the sponsor slots from `displays.theme.sponsors` as
+  well while `users.subscription_until` on the tournament's owner is still in
+  the future. The filtering is the server's: an unsubscribed tournament sends
+  no sponsors at all, so there is nothing on a public endpoint for a screen to
+  un-hide, and no account can sell itself the upgrade — the date sits on a
+  record its owner may otherwise write, so a hook refuses that write.
 - **Every fixture side is renderable.** When a slot has no entry yet the
   projector payload sends its label instead — "Winner SF1", "1. A", "TBD" — so
   a screen never has to draw a blank box.
@@ -187,3 +194,7 @@ a draw without a round trip. They are now Go only, and preview goes through
 4. **Nobody can be added once a stage is generated.** The wizard takes the
    teams and the generator takes them all; a late arrival means starting the
    draw again.
+5. **Nothing sells a subscription.** `users.subscription_until` is what the
+   sponsor slots read, and the only things that set it are an admin and
+   whatever writes the record server-side. There is no checkout, no provider
+   and no webhook.

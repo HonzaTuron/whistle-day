@@ -1,7 +1,7 @@
 import type { DisplayPayload } from "@seedly/engine";
 import { bracketStages, tablePools } from "../../lib/format";
 
-export type PanelKind = "now_playing" | "standings" | "bracket" | "next_up" | "results" | "court_schedule" | "stage_progress" | "stage_table";
+export type PanelKind = "now_playing" | "standings" | "bracket" | "next_up" | "results" | "court_schedule" | "stage_progress" | "stage_table" | "branding";
 
 export interface Panel {
   kind: PanelKind;
@@ -120,5 +120,22 @@ export function buildPanels(payload: DisplayPayload): Panel[] {
     addBracket();
     addNextUp();
   }
+
+  // Who ran the day on, and — while the organiser is subscribed — the sponsors
+  // whose money paid for the hall.
+  //
+  // It closes every mode, locked ones included: a screen pinned to "now
+  // playing" is exactly where a sponsor slot is worth having, and a credit
+  // that only appears in `auto` is a credit nobody sees. But only on a screen
+  // that has something else to show — a tournament with nothing in it should
+  // say so rather than rotate a logo at an empty hall.
+  if (panels.length > 0) {
+    panels.push({
+      kind: "branding",
+      title: payload.sponsors.length > 0 ? "Our partners" : "Powered by Seedly",
+      index: 0,
+    });
+  }
+
   return panels;
 }

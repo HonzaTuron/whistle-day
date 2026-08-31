@@ -142,3 +142,14 @@ score is. The line that matters is the second one: "changed 3–1 to 2–4".
   the difference between a table and an argument.
 - **The rotation bar fills over one panel's dwell time**, so the room can see
   the screen is about to change.
+- **The rotation closes on a credit**, and on the sponsors when there are any.
+  It is the one panel that is never empty, and the one that closes a locked
+  mode too — a screen pinned to "now playing" is exactly where a sponsor slot
+  is worth having, and a credit that only appears in `auto` is a credit nobody
+  sees. A screen with nothing else on it still says "nothing to show yet"
+  rather than rotating a logo at an empty hall.
+- **The client never checks a subscription.** `payload.sponsors` is already
+  filtered by what the tournament's owner is paying for, so the browser is
+  never handed something it is trusted to hide. A logo that fails to load falls
+  back to the sponsor's name: a broken-image icon at projector size is worse
+  than plain type.

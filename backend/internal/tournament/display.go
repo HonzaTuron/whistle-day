@@ -16,6 +16,9 @@ import (
 const (
 	maxNextUp = 12
 	maxRecent = 8
+	// A wall of logos at projector size is a wall nobody reads. The closing
+	// panel is one page, not a scroll, so the rest are dropped.
+	maxSponsors = 6
 )
 
 // DisplayScope narrows what one screen shows. Empty fields mean "everything".
@@ -50,6 +53,15 @@ type displayEntry struct {
 	Club      string `json:"club"`
 	Logo      string `json:"logo"`
 	Seed      int    `json:"seed"`
+}
+
+// displaySponsor is one slot on the closing panel. Logo is a URL; Name is what
+// the screen draws when there is no logo, and the image's alt text when there
+// is. Tier is the line underneath — "Main partner", "Official ball".
+type displaySponsor struct {
+	Name string `json:"name"`
+	Logo string `json:"logo"`
+	Tier string `json:"tier,omitempty"`
 }
 
 type displayCourt struct {
@@ -144,6 +156,10 @@ type DisplayPayload struct {
 	NowPlaying  []displayFixture        `json:"now_playing"`
 	NextUp      []displayFixture        `json:"next_up"`
 	Recent      []displayFixture        `json:"recent"`
+	// Already filtered by what the owner is paying for: an unsubscribed
+	// tournament sends an empty list, so there is nothing on the wire for a
+	// screen to un-hide and no plan for it to know about.
+	Sponsors []displaySponsor `json:"sponsors"`
 }
 
 // BuildDisplayPayload assembles the whole screen in one pass.
@@ -185,9 +201,10 @@ func BuildDisplayPayload(app core.App, display *core.Record) (*DisplayPayload, e
 			Scope:         scope,
 			Theme:         theme,
 		},
-		Entries: map[string]displayEntry{},
-		Courts:  []displayCourt{},
-		Stages:  []displayStage{},
+		Entries:  map[string]displayEntry{},
+		Courts:   []displayCourt{},
+		Stages:   []displayStage{},
+		Sponsors: sponsorSlots(app, display, tournament),
 	}
 
 	entries, err := app.FindRecordsByFilter(
@@ -380,6 +397,52 @@ func BuildDisplayPayload(app core.App, display *core.Record) (*DisplayPayload, e
 	}
 
 	return payload, nil
+}
+
+// sponsorSlots reads the screen's sponsors out of its theme — and returns
+// nothing at all unless the tournament's owner is subscribed.
+//
+// The check is here, and not in the browser, for two reasons. A client cannot
+// be trusted to hide something it has been handed; and the owner's plan is not
+// the screen's business, so the way to keep it off a public endpoint is to
+// send no sponsors rather than send them with a flag.
+//
+// Nothing in here can fail the payload. A theme that will not parse, or an
+// owner who cannot be loaded, costs the sponsors — not the scoreboard.
+func sponsorSlots(app core.App, display, tournament *core.Record) []displaySponsor {
+	empty := []displaySponsor{}
+
+	raw := display.GetString("theme")
+	if raw == "" || raw == "null" {
+		return empty
+	}
+
+	var theme struct {
+		Sponsors []displaySponsor `json:"sponsors"`
+	}
+	if err := json.Unmarshal([]byte(raw), &theme); err != nil || len(theme.Sponsors) == 0 {
+		return empty
+	}
+
+	// Only looked up when there is something to gate, so an ordinary screen
+	// polling every four seconds does not read the owner at all.
+	owner, err := app.FindRecordById("users", tournament.GetString("owner"))
+	if err != nil || !SubscriptionActive(owner) {
+		return empty
+	}
+
+	slots := empty
+	for _, sponsor := range theme.Sponsors {
+		// Neither a logo nor a name is not a sponsor, it is a blank box.
+		if sponsor.Logo == "" && sponsor.Name == "" {
+			continue
+		}
+		slots = append(slots, sponsor)
+		if len(slots) == maxSponsors {
+			break
+		}
+	}
+	return slots
 }
 
 // slotLabelIndex maps slot id -> the text to show when it has no entry yet.

@@ -275,6 +275,37 @@ Three details that matter for a screen:
 A draft tournament returns 404 rather than 403, so the endpoint cannot be used
 to probe for unpublished events.
 
+## The one thing on a screen somebody pays for
+
+The rotation ends on a panel crediting Seedly, and that panel carries the
+screen's sponsor slots — `displays.theme.sponsors`, a list of
+`{ name, logo, tier }` — while the tournament's owner is subscribed.
+
+**It is one date on the user.** `users.subscription_until`, and nothing beside
+it. The subscription is on the user because that is what is bought — somebody
+who runs four events a year does not buy it four times — and it is a date
+because a date already answers both questions anyone asks of it: whether the
+account is paying, and whether it used to. Empty never subscribed, a date in
+the past has lapsed, and a subscription meant to last is written far ahead.
+There is no value meaning "for ever", and no plan column: tiers, if there are
+ever any, are a select added then and backfilled from this, which is cheaper
+than two columns that can disagree about a distinction nothing yet makes.
+
+**The filtering happens on the server.** `GET /api/display/{token}` is public
+and needs no login, so an unsubscribed tournament sends `sponsors: []` rather
+than sending them with a flag for the browser to respect. The owner is only
+looked up when a theme actually has sponsors in it, so an ordinary screen
+polling every four seconds does not read the user table at all, and neither a
+theme that will not parse nor an owner who cannot be loaded fails the payload —
+that costs the sponsors, not the scoreboard.
+
+**Nothing else guards the field.** It sits on a record its owner is allowed to
+write, which is what lets an organiser put an email on a device account, and a
+collection rule cannot say "every field except this one". So the exception is a
+hook (`RegisterSubscriptionGuard`), bound to the *request* events only:
+whatever grants a subscription server-side goes through `app.Save` and is
+unaffected. The field is writable — just not by the account it is about.
+
 ## What the model does not solve yet
 
 - **A best-of-next bracket can draw two pool-mates together in round 1.** The

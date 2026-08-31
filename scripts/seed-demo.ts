@@ -295,7 +295,22 @@ await create("displays", {
   mode: "auto",
   rotate_seconds: 12,
   active: true,
-  theme: { accent: "#22c55e" },
+  theme: {
+    accent: "#22c55e",
+    // The closing panel's sponsor slots. They only reach a screen while the
+    // tournament's owner is subscribed — hence the line below, since a panel
+    // that silently shows nothing demonstrates nothing.
+    sponsors: [
+      { name: "Pivovar Podzim", logo: "", tier: "Hlavní partner" },
+      { name: "Sportovní haly s.r.o.", logo: "", tier: "Partner haly" },
+      { name: "Míče Novák", logo: "" },
+    ],
+  },
+});
+
+await patch("users", organiser.id, {
+  subscription_until: new Date(Date.now() + 365 * 24 * 3600 * 1000)
+    .toISOString().replace("T", " ").replace(/\..*/, "Z"),
 });
 
 await patch("stages", groups.id, { status: "finished" });

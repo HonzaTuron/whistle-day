@@ -581,6 +581,97 @@ th,
   color: var(--muted);
 }
 
+/* --- powered by, and the sponsors ---------------------------------------- */
+
+.branding {
+  height: 100%;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 3vmin;
+  text-align: center;
+}
+
+/* With partners on it the panel is theirs: the logos take the middle and the
+   credit drops to a footer. */
+.branding--partners {
+  align-content: space-between;
+  padding: 2vmin 0;
+}
+
+.branding__slots {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(var(--columns, 3), 1fr);
+  gap: 4vmin 5vmin;
+  align-items: center;
+  justify-items: center;
+}
+
+.branding__slot {
+  display: grid;
+  justify-items: center;
+  gap: 1vmin;
+  /* A logo arrives in whatever shape it was drawn in; the slot is what stays
+     the same size, so a wide one and a square one still read as a row. */
+  max-width: 28vmin;
+}
+
+.branding__logo {
+  max-width: 100%;
+  max-height: 15vmin;
+  object-fit: contain;
+  /* Sponsor logos are drawn for white paper, and this screen is not white.
+     The plate is the difference between a logo and a dark smudge. */
+  background: #fff;
+  border-radius: var(--radius);
+  padding: 1.5vmin 2vmin;
+}
+
+.branding__name {
+  font-size: 3vmin;
+  font-weight: 650;
+  line-height: 1.1;
+}
+
+.branding__tier {
+  font-size: 1.5vmin;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+}
+
+.branding__credit {
+  display: grid;
+  justify-items: center;
+  gap: 0.6vmin;
+}
+
+.branding__mark {
+  font-size: 7vmin;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1;
+  color: var(--accent);
+}
+
+.branding__credit small {
+  font-size: 1.9vmin;
+  color: var(--muted);
+}
+
+/* Second billing, once somebody has paid for first. */
+.branding--partners .branding__mark {
+  font-size: 3.4vmin;
+}
+
+.branding--partners .branding__credit small {
+  font-size: 1.5vmin;
+}
+
 /* ==========================================================================
    Phone
    ========================================================================== */
