@@ -1960,6 +1960,17 @@ th,
   border-top: 1px solid var(--line);
   border-radius: 1.1rem 1.1rem 0 0;
   background: var(--surface);
+  /* The sheet rises from the bottom edge, so a panel taller than the window
+     grows off the top of it — where there is no scrollbar, because the page
+     behind is not the thing that is too tall. It scrolls inside itself
+     instead. `dvh` because a phone's address bar is part of the window until
+     it is not. */
+  max-height: 90vh;
+  max-height: 90dvh;
+  overflow-y: auto;
+  /* Scrolling to the end of the sheet should not then scroll the list behind
+     it, which is a list the sheet is about to be dismissed back to. */
+  overscroll-behavior: contain;
 }
 
 .sheet__meta {
