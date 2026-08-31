@@ -1,5 +1,5 @@
 import type { Court, Entry, Id, Pool, Stage } from "@seedly/engine";
-import type { Board, BoardFixture } from "../api/organiser";
+import type { Board, BoardFixture, SetScore } from "../api/organiser";
 
 /**
  * Shaping the organiser's fixture list.
@@ -27,6 +27,23 @@ export interface BoardRow {
   settled: boolean;
   live: boolean;
   walkover: boolean;
+}
+
+/**
+ * The match score, counted from the points.
+ *
+ * A set with the same score on both sides is nobody's — that includes the
+ * 0–0 a set is added as, which is what keeps a half-entered match from
+ * announcing a result the hall has not seen.
+ */
+export function setsWon(sets: SetScore[]): { home: number; away: number } {
+  let home = 0;
+  let away = 0;
+  for (const set of sets) {
+    if (set.home > set.away) home++;
+    else if (set.away > set.home) away++;
+  }
+  return { home, away };
 }
 
 export interface BoardSection {

@@ -3,6 +3,7 @@ import type {
   Entry,
   Fixture,
   FixtureEvent,
+  Game,
   Id,
   Pool,
   Slot,
@@ -470,6 +471,87 @@ export const saveResult = (
       finished_at: stamp(new Date()),
     },
   });
+
+/** The points in one set. The sets themselves are ordered, and 1-based. */
+export interface SetScore {
+  home: number;
+  away: number;
+}
+
+/** The per-set points of one match, first set first. */
+export const loadGames = (session: Session, fixture: Id) =>
+  records<Game>(session, "games", `filter=(fixture='${fixture}')&sort=number&perPage=50`);
+
+/**
+ * Write the points set by set.
+ *
+ * The fixture keeps the match score — sets won, or goals — and these are the
+ * numbers underneath it. They are not decoration: `standings` sums them into
+ * sub_for / sub_against, which is the tiebreak that separates two teams level
+ * on points and on sets, and the projector's "Now playing" reads them to show
+ * a match in progress set by set.
+ *
+ * Rows are matched by set number rather than replaced wholesale, so correcting
+ * the second set of a match leaves the first one's record alone. The server
+ * rebuilds the tables on every one of these writes, hence the sequence rather
+ * than a burst: they are three requests for a volleyball match, and the last
+ * one to land should be the one the tables end up agreeing with.
+ *
+ * `existing` is read here rather than passed in. The sheet may have been open
+ * a while, and the list it loaded is not what the write should be diffed
+ * against.
+ */
+export async function saveGames(
+  session: Session,
+  fixture: Id,
+  sets: SetScore[],
+  settled: boolean,
+): Promise<void> {
+  const existing = await loadGames(session, fixture);
+
+  for (const [index, set] of sets.entries()) {
+    const number = index + 1;
+    // Everything but the set being played is over; when the match itself is
+    // over, so is the last one. The projector highlights the unfinished set.
+    const finished = settled || index < sets.length - 1;
+    const current = existing.find((game) => game.number === number);
+
+    if (
+      current &&
+      current.home_score === set.home &&
+      current.away_score === set.away &&
+      current.finished === finished
+    ) {
+      continue;
+    }
+
+    await api<Game>(
+      current
+        ? `/api/collections/games/records/${current.id}`
+        : "/api/collections/games/records",
+      {
+        method: current ? "PATCH" : "POST",
+        token: session.token,
+        body: {
+          fixture,
+          number,
+          home_score: set.home,
+          away_score: set.away,
+          finished,
+        },
+      },
+    );
+  }
+
+  // A match that went to three sets and is corrected to two leaves a third
+  // row behind, and that row would still be counted in the tiebreak.
+  for (const surplus of existing.filter((game) => game.number > sets.length)) {
+    await api<null>(`/api/collections/games/records/${surplus.id}`, {
+      method: "DELETE",
+      token: session.token,
+    });
+  }
+}
 
 /**
  * What has been done to one match, oldest first.

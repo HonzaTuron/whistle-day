@@ -6,6 +6,7 @@ import {
   loadBoard,
   rememberedTournament,
   rememberTournament,
+  saveGames,
   saveResult,
   saveWalkover,
   setLive,
@@ -184,17 +185,33 @@ export function Results({ id }: { id: string }) {
           allFixtures={board.fixtures}
           entries={entries}
           saving={saving}
-          onSave={(home, away) =>
-            void write(
-              (active) => saveResult(active, open.fixture.id, home, away),
-              true,
-            )
+          /**
+           * Points first, then the result. Both orders save the same rows, but
+           * the fixture write is the one that rebuilds the tables, and it
+           * should be the last thing the server sees — otherwise the tiebreak
+           * is computed from the sets as they were a request ago.
+           *
+           * A result that goes away takes its points with it, on both paths: a
+           * cleared match whose sets were left behind would still be feeding
+           * sub_for and sub_against to a table it is no longer part of.
+           */
+          onSave={(home, away, sets) =>
+            void write(async (active) => {
+              await saveGames(active, open.fixture.id, sets, true);
+              await saveResult(active, open.fixture.id, home, away);
+            }, true)
           }
           onWalkover={(winner) =>
-            void write((active) => saveWalkover(active, open.fixture.id, winner), true)
+            void write(async (active) => {
+              await saveGames(active, open.fixture.id, [], true);
+              await saveWalkover(active, open.fixture.id, winner);
+            }, true)
           }
           onClear={() =>
-            void write((active) => clearResult(active, open.fixture), true)
+            void write(async (active) => {
+              await saveGames(active, open.fixture.id, [], false);
+              await clearResult(active, open.fixture);
+            }, true)
           }
           onSchedule={(schedule) =>
             void write(

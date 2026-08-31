@@ -1976,6 +1976,16 @@ th,
   line-height: 1.45;
 }
 
+/* Not a warning — an explanation. `sheet__note` is the colour of something
+   about to change a recorded result; this is just the screen saying what it
+   has already done. */
+.sheet__hint {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
 .sheet__actions {
   display: grid;
   gap: 0.4rem;
@@ -2026,6 +2036,181 @@ th,
 .score__value:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
+}
+
+/* Counted from the sets rather than typed: still the biggest number on the
+   sheet, because it is still the result — just not a box to tap into. */
+.score__value.is-counted {
+  border-color: transparent;
+  background: var(--surface-2);
+  color: var(--text);
+}
+
+/* --- points, set by set --------------------------------------------------- */
+
+.sets {
+  display: grid;
+  gap: 0.5rem;
+  padding-top: 0.25rem;
+  border-top: 1px solid var(--line);
+}
+
+.sets__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.sets__title {
+  flex: 1;
+  font-size: 0.8rem;
+  font-weight: 650;
+  color: var(--muted);
+}
+
+/* Only ever shown while a write is in the air or after one failed: a "saved"
+   that is always there is a label, not information. */
+.sets__state {
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+
+.sets__state.is-failed {
+  color: var(--live);
+  font-weight: 700;
+}
+
+.btn--tiny {
+  min-height: 36px;
+  padding: 0 0.6rem;
+  font-size: 0.8rem;
+}
+
+.sets__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.4rem;
+}
+
+.sets__row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.sets__number {
+  flex: 0 0 3.5rem;
+  display: grid;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+/* The set on court right now: entered like the others, counted like none of
+   them until the match is saved. */
+.sets__inplay {
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--live);
+}
+
+/* Wide enough for three digits and tall enough to hit at the side of a court,
+   but nothing like the size of the score above: these are the detail. */
+.sets__points {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  height: 44px;
+  border: 1px solid var(--line);
+  border-radius: 0.6rem;
+  background: var(--bg);
+}
+
+.sets__value {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 1.1rem;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  -moz-appearance: textfield;
+}
+
+.sets__value::-webkit-outer-spin-button,
+.sets__value::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.sets__points:focus-within {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.sets__value:focus {
+  outline: none;
+}
+
+/* A point at a time, on the set being entered. Wide targets and no gap to
+   miss into: this is tapped between rallies, at the side of a court, by
+   somebody watching the game rather than the phone. */
+.sets__tick {
+  flex: 0 0 auto;
+  width: 2.4rem;
+  align-self: stretch;
+  border: 0;
+  border-radius: 0.6rem;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 1.2rem;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.sets__points--stepped.is-live .sets__tick {
+  color: var(--live);
+}
+
+.sets__tick:hover:not(:disabled) {
+  background: var(--surface-2);
+}
+
+.sets__tick:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.sets__colon {
+  color: var(--muted);
+}
+
+.sets__remove {
+  flex: 0 0 auto;
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--muted);
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.sets__remove:hover {
+  background: var(--surface-2);
+  color: var(--text);
 }
 
 /* --- court, time, live, walkover ------------------------------------------ */

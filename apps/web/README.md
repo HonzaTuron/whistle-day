@@ -104,7 +104,60 @@ on court right now. `live` is what the projector's "Now playing" panel reads —
 every live fixture appears on it, however many there are — so that switch is
 what puts a match on the wall. Court and time save on tap rather than with the
 result: putting a match on a court is a decision that has already happened by
-the time it is recorded, and the score may be an hour away.
+the time it is recorded, and the score may be an hour away. The sheet says so
+in as many words, because a lit chip is otherwise the only evidence that a tap
+was a write, and somebody who taps a court and then looks for Save has no way
+to tell whether anything happened.
+
+Under the score are the points, set by set, written to `games`. They are
+optional and plenty of days are run without them, but they are not decoration:
+`standings` sums them into sub_for / sub_against, which is the tiebreak that
+separates two teams level on points and on sets, and the projector reads them
+to show a live match set by set instead of as a bare 1–1.
+
+They are written as they are entered, not with the result. Somebody standing
+at the net tapping a point per rally will not press Save between rallies, and
+the wall is the reason to enter them at all: the server nudges every screen
+showing this tournament, so a tap here is a scoreline in the hall a moment
+later. The last set
+gets − and + for exactly that, in the live colour while it is the set on court;
+the sets above it are typed, because a + beside a set that finished an hour ago
+is an invitation to change a score nobody meant to touch.
+
+Three details in that write worth keeping:
+
+- **The buttons send a step, not a number.** Two taps inside one frame both
+  read the value their row was drawn with, so `value + 1` twice means "make it
+  19" twice and the second point of the rally is never scored. The count is
+  done against what the last tap left behind.
+- **It does not go through the board's write-then-reload.** The board shows the
+  fixture's score, which points do not change, so reloading seven collections
+  per rally would buy nothing. The write is debounced so a held + is one
+  request, and flushed when the sheet closes so the last tap is never the one
+  that got away.
+- **Recording a result cancels whatever is pending.** Save, walkover and clear
+  write these rows themselves and know something the timer does not — whether
+  the match is over. A debounced write landing after a clear would recreate the
+  rows it had just deleted.
+
+Two rules keep them honest:
+
+- **The match score is counted from the points, not typed beside them.** Once a
+  set exists the steppers become a read-out. A screen that accepts 2–1 over
+  three sets reading 25–20, 22–25, 19–25 is a screen that will eventually put a
+  scoreline on a wall the hall can see is wrong.
+- **A set is won when it is over, and the last set of a live match is not.**
+  18–14 in the third is not a two-set lead; it is a third set somebody is ahead
+  in, and the wall says 1–1 while it is being played. Saving is what ends the
+  match, so the recorded result counts every set — the sheet says which score
+  that will be before the button is pressed.
+
+When the result is saved, the points go before the fixture, because the fixture
+write is the one that rebuilds the tables and should be the last thing the
+server sees.
+Clearing a result and recording a walkover both delete them: sets left behind
+by a match that no longer has a result would still be feeding a table it is no
+longer part of.
 
 Three consequences worth keeping:
 

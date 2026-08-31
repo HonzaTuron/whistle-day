@@ -1,9 +1,16 @@
 import type { Court, Entry, Id } from "@seedly/engine";
-import { useEffect, useState } from "react";
-import type { BoardFixture } from "../../api/organiser";
+import { useEffect, useRef, useState } from "react";
+import {
+  ensureOrganiser,
+  loadGames,
+  saveGames,
+  type BoardFixture,
+  type SetScore,
+} from "../../api/organiser";
 import {
   atTime,
   scheduleConflicts,
+  setsWon,
   sideName,
   timeValue,
   type BoardRow,
@@ -16,7 +23,7 @@ interface Props {
   allFixtures: BoardFixture[];
   entries: Map<Id, Entry>;
   saving: boolean;
-  onSave: (home: number, away: number) => void;
+  onSave: (home: number, away: number, sets: SetScore[]) => void;
   onWalkover: (winner: string) => void;
   onClear: () => void;
   onSchedule: (schedule: { court?: string | null; scheduled_at?: string }) => void;
@@ -25,6 +32,9 @@ interface Props {
 }
 
 const MAX_SCORE = 999;
+
+/** Long enough that a held + is one write, short enough to feel like none. */
+const POINTS_DEBOUNCE_MS = 700;
 
 /**
  * Everything you can do to one match, as a sheet over the list.
@@ -55,6 +65,21 @@ export function MatchSheet({
 }: Props) {
   const [home, setHome] = useState(row.fixture.home_score ?? 0);
   const [away, setAway] = useState(row.fixture.away_score ?? 0);
+  /** The points set by set. `null` until they have been read back. */
+  const [sets, setSets] = useState<SetScore[] | null>(null);
+  const [pointsState, setPointsState] = useState<"idle" | "saving" | "failed">(
+    "idle",
+  );
+  /**
+   * The points as they stand, kept alongside the state they render from.
+   *
+   * Two taps on + inside one frame both read the same rendered value, so the
+   * second overwrites the first and a point goes missing — which is precisely
+   * what happens when somebody catches up after two quick rallies. The ref is
+   * updated in the handler rather than after the render, so the second tap
+   * reads what the first one wrote.
+   */
+  const latest = useRef<SetScore[]>([]);
   /**
    * "score" is the sheet; the other two are questions it steps aside for.
    * Both are one tap from destroying a result, so neither happens on the tap
@@ -70,8 +95,148 @@ export function MatchSheet({
     return () => window.removeEventListener("keydown", escape);
   }, [onClose]);
 
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      try {
+        const games = await loadGames(await ensureOrganiser(), row.fixture.id);
+        if (cancelled) return;
+        const loaded = games.map((game) => ({
+          home: game.home_score ?? 0,
+          away: game.away_score ?? 0,
+        }));
+        latest.current = loaded;
+        setSets(loaded);
+      } catch {
+        // Sets are the detail under the score, not the score. A match whose
+        // points cannot be read is still a match whose result can be entered.
+        if (!cancelled) setSets([]);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [row.fixture.id]);
+
+  /**
+   * Points are written as they are entered, not when the sheet is saved.
+   *
+   * Somebody standing at the net tapping a point per rally is not going to
+   * press Save between rallies, and the reason to enter them at all is the
+   * wall: the projector polls every four seconds, so a tap here is a scoreline
+   * in the hall a moment later. Saving the *result* is still a separate,
+   * deliberate act — that is the one that ends the match and moves the tables.
+   *
+   * It does not go through the board's write-then-reload: the board shows the
+   * fixture's score, which these do not change, so reloading seven collections
+   * per rally would buy nothing. The delay is there so that holding + writes
+   * once rather than nine times, and the write is flushed on the way out —
+   * closing the sheet a moment after the last tap must not lose it.
+   */
+  const flush = useRef<(() => void) | null>(null);
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const writePoints = (next: SetScore[]) => {
+    if (timer.current) clearTimeout(timer.current);
+
+    const send = () => {
+      timer.current = null;
+      flush.current = null;
+      setPointsState("saving");
+      void (async () => {
+        try {
+          await saveGames(await ensureOrganiser(), row.fixture.id, next, row.settled);
+          setPointsState("idle");
+        } catch {
+          setPointsState("failed");
+        }
+      })();
+    };
+
+    flush.current = send;
+    timer.current = setTimeout(send, POINTS_DEBOUNCE_MS);
+  };
+
+  /**
+   * Drop a pending write instead of sending it.
+   *
+   * Recording a result, a walkover or a clear writes these same rows itself,
+   * and it knows something this timer does not: whether the match is over. A
+   * debounced write landing a moment later would put the last set back to
+   * unfinished, or — after a clear — recreate the rows that were just deleted.
+   */
+  const forgetPoints = () => {
+    if (timer.current) clearTimeout(timer.current);
+    timer.current = null;
+    flush.current = null;
+  };
+
+  // Anything still pending goes on the way out: closing the sheet a moment
+  // after the last tap must not lose it.
+  useEffect(
+    () => () => {
+      if (timer.current) clearTimeout(timer.current);
+      flush.current?.();
+    },
+    [],
+  );
+
   const clamp = (value: number) => Math.min(Math.max(value, 0), MAX_SCORE);
   const clashes = scheduleConflicts(row.fixture, allFixtures, entries, courts);
+
+  /**
+   * Once there are points, the match score is counted rather than typed. Two
+   * places to enter the same number is two places for them to disagree, and
+   * the one the hall watched is the set scores.
+   *
+   * A set is won when it is over, and the last set of a live match is not:
+   * 18–14 in the third is not a two-set lead, it is a third set somebody is
+   * ahead in. Counting it would put a score on this screen that the wall — and
+   * the hall — can both see is not the score. Saving is what ends the match,
+   * and it ends that set with it, so the recorded result counts every set.
+   */
+  const points = sets ?? [];
+  const inPlay = row.live && points.length > 0 ? points.length - 1 : -1;
+  const counted = setsWon(points.filter((_, index) => index !== inPlay));
+  const final = setsWon(points);
+  const fromPoints = points.length > 0;
+  const homeScore = fromPoints ? counted.home : home;
+  const awayScore = fromPoints ? counted.away : away;
+  const savedScore = fromPoints ? final : { home, away };
+  const endsASet =
+    fromPoints && (final.home !== counted.home || final.away !== counted.away);
+
+  /** Every change to the points is a change on the wall, so it is written. */
+  const changeSets = (update: (previous: SetScore[]) => SetScore[]) => {
+    const next = update(latest.current);
+    latest.current = next;
+    setSets(next);
+    writePoints(next);
+  };
+
+  const editSet = (index: number, side: "home" | "away", value: number) =>
+    changeSets((previous) =>
+      previous.map((set, i) =>
+        i === index ? { ...set, [side]: clamp(value) } : set,
+      ),
+    );
+
+  /**
+   * A tap is a point, not a number.
+   *
+   * The buttons send the step and the count is done here, against what the
+   * last tap left behind. Sending `value + 1` instead would send the value
+   * this row was drawn with, so two taps between two frames would both mean
+   * "make it 19" — and the second point of the rally would never be scored.
+   */
+  const stepSet = (index: number, side: "home" | "away", delta: number) =>
+    changeSets((previous) =>
+      previous.map((set, i) =>
+        i === index ? { ...set, [side]: clamp(set[side] + delta) } : set,
+      ),
+    );
+
+  const onCourt = courts.find((court) => court.id === row.fixture.court);
 
   return (
     <div className="sheet" role="dialog" aria-modal="true" aria-label="Match">
@@ -102,7 +267,10 @@ export function MatchSheet({
                 type="button"
                 className="btn btn--danger btn--block"
                 disabled={saving}
-                onClick={onClear}
+                onClick={() => {
+                  forgetPoints();
+                  onClear();
+                }}
               >
                 {saving ? "Clearing…" : "Clear the result"}
               </button>
@@ -123,7 +291,10 @@ export function MatchSheet({
                 type="button"
                 className="btn btn--block"
                 disabled={saving}
-                onClick={() => onWalkover(row.home.entry?.id ?? "")}
+                onClick={() => {
+                  forgetPoints();
+                  onWalkover(row.home.entry?.id ?? "");
+                }}
               >
                 {sideName(row.home)}
               </button>
@@ -131,7 +302,10 @@ export function MatchSheet({
                 type="button"
                 className="btn btn--block"
                 disabled={saving}
-                onClick={() => onWalkover(row.away.entry?.id ?? "")}
+                onClick={() => {
+                  forgetPoints();
+                  onWalkover(row.away.entry?.id ?? "");
+                }}
               >
                 {sideName(row.away)}
               </button>
@@ -169,6 +343,20 @@ export function MatchSheet({
                   </button>
                 ))}
               </div>
+            ) : null}
+
+            {/* The chips write the moment they are tapped, and a lit chip is
+                the only thing that says so. Somebody who taps one and watches
+                for a Save button needs telling, and so does somebody looking
+                for the way to take a match back off a court. */}
+            {courts.length > 0 ? (
+              <p className="sheet__hint">
+                {onCourt
+                  ? `On ${onCourt.name} — saved. Tap it again to take it off court.`
+                  : "Not on a court yet. Tap one and it is saved straight away."}{" "}
+                Court, time and the points below all save as they are tapped.
+                The result is the one thing that waits for Save.
+              </p>
             ) : null}
 
             <div className="sheet__row">
@@ -213,14 +401,38 @@ export function MatchSheet({
 
             <Score
               name={sideName(row.home)}
-              value={home}
+              value={homeScore}
+              counted={fromPoints}
               onChange={(value) => setHome(clamp(value))}
             />
             <Score
               name={sideName(row.away)}
-              value={away}
+              value={awayScore}
+              counted={fromPoints}
               onChange={(value) => setAway(clamp(value))}
             />
+
+            <Sets
+              home={sideName(row.home)}
+              away={sideName(row.away)}
+              sets={points}
+              inPlay={inPlay}
+              state={pointsState}
+              onEdit={editSet}
+              onStep={stepSet}
+              onAdd={() => changeSets((previous) => [...previous, { home: 0, away: 0 }])}
+              onRemove={(index) =>
+                changeSets((previous) => previous.filter((_, i) => i !== index))
+              }
+            />
+
+            {endsASet ? (
+              <p className="sheet__hint">
+                Set {points.length} is still in play, so it is not counted
+                above. Saving ends the match and records {savedScore.home}–
+                {savedScore.away}.
+              </p>
+            ) : null}
 
             {row.settled ? (
               <p className="sheet__note">
@@ -236,7 +448,10 @@ export function MatchSheet({
                 type="button"
                 className="btn btn--primary btn--block"
                 disabled={saving}
-                onClick={() => onSave(home, away)}
+                onClick={() => {
+                  forgetPoints();
+                  onSave(savedScore.home, savedScore.away, points);
+                }}
               >
                 {saving ? "Saving…" : "Save result"}
               </button>
@@ -277,10 +492,13 @@ export function MatchSheet({
 function Score({
   name,
   value,
+  counted,
   onChange,
 }: {
   name: string;
   value: number;
+  /** Counted from the points below, so this is a read-out rather than a field. */
+  counted: boolean;
   onChange: (value: number) => void;
 }) {
   return (
@@ -291,19 +509,20 @@ function Score({
           type="button"
           className="stepper__button"
           onClick={() => onChange(value - 1)}
-          disabled={value <= 0}
+          disabled={counted || value <= 0}
           aria-label={`One fewer for ${name}`}
         >
           −
         </button>
         {/* A field, not a label: a 21-point set is twenty-one taps otherwise. */}
         <input
-          className="score__value"
+          className={"score__value" + (counted ? " is-counted" : "")}
           type="number"
           inputMode="numeric"
           min={0}
           max={MAX_SCORE}
           value={value}
+          readOnly={counted}
           onFocus={(event) => event.target.select()}
           onChange={(event) => onChange(Number(event.target.value) || 0)}
           aria-label={`Score for ${name}`}
@@ -312,11 +531,172 @@ function Score({
           type="button"
           className="stepper__button"
           onClick={() => onChange(value + 1)}
+          disabled={counted}
           aria-label={`One more for ${name}`}
         >
           +
         </button>
       </div>
     </div>
+  );
+}
+
+/**
+ * The points, set by set.
+ *
+ * They are optional and they are secondary — plenty of days are run on sets
+ * alone — so this opens closed, as one button under the score. What it buys
+ * once it is filled in: the tiebreak that separates two teams level on points
+ * and on sets is the points inside them, and the wall shows a live match set
+ * by set instead of as a bare 1–1.
+ *
+ * The sets above are counted from these rather than typed alongside them. A
+ * screen that lets somebody enter 2–1 over three sets that read 25–20, 22–25,
+ * 19–25 is a screen that will eventually put a scoreline on a wall that the
+ * hall can see is wrong.
+ */
+function Sets({
+  home,
+  away,
+  sets,
+  inPlay,
+  state,
+  onEdit,
+  onStep,
+  onAdd,
+  onRemove,
+}: {
+  home: string;
+  away: string;
+  sets: SetScore[];
+  /** Index of the set being played, or -1 when the match is not on court. */
+  inPlay: number;
+  state: "idle" | "saving" | "failed";
+  onEdit: (index: number, side: "home" | "away", value: number) => void;
+  onStep: (index: number, side: "home" | "away", delta: number) => void;
+  onAdd: () => void;
+  onRemove: (index: number) => void;
+}) {
+  return (
+    <div className="sets">
+      <div className="sets__head">
+        <span className="sets__title">Points in each set</span>
+        {state === "failed" ? (
+          <span className="sets__state is-failed">not saved</span>
+        ) : state === "saving" ? (
+          <span className="sets__state">saving…</span>
+        ) : null}
+        <button type="button" className="btn btn--quiet btn--tiny" onClick={onAdd}>
+          Add a set
+        </button>
+      </div>
+
+      {sets.length === 0 ? (
+        <p className="sheet__hint">
+          Optional, and saved as they are entered rather than with the result.
+          Fill them in and the score above is counted from them, the tiebreak
+          has the numbers it needs, and the wall shows the match set by set
+          while it is on.
+        </p>
+      ) : (
+        <ol className="sets__list">
+          {sets.map((set, index) => (
+            // Sets are only ever added and removed from the end of a match, so
+            // the index is the identity: set two stays set two.
+            <li key={index} className="sets__row">
+              <span className="sets__number">
+                Set {index + 1}
+                {index === inPlay && <small className="sets__inplay">in play</small>}
+              </span>
+              <SetPoints
+                label={`${home}, set ${index + 1}`}
+                value={set.home}
+                // Only the last set gets the taps: it is the one being played,
+                // and a + beside a set that finished an hour ago is an invitation
+                // to change a score nobody meant to touch.
+                stepper={index === sets.length - 1}
+                live={index === inPlay}
+                onChange={(value) => onEdit(index, "home", value)}
+                onStep={(delta) => onStep(index, "home", delta)}
+              />
+              <span className="sets__colon">:</span>
+              <SetPoints
+                label={`${away}, set ${index + 1}`}
+                value={set.away}
+                stepper={index === sets.length - 1}
+                live={index === inPlay}
+                onChange={(value) => onEdit(index, "away", value)}
+                onStep={(delta) => onStep(index, "away", delta)}
+              />
+              <button
+                type="button"
+                className="sets__remove"
+                onClick={() => onRemove(index)}
+                aria-label={`Remove set ${index + 1}`}
+              >
+                ✕
+              </button>
+            </li>
+          ))}
+        </ol>
+      )}
+    </div>
+  );
+}
+
+function SetPoints({
+  label,
+  value,
+  stepper,
+  live,
+  onChange,
+  onStep,
+}: {
+  label: string;
+  value: number;
+  /** Tap-a-point buttons, on the set being entered. */
+  stepper: boolean;
+  /** That set is on court right now, so the buttons wear the live colour. */
+  live: boolean;
+  onChange: (value: number) => void;
+  onStep: (delta: number) => void;
+}) {
+  const field = (
+    <input
+      className="sets__value"
+      type="number"
+      inputMode="numeric"
+      min={0}
+      max={MAX_SCORE}
+      value={value}
+      onFocus={(event) => event.target.select()}
+      onChange={(event) => onChange(Number(event.target.value) || 0)}
+      aria-label={label}
+    />
+  );
+
+  if (!stepper) return <span className="sets__points">{field}</span>;
+
+  return (
+    <span className={"sets__points sets__points--stepped" + (live ? " is-live" : "")}>
+      <button
+        type="button"
+        className="sets__tick"
+        onClick={() => onStep(-1)}
+        disabled={value <= 0}
+        aria-label={`One fewer, ${label}`}
+      >
+        −
+      </button>
+      {field}
+      <button
+        type="button"
+        className="sets__tick"
+        onClick={() => onStep(1)}
+        aria-label={`One more, ${label}`}
+      >
+        +
+      </button>
+    </span>
   );
 }
