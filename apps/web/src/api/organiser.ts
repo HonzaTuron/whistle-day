@@ -1,5 +1,6 @@
 import type {
   Court,
+  Display,
   Entry,
   Fixture,
   FixtureEvent,
@@ -397,6 +398,13 @@ export interface Board {
   fixtures: BoardFixture[];
   /** The screen token, so the organiser can always find the wall. */
   token: string;
+  /**
+   * The screen itself, so it can be configured from here.
+   *
+   * The first one: a tournament may have several screens and nothing yet
+   * makes more than one, so this is the wall the "Screen" link points at.
+   */
+  screen: Display | null;
 }
 
 /**
@@ -431,7 +439,7 @@ export async function loadBoard(session: Session, id: Id): Promise<Board> {
         `&expand=home_slot,away_slot&perPage=500`,
     ),
     // Staff can read their own screens; the public still needs the token.
-    records<{ token: string }>(session, "displays", `filter=(tournament='${id}')&perPage=5`),
+    records<Display>(session, "displays", `filter=(tournament='${id}')&perPage=5`),
   ]);
 
   return {
@@ -442,8 +450,25 @@ export async function loadBoard(session: Session, id: Id): Promise<Board> {
     courts,
     fixtures,
     token: screens[0]?.token ?? "",
+    screen: screens[0] ?? null,
   };
 }
+
+/**
+ * Change what the wall shows.
+ *
+ * Every field here is one the projector reads on its next payload, and the
+ * server nudges it the moment this lands — so an organiser standing in front
+ * of the screen with a phone sees the change on the wall rather than guessing
+ * at it. That is also why these save on change rather than behind a button:
+ * the wall is the preview.
+ */
+export const updateDisplay = (session: Session, id: Id, patch: Partial<Display>) =>
+  api<Display>(`/api/collections/displays/records/${id}`, {
+    method: "PATCH",
+    token: session.token,
+    body: patch,
+  });
 
 /**
  * Write a result and let the server do the rest.

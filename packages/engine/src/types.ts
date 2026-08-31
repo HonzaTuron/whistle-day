@@ -335,6 +335,27 @@ export type DisplayMode =
   | "court_schedule"
   | "stage_progress";
 
+/**
+ * A panel an organiser can switch off.
+ *
+ * `mode` answers "show me nothing but the bracket"; this answers the commoner
+ * question, which is "show me everything except the two that do not apply to
+ * my day" — a one-court hall has no court schedule worth a panel, a straight
+ * knockout has no group tables.
+ *
+ * The closing credit is deliberately absent. It ends every rotation and it is
+ * where the sponsors live, so it is not an organiser's to turn off.
+ */
+export type DisplayPanel =
+  | "now_playing"
+  | "standings"
+  | "bracket"
+  | "next_up"
+  | "results"
+  | "court_schedule"
+  | "stage_progress"
+  | "stage_table";
+
 export interface Display {
   id: Id;
   tournament: Id;
@@ -345,6 +366,8 @@ export interface Display {
   rotate_seconds: number;
   scope: { stage?: Id; pool?: Id; court?: Id };
   theme: DisplayTheme;
+  /** Which panels may rotate. Empty is every one of them, and is the default. */
+  panels: DisplayPanel[];
   active: boolean;
 }
 
@@ -570,6 +593,8 @@ export interface DisplayPayload {
     rotate_seconds: number;
     scope: { stage?: Id; pool?: Id; court?: Id };
     theme: DisplayTheme | null;
+    /** Empty means all of them — see {@link DisplayPanel}. */
+    panels: DisplayPanel[];
   };
   /** Sent once, referenced by id everywhere else. */
   entries: Record<Id, DisplayEntry>;

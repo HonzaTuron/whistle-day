@@ -11,11 +11,14 @@ import {
   saveWalkover,
   setLive,
   setSchedule,
+  updateDisplay,
   type Board,
   type Session,
 } from "../api/organiser";
+import type { Display } from "@seedly/engine";
 import { FixtureRow } from "../components/results/FixtureRow";
 import { MatchSheet } from "../components/results/MatchSheet";
+import { ScreenSheet } from "../components/results/ScreenSheet";
 import { StageProgress } from "../components/results/StageProgress";
 import { progress, sections, toRow } from "../lib/board";
 
@@ -35,6 +38,10 @@ export function Results({ id }: { id: string }) {
   const [board, setBoard] = useState<Board | null>(null);
   const [tab, setTab] = useState<Tab>("todo");
   const [selected, setSelected] = useState<string | null>(null);
+  const [settings, setSettings] = useState(false);
+  const [screenState, setScreenState] = useState<"idle" | "saving" | "failed">(
+    "idle",
+  );
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -83,10 +90,37 @@ export function Results({ id }: { id: string }) {
   const token = board.token;
 
   /**
-   * Every write goes the same way: send it, read the whole board back, and
-   * only then decide whether the sheet should close. `close` is what separates
-   * recording a result from putting a match on a court — one ends the
-   * interaction, the other is in the middle of it.
+   * Setting the screen up is the one write that does not read the board back.
+   *
+   * Nothing else on this page renders the display record, and the round trip
+   * is what made the rotation flinch: the sheet would fall back to the order
+   * the board still held, then jump forward again when the reload landed — a
+   * blink on every drag. The new value is put on the board as it is sent, and
+   * only a failure goes to the server to find out what is actually there.
+   */
+  const writeScreen = async (patch: Partial<Display>) => {
+    const screen = board.screen;
+    if (!screen) return;
+
+    setBoard((prev) =>
+      prev?.screen ? { ...prev, screen: { ...prev.screen, ...patch } } : prev,
+    );
+    setScreenState("saving");
+
+    try {
+      await updateDisplay(await getSession(), screen.id, patch);
+      setScreenState("idle");
+    } catch {
+      setScreenState("failed");
+      await refresh();
+    }
+  };
+
+  /**
+   * Every other write goes the same way: send it, read the whole board back,
+   * and only then decide whether the sheet should close. `close` is what
+   * separates recording a result from putting a match on a court — one ends
+   * the interaction, the other is in the middle of it.
    */
   const write = async (
     work: (active: Session) => Promise<unknown>,
@@ -124,9 +158,20 @@ export function Results({ id }: { id: string }) {
           </p>
         </div>
         {token ? (
-          <Link to="/display/$token" params={{ token }} className="results__screen">
-            Screen
-          </Link>
+          <div className="results__screens">
+            <Link to="/display/$token" params={{ token }} className="results__screen">
+              Screen
+            </Link>
+            {board.screen ? (
+              <button
+                type="button"
+                className="results__screen results__screen--settings"
+                onClick={() => setSettings(true)}
+              >
+                Set up
+              </button>
+            ) : null}
+          </div>
         ) : null}
       </header>
 
@@ -177,6 +222,18 @@ export function Results({ id }: { id: string }) {
           ))
         )}
       </main>
+
+      {settings && board.screen ? (
+        <ScreenSheet
+          screen={board.screen}
+          stages={board.stages}
+          pools={board.pools}
+          courts={board.courts}
+          state={screenState}
+          onChange={(patch) => void writeScreen(patch)}
+          onClose={() => setSettings(false)}
+        />
+      ) : null}
 
       {open ? (
         <MatchSheet

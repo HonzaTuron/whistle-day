@@ -65,7 +65,7 @@ Re-running `bun run seed` replaces the demo rather than adding a second one.
 | Route | For |
 |---|---|
 | `/new` | The organiser: name, teams, courts, format, and a link for the wall. |
-| `/t/:id` | Running the day: courts, times, what is live, and a score for each. |
+| `/t/:id` | Running the day: courts, times, what is live, a score for each, and how the wall is set up. |
 | `/account` | Put an email on the device account, or sign in on another device. |
 | `/display/:token` | The projector: unattended, rotates itself, read from across a hall. |
 | `/m/:token` | A phone: tabs, scrolling, one person looking for one thing. |

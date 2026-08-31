@@ -44,6 +44,9 @@ type displayConfig struct {
 	RotateSeconds int             `json:"rotate_seconds"`
 	Scope         DisplayScope    `json:"scope"`
 	Theme         json.RawMessage `json:"theme"`
+	// Which panels this screen may rotate through. Empty means all of them,
+	// which is also what a screen nobody has configured sends.
+	Panels []string `json:"panels"`
 }
 
 type displayEntry struct {
@@ -183,6 +186,13 @@ func BuildDisplayPayload(app core.App, display *core.Record) (*DisplayPayload, e
 		theme = json.RawMessage(raw)
 	}
 
+	// A panel list that will not parse is a screen showing everything, not a
+	// screen showing nothing: the rotation is what this endpoint is for.
+	panels := []string{}
+	if raw := display.GetString("panels"); raw != "" && raw != "null" {
+		_ = json.Unmarshal([]byte(raw), &panels)
+	}
+
 	payload := &DisplayPayload{
 		GeneratedAt: time.Now().UTC().Format(time.RFC3339),
 		Tournament: displayTournament{
@@ -200,6 +210,7 @@ func BuildDisplayPayload(app core.App, display *core.Record) (*DisplayPayload, e
 			RotateSeconds: display.GetInt("rotate_seconds"),
 			Scope:         scope,
 			Theme:         theme,
+			Panels:        panels,
 		},
 		Entries:  map[string]displayEntry{},
 		Courts:   []displayCourt{},

@@ -271,6 +271,14 @@ Three details that matter for a screen:
 - **Reading is cheap.** The response is tagged; send it back in
   `If-None-Match` and an unchanged tournament answers 304. The tag excludes
   the generation timestamp, so it only changes when the tournament does.
+- **A screen is configured, not coded.** `displays` carries `panels` (the
+  rotation: which panels, in which order — empty means all of them in the
+  running order, so a screen nobody has set up still picks up a panel added
+  next month), `mode` (the older way to pin a screen to one panel; a rotation
+  of one says the same thing, and the organiser UI writes `auto`),
+  `rotate_seconds`, `scope` (one stage, group or court) and `theme`.
+  The organiser writes them from the results screen and the wall follows on
+  the next nudge, which is what makes the wall the preview.
 - **A screen is told when to read.** Every write to anything a screen renders
   broadcasts a nudge on `tournament/{id}` over PocketBase's realtime stream —
   the fact of the change, never the change itself. Screens still hold a slow

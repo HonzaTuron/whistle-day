@@ -1,4 +1,4 @@
-import type { DisplayPayload } from "@seedly/engine";
+import type { DisplayPanel, DisplayPayload } from "@seedly/engine";
 import { bracketStages, tablePools } from "../../lib/format";
 
 export type PanelKind = "now_playing" | "standings" | "bracket" | "next_up" | "results" | "court_schedule" | "stage_progress" | "stage_table" | "branding";
@@ -80,6 +80,24 @@ export function buildPanels(payload: DisplayPayload): Panel[] {
     }
   };
 
+  /**
+   * The rotation this screen has been set up with: which panels, in which
+   * order. Empty is all of them in the order below, which is what a screen
+   * nobody has arranged sends.
+   *
+   * It shapes the rotation and nothing else: a screen pinned to one panel
+   * through `mode` was answering a different question, and the fallback at the
+   * bottom is there for a tournament with nothing in it rather than for an
+   * organiser who has switched everything off — so both are decided before
+   * this is applied.
+   */
+  const configured = payload.display.panels ?? [];
+  const rank = new Map<DisplayPanel, number>(
+    configured.map((panel, index) => [panel, index]),
+  );
+  const wanted = (kind: PanelKind) =>
+    rank.size === 0 || rank.has(kind as DisplayPanel);
+
   switch (mode) {
     case "now_playing":
       addNowPlaying();
@@ -111,6 +129,21 @@ export function buildPanels(payload: DisplayPayload): Panel[] {
       addBracket();
       addNextUp();
       addResults();
+  }
+
+  if (mode === "auto" && rank.size > 0) {
+    const kept = panels.filter((panel) => wanted(panel.kind));
+    if (kept.length > 0) {
+      // Stable within a kind: four group tables stay in group order, wherever
+      // the organiser put "Group tables" in the rotation.
+      kept.sort(
+        (a, b) =>
+          (rank.get(a.kind as DisplayPanel) ?? 0) -
+          (rank.get(b.kind as DisplayPanel) ?? 0),
+      );
+      panels.length = 0;
+      panels.push(...kept);
+    }
   }
 
   // A locked mode with nothing in it would leave a black screen; fall back to

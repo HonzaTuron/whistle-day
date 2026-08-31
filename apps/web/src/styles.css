@@ -1783,6 +1783,12 @@ th,
   font-variant-numeric: tabular-nums;
 }
 
+.results__screens {
+  flex: 0 0 auto;
+  display: flex;
+  gap: 0.35rem;
+}
+
 .results__screen {
   flex: 0 0 auto;
   min-height: 36px;
@@ -1795,6 +1801,160 @@ th,
   font-size: 0.8rem;
   font-weight: 600;
   text-decoration: none;
+}
+
+.results__screen--settings {
+  background: transparent;
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* --- screen settings ------------------------------------------------------ */
+
+.setting {
+  display: grid;
+  gap: 0.5rem;
+  padding-top: 0.6rem;
+  border-top: 1px solid var(--line);
+}
+
+.setting__label {
+  margin: 0;
+  font-size: 0.8rem;
+  font-weight: 650;
+  color: var(--muted);
+}
+
+/* Wrapping, not scrolling: a list of panels is read all at once to decide
+   which two to drop, unlike the courts on a match sheet. */
+.chips--wrap {
+  flex-wrap: wrap;
+  overflow-x: visible;
+}
+
+/* The rotation: one panel per line, in the order it runs, with its
+   consequence underneath — "Bracket" alone does not say what a screen showing
+   it is not showing. */
+.rotation {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.3rem;
+}
+
+.rotation__row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  min-height: 48px;
+  border: 1px solid var(--accent);
+  border-radius: 0.6rem;
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  /* A row being dragged must not also be a row being scrolled. */
+  touch-action: none;
+}
+
+.rotation__row.is-dragging {
+  background: color-mix(in srgb, var(--accent) 22%, transparent);
+  box-shadow: 0 0.4rem 1rem rgba(4, 7, 10, 0.45);
+}
+
+.rotation__pick {
+  display: grid;
+  gap: 0.1rem;
+  padding: 0.4rem 0.8rem;
+  cursor: pointer;
+}
+
+.rotation__row:focus-within {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.rotation__name {
+  font-size: 0.9rem;
+  font-weight: 650;
+}
+
+.rotation__hint {
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+/* Its own target, away from the row's, so reaching for one never fires the
+   other. */
+.rotation__grip {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  align-self: stretch;
+  border: 0;
+  border-radius: 0 0.6rem 0.6rem 0;
+  background: transparent;
+  color: var(--muted);
+  cursor: grab;
+  touch-action: none;
+}
+
+.rotation__grip:active {
+  cursor: grabbing;
+}
+
+.rotation__grip svg {
+  fill: currentColor;
+}
+
+.rotation__off {
+  margin: 0.2rem 0 0;
+  font-size: 0.75rem;
+  font-weight: 650;
+  color: var(--muted);
+}
+
+/* Present to the keyboard and to a screen reader, absent to everyone else:
+   the row already says whether it is on. */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.option__label {
+  font-size: 0.9rem;
+  font-weight: 650;
+}
+
+.option__hint {
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.accent {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.accent__pick {
+  width: 48px;
+  height: 40px;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 0.5rem;
+  background: transparent;
+  cursor: pointer;
+}
+
+.accent__value {
+  font-family: var(--numeric);
+  font-size: 0.8rem;
+  color: var(--muted);
 }
 
 /* Sticky, so switching between what is left and what is done never needs a

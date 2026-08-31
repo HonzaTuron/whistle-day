@@ -205,6 +205,42 @@ it is open on — but only when there is something to say. A match entered once
 and left alone shows nothing, because the row above it already says what the
 score is. The line that matters is the second one: "changed 3–1 to 2–4".
 
+## Setting the screen up
+
+The wall is configured from the results screen — "Set up" beside the "Screen"
+link — and every field saves on change, because the wall is the preview: the
+server nudges it the moment the write lands, so an organiser standing in front
+of the screen with a phone sees what a setting does rather than guessing and
+walking over.
+
+- **Which panels and in what order are one list, because they are one
+  decision.** The row is the switch; the six-dot grip on the right is the
+  handle, far enough from it that reaching for one cannot fire the other.
+  Dragging is pointer events rather than HTML5 drag-and-drop, which does not
+  exist on touch — and this screen is used on a phone. The same handle takes
+  arrow keys, so the order is reachable without a pointer at all.
+- **A rotation of one is a pinned screen.** `displays.mode` says the same
+  thing in an older way, so the sheet writes `mode: "auto"` whenever it writes
+  the list: two fields that can disagree about what is on the wall is one more
+  than there should be. A screen pinned through the API still reads correctly
+  here — it shows as a rotation with one panel in it.
+- **Empty means all of them, in the running order.** An untouched screen
+  stores no list, and putting the last panel back stores no list again: a
+  default written out is a default that goes stale, and a screen set up today
+  would never pick up a panel added next month. The cost is that arranging the
+  order *is* saying "this list, this order", so a screen that has been
+  arranged will not pick that panel up either. That is the trade an organiser
+  is making by arranging it.
+- **The closing credit is not in the list.** It ends every rotation and it is
+  where the sponsors live, so it is not an organiser's to switch off.
+- **A panel with nothing in it was already dropped.** These toggles are for
+  the panels that would otherwise have something to show and are not wanted —
+  which is worth saying on the screen, or the first thing an organiser does is
+  switch off a panel that was never going to appear.
+
+`scope` narrows a screen to one stage, group or court. It is the second screen
+by the door, not the main wall.
+
 ## Notes on the projector
 
 - **Empty panels are dropped, not shown blank.** A hall with no live match
