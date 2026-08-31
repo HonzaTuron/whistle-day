@@ -1133,13 +1133,31 @@ try {
 
   // The crew sheet reads before it writes — it reuses a live code rather than
   // minting one per visit — so the list rule is on the path, not beside it.
+  //
+  // The filter is encoded the way the client encodes it, and that is the whole
+  // point of writing it this way. `&&` in a PocketBase filter is two
+  // ampersands in a query string; spelled out by hand here as %26%26 this
+  // assertion passed while the browser, sending them raw, had its filter cut
+  // off at the first condition. A test that builds the URL more carefully than
+  // the code it stands in for is testing the wrong thing.
+  const liveReferee =
+    `tournament='${hall.id}' && role='referee' && active=true`;
   const ownList = await fetch(
     `${BASE}/api/collections/invites/records` +
-      `?filter=(tournament='${hall.id}' %26%26 role='referee' %26%26 active=true)`,
+      `?filter=${encodeURIComponent(liveReferee)}`,
     { headers: { Authorization: chiefAuth.token } },
   );
   check("the owner can find a code they already minted", ownList.status, 200);
   check("and finds exactly the live one", (await ownList.json()).items.length, 1);
+
+  // And the shape that was actually broken: ampersands straight into the query
+  // string, which is what a template literal in the browser produces.
+  const rawAmpersands = await fetch(
+    `${BASE}/api/collections/invites/records?filter=(${liveReferee})`,
+    { headers: { Authorization: chiefAuth.token } },
+  );
+  check("an unencoded filter is refused rather than half-applied",
+    rawAmpersands.status, 400);
 
   // The preview is public: a join screen that could not name the tournament
   // would be asking somebody to accept a blank invitation.

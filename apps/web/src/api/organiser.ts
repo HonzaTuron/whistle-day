@@ -217,6 +217,19 @@ export interface TournamentRecord {
   owner: Id;
 }
 
+/**
+ * A filter, encoded.
+ *
+ * `&&` in a PocketBase filter is two ampersands in a query string, and the
+ * browser reads those as parameter separators — so an unencoded two-condition
+ * filter arrives truncated at the first one and is rejected. Single-condition
+ * filters happen to survive it, which is exactly why this went unnoticed:
+ * every filter here had one condition until the invite lookup needed three.
+ *
+ * Every filter goes through here so the hazard cannot come back.
+ */
+const where = (filter: string) => `filter=${encodeURIComponent(filter)}`;
+
 const records = <T>(session: Session, collection: string, query: string) =>
   api<{ items: T[] }>(
     `/api/collections/${collection}/records?${query}`,
@@ -281,7 +294,7 @@ export const myTournaments = (session: Session) =>
   records<TournamentRecord>(
     session,
     "tournaments",
-    `filter=(owner='${session.userId}' || staff_via_tournament.user?='${session.userId}')` +
+    `${where(`owner='${session.userId}' || staff_via_tournament.user?='${session.userId}'`)}` +
       `&sort=-created&perPage=50`,
   );
 
@@ -345,10 +358,10 @@ export const deleteDraft = (session: Session, id: Id) =>
   });
 
 export const loadTeams = (session: Session, tournament: Id) =>
-  records<TeamRecord>(session, "entries", `filter=(tournament='${tournament}')&sort=seed&perPage=200`);
+  records<TeamRecord>(session, "entries", `${where(`tournament='${tournament}'`)}&sort=seed&perPage=200`);
 
 export const loadCourts = (session: Session, tournament: Id) =>
-  records<CourtRecord>(session, "courts", `filter=(tournament='${tournament}')&sort=position&perPage=100`);
+  records<CourtRecord>(session, "courts", `${where(`tournament='${tournament}'`)}&sort=position&perPage=100`);
 
 /**
  * `seed` is the position in the list, and the list is the order they were
@@ -452,24 +465,24 @@ export async function loadBoard(session: Session, id: Id): Promise<Board> {
   const [tournament, entries, stages, pools, courts, fixtures, screens, crew] =
     await Promise.all([
     loadTournament(session, id),
-    records<Entry>(session, "entries", `filter=(tournament='${id}')&sort=seed&perPage=200`),
-    records<Stage>(session, "stages", `filter=(tournament='${id}')&sort=position&perPage=50`),
-    records<Pool>(session, "pools", `filter=(stage.tournament='${id}')&sort=position&perPage=100`),
-    records<Court>(session, "courts", `filter=(tournament='${id}')&sort=position&perPage=50`),
+    records<Entry>(session, "entries", `${where(`tournament='${id}'`)}&sort=seed&perPage=200`),
+    records<Stage>(session, "stages", `${where(`tournament='${id}'`)}&sort=position&perPage=50`),
+    records<Pool>(session, "pools", `${where(`stage.tournament='${id}'`)}&sort=position&perPage=100`),
+    records<Court>(session, "courts", `${where(`tournament='${id}'`)}&sort=position&perPage=50`),
     records<BoardFixture>(
       session,
       "fixtures",
-      `filter=(tournament='${id}')&sort=round,position` +
+      `${where(`tournament='${id}'`)}&sort=round,position` +
         `&expand=home_slot,away_slot&perPage=500`,
     ),
     // Staff can read their own screens; the public still needs the token.
-    records<Display>(session, "displays", `filter=(tournament='${id}')&perPage=5`),
+    records<Display>(session, "displays", `${where(`tournament='${id}'`)}&perPage=5`),
     // A crew can see itself. An empty list is the ordinary case — most
     // tournaments are run by the one phone that created them.
     records<StaffRecord>(
       session,
       "staff",
-      `filter=(tournament='${id}')&sort=created&perPage=100`,
+      `${where(`tournament='${id}'`)}&sort=created&perPage=100`,
     ),
   ]);
 
@@ -537,7 +550,7 @@ export interface SetScore {
 
 /** The per-set points of one match, first set first. */
 export const loadGames = (session: Session, fixture: Id) =>
-  records<Game>(session, "games", `filter=(fixture='${fixture}')&sort=number&perPage=50`);
+  records<Game>(session, "games", `${where(`fixture='${fixture}'`)}&sort=number&perPage=50`);
 
 /**
  * Write the points set by set.
@@ -621,7 +634,7 @@ export const loadHistory = (session: Session, fixture: Id) =>
   records<FixtureEvent>(
     session,
     "fixture_events",
-    `filter=(fixture='${fixture}')&sort=created&perPage=50`,
+    `${where(`fixture='${fixture}'`)}&sort=created&perPage=50`,
   );
 
 /**
@@ -761,7 +774,7 @@ export const loadStaff = (session: Session, tournament: Id) =>
   records<StaffRecord>(
     session,
     "staff",
-    `filter=(tournament='${tournament}')&sort=created&perPage=100`,
+    `${where(`tournament='${tournament}'`)}&sort=created&perPage=100`,
   );
 
 /**
@@ -796,7 +809,7 @@ export async function ensureInvite(
   const existing = await records<Invite>(
     session,
     "invites",
-    `filter=(tournament='${tournament}' && role='${role}' && active=true)&perPage=1`,
+    `${where(`tournament='${tournament}' && role='${role}' && active=true`)}&perPage=1`,
   );
   if (existing[0]) return existing[0];
 
@@ -824,7 +837,7 @@ export async function resetInvite(
   const live = await records<Invite>(
     session,
     "invites",
-    `filter=(tournament='${tournament}' && role='${role}' && active=true)&perPage=20`,
+    `${where(`tournament='${tournament}' && role='${role}' && active=true`)}&perPage=20`,
   );
 
   for (const invite of live) {
