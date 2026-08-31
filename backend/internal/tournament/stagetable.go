@@ -41,6 +41,7 @@ import (
 // skipped.
 func computeStageTable(
 	app core.App, stage *core.Record, cfg ScoringConfig, tables []poolTable,
+	voided map[string]bool,
 ) error {
 	if len(tables) == 0 {
 		return nil
@@ -57,7 +58,11 @@ func computeStageTable(
 	truncated := tables
 	fixtures := []*core.Record{}
 
-	if ignore := belowDepth(tables, depth); len(ignore) > 0 {
+	// The pool tables handed in here were already tallied without the voided
+	// entries, but the re-tally below builds its own ignore set from scratch —
+	// so they have to be carried into it or a struck match walks back into the
+	// stage table by the side door.
+	if ignore := union(belowDepth(tables, depth), voided); len(ignore) > 0 {
 		truncated = make([]poolTable, 0, len(tables))
 		for _, table := range tables {
 			rows, played, err := tallyPool(app, stage, table.Pool, cfg, allRounds, ignore)
@@ -172,6 +177,18 @@ func belowDepth(tables []poolTable, depth int) map[string]bool {
 		}
 	}
 	return ignore
+}
+
+// union merges two ignore sets without disturbing either.
+func union(a, b map[string]bool) map[string]bool {
+	merged := make(map[string]bool, len(a)+len(b))
+	for id := range a {
+		merged[id] = true
+	}
+	for id := range b {
+		merged[id] = true
+	}
+	return merged
 }
 
 // inTableOrder puts freshly tallied rows back into the order of the pool table

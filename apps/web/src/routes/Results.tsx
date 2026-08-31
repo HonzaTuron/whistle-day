@@ -12,17 +12,20 @@ import {
   saveWalkover,
   setLive,
   setSchedule,
+  reinstateEntry,
   removeStaff,
   storedSession,
   resetInvite,
   updateDisplay,
+  withdrawEntry,
   type Board,
   type Session,
   type StaffRecord,
 } from "../api/organiser";
-import type { Display, StaffRole } from "@seedly/engine";
+import type { Display, Entry, StaffRole } from "@seedly/engine";
 import { CrewSheet } from "../components/results/CrewSheet";
 import { FixtureRow } from "../components/results/FixtureRow";
+import { TeamsSheet } from "../components/results/TeamsSheet";
 import { MatchSheet } from "../components/results/MatchSheet";
 import { ScreenSheet } from "../components/results/ScreenSheet";
 import { StageProgress } from "../components/results/StageProgress";
@@ -46,6 +49,7 @@ export function Results({ id }: { id: string }) {
   const [selected, setSelected] = useState<string | null>(null);
   const [settings, setSettings] = useState(false);
   const [crew, setCrew] = useState(false);
+  const [roster, setRoster] = useState(false);
   const [invite, setInvite] = useState<{ role: StaffRole; url: string } | null>(null);
   const [inviting, setInviting] = useState(false);
   const [screenState, setScreenState] = useState<"idle" | "saving" | "failed">(
@@ -94,7 +98,12 @@ export function Results({ id }: { id: string }) {
   const entries = new Map(board.entries.map((entry) => [entry.id, entry]));
   const rows = board.fixtures.map((fixture) => toRow(fixture, entries));
   const done = progress(rows);
-  const visible = rows.filter((row) => (tab === "done" ? row.settled : !row.settled));
+  // A cancelled match belongs in neither tab's headline but has to stay
+  // findable, so it sits with the settled ones — an organiser who took a team
+  // out and wants to see what that did to the day should not have to guess.
+  const visible = rows.filter((row) =>
+    tab === "done" ? row.settled || row.cancelled : !row.settled && !row.cancelled,
+  );
   const open = selected ? rows.find((row) => row.fixture.id === selected) ?? null : null;
   const token = board.token;
   // Read rather than awaited: the board has already loaded, so the session it
@@ -194,6 +203,26 @@ export function Results({ id }: { id: string }) {
   const dropStaff = (member: StaffRecord) =>
     void write((active) => removeStaff(active, member.id), false);
 
+  /**
+   * How many matches each team still has to play, which is the number that
+   * makes the choice concrete: "they have four left" is what tells an
+   * organiser whether this is a formality or a decision.
+   */
+  const remaining = new Map<string, number>();
+  for (const team of board.entries) remaining.set(team.id, 0);
+  for (const row of rows) {
+    if (row.settled) continue;
+    for (const side of [row.fixture.home_entry, row.fixture.away_entry]) {
+      if (side && remaining.has(side)) remaining.set(side, remaining.get(side)! + 1);
+    }
+  }
+
+  const takeOut = (team: Entry, policy: "forfeit" | "void") =>
+    void write((active) => withdrawEntry(active, team.id, policy), false);
+
+  const putBack = (team: Entry) =>
+    void write((active) => reinstateEntry(active, team.id), false);
+
   return (
     <div className="results">
       {error ? (
@@ -232,6 +261,13 @@ export function Results({ id }: { id: string }) {
             owner-only on the server, so offering the button to a referee would
             be offering them a request that comes back 403.
           */}
+          <button
+            type="button"
+            className="results__screen results__screen--settings"
+            onClick={() => setRoster(true)}
+          >
+            Teams
+          </button>
           {isOwner ? (
             <button
               type="button"
@@ -291,6 +327,17 @@ export function Results({ id }: { id: string }) {
           ))
         )}
       </main>
+
+      {roster ? (
+        <TeamsSheet
+          teams={board.entries}
+          remaining={remaining}
+          busy={saving}
+          onWithdraw={takeOut}
+          onReinstate={putBack}
+          onClose={() => setRoster(false)}
+        />
+      ) : null}
 
       {crew ? (
         <CrewSheet

@@ -45,11 +45,11 @@ erDiagram
 | `staff` | Who may operate it (`organizer` / `referee` / `scorer`), and the name they gave when they joined. |
 | `invites` | A join code: one unguessable token per role, scanned off the organiser's phone. |
 | `courts` | Playing areas. Used by the schedule and the projector. |
-| `entries` | A participant — team or individual. `short_name` is what the projector draws. |
+| `entries` | A participant — team or individual. `short_name` is what the projector draws; `withdrawal` is what happens to their results once they are out. |
 | `stages` | A phase. `position` + `format` + `config`. |
 | `pools` | A self-contained sub-competition inside a stage: one round-robin group, or one side of a double-elimination bracket. |
 | `slots` | A fillable position. The core of the model. |
-| `fixtures` | A match. |
+| `fixtures` | A match. `forfeited_by` names the team whose exit closed it, when nobody played it. |
 | `games` | Sets / legs / maps inside a fixture. |
 | `standings` | A table. Materialised, not a SQL view. |
 | `displays` | A projector screen. |
@@ -92,6 +92,41 @@ Generating such a bracket is one call:
 Qualifiers are ordered by rank first, then by pool — A1 B1 C1 D1 A2 B2 C2 D2 —
 which, combined with standard bracket seeding, guarantees no two entries from
 the same pool meet in round 1.
+
+## When a team goes home
+
+Two sets, and confusing them is the bug this is arranged to prevent.
+
+**Who is still in** — every entry whose `status` is `withdrawn` or
+`disqualified` — decides what happens next: who the Swiss pairing may draw, and
+whose remaining fixtures are still going to be played.
+
+**Whose results count** — the subset of those with `withdrawal = 'void'` —
+decides what the tables say about everybody else.
+
+A forfeiting team is out of the first set and still in the second. That is the
+whole difference between the two policies, and it is why the pairing and the
+tally read different queries rather than sharing one.
+
+Voiding needs no new tallying machinery. `tallyPool` already took an `ignore`
+set that drops every fixture involving those entries and the entries
+themselves, built for the cross-pool table so that uneven pools are compared
+over the same number of matches. A voided team is the same operation asked for
+a different reason, so it is the same parameter.
+
+| | |
+|---|---|
+| `forfeit` | What they played stands. Everything left becomes a walkover to the opponent. |
+| `void` | Every match they were ever in is struck, on both sides. They leave the table entirely. |
+
+Both close the fixtures the team had left — a walkover for the first, a
+`cancelled` for the second — and both stamp `fixtures.forfeited_by`, which is
+what `reinstate` reads to undo precisely those and nothing else.
+
+A cancelled match is the first fixture status that is neither a result nor
+outstanding work, so it leaves every denominator rather than counting as done.
+A day with two cancelled matches is a day of four matches, not a day of six
+that can only ever reach four.
 
 ## How a second person gets in
 

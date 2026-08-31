@@ -1,12 +1,11 @@
 import type { Fixture, Pool, Stage } from "@seedly/engine";
+import { counts, isSettledStatus } from "../../lib/status";
 
 interface Props {
   stages: Stage[];
   pools: Pool[];
   fixtures: Fixture[];
 }
-
-const SETTLED = ["finished", "walkover", "bye"];
 
 export function StageProgress({ stages, pools, fixtures }: Props) {
   const poolsByStage = new Map<string, Pool[]>();
@@ -28,8 +27,9 @@ export function StageProgress({ stages, pools, fixtures }: Props) {
     <div className="prog">
       {stages.map((stage) => {
         const stagePools = poolsByStage.get(stage.id) ?? [];
-        const stageFixtures = fixtures.filter((f) => f.stage === stage.id);
-        const done = stageFixtures.filter((f) => SETTLED.includes(f.status)).length;
+        // Cancelled matches leave the count entirely — see lib/status.
+        const stageFixtures = counts(fixtures.filter((f) => f.stage === stage.id));
+        const done = stageFixtures.filter((f) => isSettledStatus(f.status)).length;
         const live = stageFixtures.filter((f) => f.status === "live").length;
         const pct = stageFixtures.length > 0 ? Math.round((done / stageFixtures.length) * 100) : 0;
 
@@ -50,8 +50,8 @@ export function StageProgress({ stages, pools, fixtures }: Props) {
             {stagePools.length > 1 && (
               <div className="prog__pools">
                 {stagePools.map((pool) => {
-                  const poolFixtures = fixturesByPool.get(pool.id) ?? [];
-                  const poolDone = poolFixtures.filter((f) => SETTLED.includes(f.status)).length;
+                  const poolFixtures = counts(fixturesByPool.get(pool.id) ?? []);
+                  const poolDone = poolFixtures.filter((f) => isSettledStatus(f.status)).length;
                   return (
                     <span key={pool.id} className="prog__pool">
                       {pool.name} {poolDone}/{poolFixtures.length}

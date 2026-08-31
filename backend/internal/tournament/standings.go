@@ -85,19 +85,28 @@ func ComputeStandings(app core.App, stageID string) error {
 		return err
 	}
 
+	// Whoever's results have been struck. A voided team is not merely absent
+	// from the table — every match they were in comes out of it, for their
+	// opponents too, which is the whole difference between voiding and
+	// forfeiting.
+	voided, err := voidedForStage(app, stage)
+	if err != nil {
+		return err
+	}
+
 	return app.RunInTransaction(func(tx core.App) error {
 		tables := []poolTable{}
 		for _, pool := range pools {
 			if pool.GetString("kind") != "group" {
 				continue // brackets do not have tables
 			}
-			rows, err := computePoolTable(tx, stage, pool, cfg)
+			rows, err := computePoolTable(tx, stage, pool, cfg, voided)
 			if err != nil {
 				return err
 			}
 			tables = append(tables, poolTable{Pool: pool, Ranked: rows})
 		}
-		return computeStageTable(tx, stage, cfg, tables)
+		return computeStageTable(tx, stage, cfg, tables, voided)
 	})
 }
 
@@ -113,9 +122,9 @@ type poolTable struct {
 const allRounds = math.MaxInt
 
 func computePoolTable(
-	app core.App, stage, pool *core.Record, cfg ScoringConfig,
+	app core.App, stage, pool *core.Record, cfg ScoringConfig, voided map[string]bool,
 ) ([]*standingRow, error) {
-	rows, played, err := tallyPool(app, stage, pool, cfg, allRounds, nil)
+	rows, played, err := tallyPool(app, stage, pool, cfg, allRounds, voided)
 	if err != nil {
 		return nil, err
 	}
@@ -140,8 +149,9 @@ func computePoolTable(
 // itself, would redraw the round it is standing in, for ever.
 //
 // ignore drops every fixture involving one of those entries, and the entries
-// themselves. It is empty for a pool table and used only by the stage-wide
-// table, which has to compare records of equal length across uneven pools.
+// themselves. Two callers want that for unrelated reasons: the stage-wide
+// table, comparing records of equal length across uneven pools, and a pool
+// table with a voided team in it, whose matches never counted for anybody.
 func tallyPool(
 	app core.App, stage, pool *core.Record, cfg ScoringConfig, throughRound int,
 	ignore map[string]bool,

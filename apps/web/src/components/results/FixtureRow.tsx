@@ -47,6 +47,7 @@ export function FixtureRow({ row, courts, onOpen }: Props) {
       className={
         "match" +
         (row.settled ? " match--done" : "") +
+        (row.cancelled ? " match--done" : "") +
         (row.live ? " match--live" : "")
       }
       onClick={onOpen}
@@ -57,6 +58,9 @@ export function FixtureRow({ row, courts, onOpen }: Props) {
 }
 
 function result(row: BoardRow) {
+  // Not a score and not a fixture waiting to be played: a match that stopped
+  // being one when a team was taken out.
+  if (row.cancelled) return "—";
   if (row.walkover) return "w/o";
   if (row.settled) return `${row.fixture.home_score ?? 0}–${row.fixture.away_score ?? 0}`;
   if (row.live) return <span className="match__live">Live</span>;

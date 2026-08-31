@@ -188,6 +188,76 @@ func RegisterRoutes(app core.App) {
 			return e.JSON(http.StatusOK, map[string]any{"email": data.Email})
 		}).Bind(apis.RequireAuth())
 
+		// Take a team out of a tournament that is already running, and put
+		// one back.
+		//
+		// A route rather than a status field somebody PATCHes, because the
+		// write is the small half of it: everything they had left has to be
+		// closed, and every stage retallied, in one transaction. Half-applied
+		// is the one state worse than not having the feature — a team gone
+		// from the draw but still in the table is a tournament nobody can
+		// explain.
+		se.Router.POST("/api/entries/{entry}/withdraw", func(e *core.RequestEvent) error {
+			entry, err := e.App.FindRecordById("entries", e.Request.PathValue("entry"))
+			if err != nil {
+				return e.NotFoundError("team not found", err)
+			}
+			if err := requireStaff(e, entry.GetString("tournament")); err != nil {
+				return err
+			}
+
+			data := struct {
+				Policy string `json:"policy"`
+				Status string `json:"status"`
+			}{}
+			if err := e.BindBody(&data); err != nil {
+				return e.BadRequestError("could not read the request", err)
+			}
+			if data.Status == "" {
+				data.Status = "withdrawn"
+			}
+
+			// No default policy. The two answers rank everybody else
+			// differently, and picking one on the organiser's behalf would be
+			// deciding a competition from inside a web framework.
+			policy := WithdrawalPolicy(data.Policy)
+			if policy != PolicyForfeit && policy != PolicyVoid {
+				return e.BadRequestError(
+					"say whether they forfeit the rest or their results are struck", nil)
+			}
+
+			if err := WithdrawEntry(e.App, entry, data.Status, policy); err != nil {
+				return e.BadRequestError("could not take that team out", err)
+			}
+
+			// No explicit nudge: RegisterRealtime fires on every record
+			// write, and this made a great many of them.
+			return e.JSON(http.StatusOK, map[string]any{
+				"entry":  entry.Id,
+				"status": entry.GetString("status"),
+				"policy": entry.GetString("withdrawal"),
+			})
+		}).Bind(apis.RequireAuth())
+
+		se.Router.POST("/api/entries/{entry}/reinstate", func(e *core.RequestEvent) error {
+			entry, err := e.App.FindRecordById("entries", e.Request.PathValue("entry"))
+			if err != nil {
+				return e.NotFoundError("team not found", err)
+			}
+			if err := requireStaff(e, entry.GetString("tournament")); err != nil {
+				return err
+			}
+
+			if err := ReinstateEntry(e.App, entry); err != nil {
+				return e.BadRequestError("could not put that team back", err)
+			}
+
+			return e.JSON(http.StatusOK, map[string]any{
+				"entry":  entry.Id,
+				"status": entry.GetString("status"),
+			})
+		}).Bind(apis.RequireAuth())
+
 		// What a join link is for, before anyone commits to using it.
 		//
 		// Public, like the display payload and for the same reason: the

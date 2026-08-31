@@ -123,9 +123,23 @@ export interface Entry {
   contact: string;
   seed: number | null;
   status: EntryStatus;
+  /**
+   * What happens to their results once they are out, and it is empty while
+   * they are still in.
+   *
+   * `forfeit` keeps everything they played and hands the rest to whoever was
+   * due to face them. `void` strikes every match they were ever in, for both
+   * sides — which is the honest answer when a team leaves mid-group, since
+   * otherwise whoever happened to play them already is ranked against a
+   * different opponent set from whoever never got the chance.
+   */
+  withdrawal: "" | "forfeit" | "void";
   logo: string;
   members: { name: string; role?: string }[];
 }
+
+/** A team is out either because they went, or because they were sent. */
+export type EntryExit = "withdrawn" | "disqualified";
 
 // ---------------------------------------------------------------------------
 // stages + pools

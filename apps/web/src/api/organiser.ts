@@ -5,6 +5,7 @@ import type {
   Fixture,
   FixtureEvent,
   Game,
+  EntryExit,
   Id,
   Invite,
   Pool,
@@ -748,6 +749,47 @@ export function rememberedTournament(): RunningTournament | null {
     return null;
   }
 }
+
+// ---------------------------------------------------------------------------
+// a team going home
+// ---------------------------------------------------------------------------
+
+/**
+ * Take a team out of a tournament that is already running.
+ *
+ * One call rather than a status write and then a lot of tidying up: the server
+ * closes everything they had left and retallies every stage in one
+ * transaction. Doing it by hand — a walkover per remaining fixture — is five
+ * sheets in a group of six and a chance to miss one, and a tournament with one
+ * fixture missed is a tournament whose table is quietly wrong.
+ *
+ * `policy` has no default here because it has none on the server either. The
+ * two answers rank everybody else differently, so choosing one on the
+ * organiser's behalf would be deciding their competition for them.
+ */
+export const withdrawEntry = (
+  session: Session,
+  entry: Id,
+  policy: "forfeit" | "void",
+  status: EntryExit = "withdrawn",
+) =>
+  api<{ entry: Id; status: string; policy: string }>(
+    `/api/entries/${entry}/withdraw`,
+    { method: "POST", token: session.token, body: { policy, status } },
+  );
+
+/**
+ * Put one back.
+ *
+ * Undoes what taking them out did and nothing else — the server tracks which
+ * fixtures their exit closed, so a walkover the organiser recorded on purpose
+ * an hour beforehand survives this untouched.
+ */
+export const reinstateEntry = (session: Session, entry: Id) =>
+  api<{ entry: Id; status: string }>(`/api/entries/${entry}/reinstate`, {
+    method: "POST",
+    token: session.token,
+  });
 
 // ---------------------------------------------------------------------------
 // the crew

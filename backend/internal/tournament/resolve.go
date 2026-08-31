@@ -176,6 +176,15 @@ func deriveOutcome(f *core.Record) {
 // It is idempotent: re-running it on an already-propagated fixture writes
 // nothing, so a corrected score can safely be replayed.
 func PropagateFixture(app core.App, fixture *core.Record) error {
+	// A fixture facing somebody who has gone home is decided the moment the
+	// other side is known — a bracket match drawn on Friday can learn on
+	// Saturday afternoon that its opponent withdrew in the morning.
+	if closed, err := settleWithdrawn(app, fixture); err != nil {
+		return err
+	} else if closed {
+		return nil
+	}
+
 	// A fixture facing a declared bye is decided the moment it exists.
 	settled, err := settleBye(app, fixture)
 	if err != nil {

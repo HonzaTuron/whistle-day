@@ -1,3 +1,5 @@
+import type { EntryStatus } from "@seedly/engine";
+
 /**
  * `entries.short_name` is capped at 16 characters and is what the projector
  * draws — a full club name wrecks a bracket cell read from five metres away.
@@ -33,3 +35,13 @@ export function suggestShortName(name: string): string {
 
 export const isDuplicateName = (name: string, existing: { name: string }[]) =>
   existing.some((team) => team.name.trim().toLowerCase() === name.trim().toLowerCase());
+
+/**
+ * Whether a team is still taking part.
+ *
+ * Withdrawn and disqualified differ in why, and in nothing this screen does
+ * about it: both are struck through in the list, both stop appearing in a
+ * draw. The reason belongs on the record and in the log, not in a branch.
+ */
+export const isOut = (entry: { status: EntryStatus }) =>
+  entry.status === "withdrawn" || entry.status === "disqualified";

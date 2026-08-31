@@ -1290,6 +1290,218 @@ try {
     "GET", `/api/collections/staff/records?filter=(tournament='${hall.id}')`);
   check("while whoever already joined stays on the crew", survivors.totalItems, 1);
 
+
+  // =====================================================================
+  console.log("\n17. a team goes home");
+  // =====================================================================
+  // The two policies are two different competitions, so the assertions that
+  // matter are the ones about everybody else. A forfeit hands the absent
+  // team's remaining matches to whoever was due to face them; a void takes
+  // every match they were ever in away from both sides of it.
+  const wd = async (entryId: string, policy: string, status = "withdrawn") =>
+    fetch(`${BASE}/api/entries/${entryId}/withdraw`, {
+      method: "POST",
+      headers: { "content-type": "application/json", Authorization: token },
+      body: JSON.stringify({ policy, status }),
+    });
+
+  const buildPool = async (name: string) => {
+    const t = await create("tournaments", {
+      name, slug: `${name}-${Date.now()}`, status: "published", owner: organiser.id,
+      scoring: { pointsWin: 3, pointsDraw: 1, pointsLoss: 0 },
+    });
+    const teams: Record<string, any> = {};
+    for (const [i, n] of ["W", "X", "Y", "Z"].entries()) {
+      teams[n] = await create("entries", {
+        tournament: t.id, name: n, seed: i + 1, status: "active",
+      });
+    }
+    const stage = await create("stages", {
+      tournament: t.id, position: 0, name: "Group",
+      format: "round_robin", status: "draft", config: { poolCount: 1 },
+    });
+    await api("POST", `/api/stages/${stage.id}/generate`);
+    return { t, teams, stage };
+  };
+
+  // Pool rows only. A stage's `standings` also holds the cross-pool table
+  // under the same stage with `pool` unset, so filtering on the stage alone
+  // returns every row twice.
+  const tableOf = async (stageId: string) =>
+    (await api("GET",
+      `/api/collections/standings/records` +
+        `?filter=${encodeURIComponent(`stage='${stageId}' && pool!=''`)}&sort=position`)).items;
+
+  const fixturesOf = async (stageId: string) =>
+    (await api("GET",
+      `/api/collections/fixtures/records?filter=(stage='${stageId}')&sort=round,position`)).items;
+
+  // --- forfeit: what they played stands, what is left goes to the opponent --
+  const ff = await buildPool("Forfeit Cup");
+  const ffFix = await fixturesOf(ff.stage.id);
+  const nameOfFf = (id: string) =>
+    Object.entries(ff.teams).find(([, e]) => e.id === id)?.[0] ?? "";
+
+  // W beats X 3-0, then W goes home.
+  const wx = ffFix.find((f: any) =>
+    [nameOfFf(f.home_entry), nameOfFf(f.away_entry)].sort().join("") === "WX");
+  await patch("fixtures", wx.id, {
+    status: "finished",
+    home_score: nameOfFf(wx.home_entry) === "W" ? 3 : 0,
+    away_score: nameOfFf(wx.home_entry) === "W" ? 0 : 3,
+  });
+
+  const noPolicy = await fetch(`${BASE}/api/entries/${ff.teams.W.id}/withdraw`, {
+    method: "POST",
+    headers: { "content-type": "application/json", Authorization: token },
+    body: JSON.stringify({}),
+  });
+  check("a withdrawal with no policy is refused", noPolicy.status, 400);
+
+  check("forfeiting is accepted", (await wd(ff.teams.W.id, "forfeit")).status, 200);
+
+  const ffAfter = await fixturesOf(ff.stage.id);
+  const ffMine = ffAfter.filter((f: any) =>
+    f.home_entry === ff.teams.W.id || f.away_entry === ff.teams.W.id);
+  check("every match they had left is a walkover",
+    ffMine.filter((f: any) => f.status === "walkover").length, 2);
+  check("the one they played is untouched",
+    ffAfter.find((f: any) => f.id === wx.id).status, "finished");
+  check("each walkover goes to whoever was due to face them",
+    ffMine.filter((f: any) => f.status === "walkover")
+      .every((f: any) => f.winner !== ff.teams.W.id && f.loser === ff.teams.W.id), true);
+  check("and is marked as settled by their exit, not by anybody playing",
+    ffMine.filter((f: any) => f.status === "walkover")
+      .every((f: any) => f.forfeited_by === ff.teams.W.id), true);
+
+  const ffTable = await tableOf(ff.stage.id);
+  check("the absent team is still in the table", ffTable.length, 4);
+  const ffX = ffTable.find((r: any) => r.entry === ff.teams.X.id);
+  check("their opponent keeps the loss they actually suffered", ffX.lost >= 1, true);
+  const ffY = ffTable.find((r: any) => r.entry === ff.teams.Y.id);
+  check("whoever never played them is credited the walkover", ffY.won >= 1, true);
+
+  // --- void: as if they had never been there ------------------------------
+  const vd = await buildPool("Void Cup");
+  const vdFix = await fixturesOf(vd.stage.id);
+  const nameOfVd = (id: string) =>
+    Object.entries(vd.teams).find(([, e]) => e.id === id)?.[0] ?? "";
+
+  const vwx = vdFix.find((f: any) =>
+    [nameOfVd(f.home_entry), nameOfVd(f.away_entry)].sort().join("") === "WX");
+  await patch("fixtures", vwx.id, {
+    status: "finished",
+    home_score: nameOfVd(vwx.home_entry) === "W" ? 3 : 0,
+    away_score: nameOfVd(vwx.home_entry) === "W" ? 0 : 3,
+  });
+
+  // X has a loss on the sheet before the void.
+  const vdBefore = await tableOf(vd.stage.id);
+  check("before the void, their opponent has a loss",
+    vdBefore.find((r: any) => r.entry === vd.teams.X.id).lost, 1);
+
+  check("voiding is accepted", (await wd(vd.teams.W.id, "void")).status, 200);
+
+  const vdAfter = await fixturesOf(vd.stage.id);
+  const vdMine = vdAfter.filter((f: any) =>
+    f.home_entry === vd.teams.W.id || f.away_entry === vd.teams.W.id);
+  check("nothing they had left is awarded to anybody",
+    vdMine.filter((f: any) => f.status === "walkover").length, 0);
+  check("it is cancelled instead",
+    vdMine.filter((f: any) => f.status === "cancelled").length, 2);
+
+  const vdTable = await tableOf(vd.stage.id);
+  check("they are gone from the table entirely", vdTable.length, 3);
+  check("and so is the loss they handed out",
+    vdTable.find((r: any) => r.entry === vd.teams.X.id).lost, 0);
+  check("nobody is left having played a match that no longer counts",
+    vdTable.every((r: any) => r.played === 0), true);
+  check("positions still run 1..3 with no gaps",
+    vdTable.map((r: any) => r.position), [1, 2, 3]);
+
+  // --- putting somebody back ----------------------------------------------
+  // A walkover the organiser recorded on purpose has to survive an undo that
+  // was only asked to reverse a withdrawal.
+  const rb = await buildPool("Reinstate Cup");
+  const rbFix = await fixturesOf(rb.stage.id);
+  const nameOfRb = (id: string) =>
+    Object.entries(rb.teams).find(([, e]) => e.id === id)?.[0] ?? "";
+
+  const yz = rbFix.find((f: any) =>
+    [nameOfRb(f.home_entry), nameOfRb(f.away_entry)].sort().join("") === "YZ");
+  await patch("fixtures", yz.id, { status: "walkover", winner: yz.home_entry });
+
+  await wd(rb.teams.W.id, "forfeit");
+  const back = await fetch(`${BASE}/api/entries/${rb.teams.W.id}/reinstate`, {
+    method: "POST", headers: { Authorization: token },
+  });
+  check("a team can be put back", back.status, 200);
+
+  const rbAfter = await fixturesOf(rb.stage.id);
+  const rbMine = rbAfter.filter((f: any) =>
+    f.home_entry === rb.teams.W.id || f.away_entry === rb.teams.W.id);
+  check("their matches are playable again",
+    rbMine.every((f: any) => f.status === "ready"), true);
+  check("and carry no trace of the withdrawal",
+    rbMine.every((f: any) => f.forfeited_by === "" && f.winner === ""), true);
+  check("the deliberate walkover is left exactly as it was",
+    rbAfter.find((f: any) => f.id === yz.id).status, "walkover");
+  check("the reinstated team is active again",
+    (await get("entries", rb.teams.W.id)).status, "active");
+  check("the table has them back", (await tableOf(rb.stage.id)).length, 4);
+
+  // --- Swiss: a departed team is not drawn into the next round -------------
+  const sw = await create("tournaments", {
+    name: "Swiss Exit", slug: `swissexit-${Date.now()}`,
+    status: "published", owner: organiser.id,
+  });
+  const swTeams: any[] = [];
+  for (let i = 1; i <= 8; i++) {
+    swTeams.push(await create("entries", {
+      tournament: sw.id, name: `S${i}`, seed: i, status: "active",
+    }));
+  }
+  const swStage = await create("stages", {
+    tournament: sw.id, position: 0, name: "Swiss",
+    format: "swiss", status: "draft", config: { rounds: 3 },
+  });
+  await api("POST", `/api/stages/${swStage.id}/generate`);
+
+  const swRound = async (round: number) =>
+    (await fixturesOf(swStage.id)).filter((f: any) => f.round === round);
+
+  for (const f of await swRound(0)) {
+    if (f.status === "bye") continue;
+    await patch("fixtures", f.id, { status: "finished", home_score: 2, away_score: 0 });
+  }
+
+  // Finishing round one draws round two, so by the time this team leaves they
+  // are already paired in it.
+  check("round two is drawn before anybody withdraws", (await swRound(1)).length > 0, true);
+  await wd(swTeams[0].id, "forfeit");
+
+  // A round already on the wall is not torn up. Their match in it becomes a
+  // walkover to the opponent, which is what a tournament does with a pairing
+  // that has been published and one side of which has gone home.
+  const round2 = await swRound(1);
+  const theirs = round2.find((f: any) =>
+    f.home_entry === swTeams[0].id || f.away_entry === swTeams[0].id);
+  check("their match in the round already drawn becomes a walkover",
+    theirs?.status, "walkover");
+  check("awarded to the opponent", theirs?.loser, swTeams[0].id);
+
+  // The round after it is drawn from a table they are no longer in, so this is
+  // the last anybody sees of them.
+  for (const f of round2) {
+    if (f.status === "bye" || f.status === "walkover") continue;
+    await patch("fixtures", f.id, { status: "finished", home_score: 2, away_score: 0 });
+  }
+  const round3 = await swRound(2);
+  check("the next round drawn after they left does not include them",
+    round3.some((f: any) =>
+      f.home_entry === swTeams[0].id || f.away_entry === swTeams[0].id), false);
+  check("and it still draws a round at all", round3.length > 0, true);
+
 } catch (error) {
   console.error("\nsmoke run threw:");
   console.error(error instanceof Error ? error.message : error);

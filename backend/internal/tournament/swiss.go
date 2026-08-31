@@ -395,6 +395,41 @@ func (s *swissState) completeRounds() (drawn, complete int) {
 	}
 }
 
+// createByeSlot adds the empty chair a pool turns out to need.
+//
+// Position is past every existing slot in the pool, because the unique index on
+// (stage, pool, round, position) does not care that this one holds nobody.
+func createByeSlot(app core.App, stage *core.Record, state *swissState) (string, error) {
+	collection, err := app.FindCollectionByNameOrId("slots")
+	if err != nil {
+		return "", err
+	}
+
+	existing, err := app.FindRecordsByFilter(
+		"slots", "pool = {:pool} && round = 0", "-position", 1, 0,
+		dbx.Params{"pool": state.Pool.Id},
+	)
+	if err != nil {
+		return "", err
+	}
+	position := 0
+	if len(existing) > 0 {
+		position = existing[0].GetInt("position") + 1
+	}
+
+	slot := core.NewRecord(collection)
+	slot.Set("stage", stage.Id)
+	slot.Set("pool", state.Pool.Id)
+	slot.Set("round", 0)
+	slot.Set("position", position)
+	slot.Set("label", "Bye")
+	slot.Set("source_type", "bye")
+	if err := app.Save(slot); err != nil {
+		return "", err
+	}
+	return slot.Id, nil
+}
+
 // swissRoundIsPlayed reports whether anybody has touched a round: a result
 // entered, a match started, a fixture cancelled — or a result entered and then
 // taken back off again, which the log remembers and the fixture does not.
@@ -532,6 +567,12 @@ func swissRoundIsDrawn(fixtures []*core.Record, round int) bool {
 // swissTable ranks the pool as it stood at the end of `throughRound`, using the
 // tournament's own tiebreakers. Passing -1 gives everybody nothing, which is
 // the round-one draw.
+//
+// Anyone who has gone home is dropped from the returned table, which is what
+// stops the next round being drawn around somebody who left at lunchtime. That
+// is a separate question from whether their results still count: a forfeiting
+// team stays in the tally and out of the draw, so the two sets are read
+// separately rather than one standing in for the other.
 func swissTable(app core.App, stage, pool *core.Record, throughRound int) ([]swissEntry, error) {
 	tournament, err := app.FindRecordById("tournaments", stage.GetString("tournament"))
 	if err != nil {
@@ -539,7 +580,16 @@ func swissTable(app core.App, stage, pool *core.Record, throughRound int) ([]swi
 	}
 	cfg := scoringConfig(tournament)
 
-	rows, played, err := tallyPool(app, stage, pool, cfg, throughRound, nil)
+	voided, err := voidedEntries(app, tournament.Id)
+	if err != nil {
+		return nil, err
+	}
+	out, err := outEntries(app, tournament.Id)
+	if err != nil {
+		return nil, err
+	}
+
+	rows, played, err := tallyPool(app, stage, pool, cfg, throughRound, voided)
 	if err != nil {
 		return nil, err
 	}
@@ -547,6 +597,9 @@ func swissTable(app core.App, stage, pool *core.Record, throughRound int) ([]swi
 
 	table := make([]swissEntry, 0, len(rows))
 	for _, row := range rows {
+		if out[row.Entry] {
+			continue
+		}
 		table = append(table, swissEntry{Entry: row.Entry, Points: row.Points})
 	}
 	return table, nil
@@ -657,8 +710,18 @@ func writeSwissRound(app core.App, stage *core.Record, state *swissState, round 
 			}
 		}
 		if drawn.Bye != "" {
+			// A pool that started even has no bye slot, because it never
+			// needed one. Somebody withdrawing makes the field odd from that
+			// round on, so the slot is made when the need appears rather than
+			// only when the stage was drawn. Without this the draw fails, and
+			// because it runs from the hook that closes a fixture, what the
+			// organiser sees is the last result of the round being refused.
 			if state.ByeSlot == "" {
-				return fmt.Errorf("round %d needs a bye and the pool has no bye slot", round+1)
+				byeSlot, err := createByeSlot(tx, stage, state)
+				if err != nil {
+					return err
+				}
+				state.ByeSlot = byeSlot
 			}
 			code := fmt.Sprintf("R%d.bye", round+1)
 			if err := write(len(drawn.Pairs), code, drawn.Bye, ""); err != nil {

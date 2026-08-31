@@ -134,6 +134,8 @@ its final positions.
 | `POST /api/stages/{stage}/generate` | Generate pools, slots and fixtures. `?dry_run=1` returns the plan without writing, so preview and commit run the same generator. Refuses to overwrite played fixtures. |
 | `POST /api/stages/{stage}/resolve` | Re-resolve a stage. The repair path for corrected scores and for slots written after the fixture they source from. Idempotent. |
 | `POST /api/stages/{stage}/pair` | Draw a Swiss stage's next round. Normally unnecessary — finishing a round is what draws the next one — so this is the repair path. Idempotent; answers `{"round": -1}` when there is nothing to draw, and `rematch: true` when the field had run out of fresh opponents. |
+| `POST /api/entries/{entry}/withdraw` | Take a team out. `policy` is `forfeit` or `void` and has no default. Closes everything they had left and retallies every stage in one transaction. |
+| `POST /api/entries/{entry}/reinstate` | Put one back, undoing exactly what taking them out did and nothing else. |
 | `GET /api/staff/invite/{token}` | What a join code is for — a name and a role, nothing else. Public, so the join screen can say what is being accepted before anyone accepts it. |
 | `POST /api/staff/join` | Accept one, as whoever is signed in on this device. Idempotent; re-scanning a different role's code changes the role rather than adding a second row. |
 | `GET /api/display/{token}` | The whole projector screen in one response. Public — the token is the only credential. Read it with `If-None-Match`; an unchanged tournament answers 304. |
@@ -178,6 +180,29 @@ its final positions.
   no sponsors at all, so there is nothing on a public endpoint for a screen to
   un-hide, and no account can sell itself the upgrade — the date sits on a
   record its owner may otherwise write, so a hook refuses that write.
+- **A team going home is two questions, not one.** Whether they are still *in*
+  decides what happens next — who gets drawn into the next Swiss round, whose
+  remaining fixtures are still going to be played. Whether their results
+  *count* decides what the table says about everyone else. `forfeit` answers
+  the first and not the second: what they played stands, and everything left is
+  a walkover to whoever was due to face them. `void` answers both: every match
+  they were ever in comes out, for their opponents too, which is the honest
+  answer when somebody pulls out mid-group and half the pool has played them
+  and half has not. Neither is a default worth guessing at, so the server
+  refuses a withdrawal that does not say which. Keeping the two sets apart is
+  what stops the obvious bug — a withdrawn team quietly paired into round four
+  because the code that drew it only knew about the ones whose results had been
+  struck.
+- **A Swiss round already drawn is not torn up.** Their match in it becomes a
+  walkover to the opponent; the rounds after it are drawn from a table they are
+  no longer in. A pairing that has been published and put on court is not
+  improved by being redrawn around the person who left.
+- **Taking a team out is reversible, exactly.** `fixtures.forfeited_by` records
+  that a fixture was settled by somebody's exit rather than by anybody playing.
+  Reversing by shape instead — clearing every scoreless walkover involving them
+  — would also wipe a walkover the organiser recorded deliberately an hour
+  earlier, which is a real result destroyed by an undo that was only asked to
+  fix a mis-tap.
 - **A crew joins by QR, and claims by email.** The referee is standing next to
   the organiser, so the invitation is something held up and scanned: proximity
   is the authentication, and anyone close enough to scan the code is someone
@@ -219,9 +244,12 @@ a draw without a round trip. They are now Go only, and preview goes through
    when a team is already down for another match at the same time; nothing
    stops them going ahead, because reshuffling a schedule passes through
    states that are briefly wrong on purpose.
-4. **Nobody can be added once a stage is generated.** The wizard takes the
-   teams and the generator takes them all; a late arrival means starting the
-   draw again.
+4. **Nobody can be *added* once a stage is generated.** Taking a team out is
+   built — see the withdrawal note above — but putting a new one in is not.
+   The wizard takes the teams and the generator takes them all, so a late
+   arrival still means starting the draw again. It is the harder half: adding
+   to a drawn round robin means extending a pool or byeing it, and adding to a
+   bracket is worse.
 5. **Roles are recorded, not enforced.** `staff.role` is set by which code
    someone scanned and shown in the crew list, and every crew member can do
    everything `/t/:id` offers. The distinction that *is* enforced is owner

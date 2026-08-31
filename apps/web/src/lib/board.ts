@@ -1,5 +1,6 @@
 import type { Court, Entry, Id, Pool, Stage } from "@seedly/engine";
 import type { Board, BoardFixture, SetScore } from "../api/organiser";
+import { isCancelledStatus, isSettledStatus } from "./status";
 
 /**
  * Shaping the organiser's fixture list.
@@ -27,6 +28,12 @@ export interface BoardRow {
   settled: boolean;
   live: boolean;
   walkover: boolean;
+  /**
+   * Nobody is going to play this one. It is what a match becomes when a team
+   * is taken out and their results are struck — not a result, and not
+   * outstanding work either.
+   */
+  cancelled: boolean;
 }
 
 /**
@@ -55,8 +62,6 @@ export interface BoardSection {
   rows: BoardRow[];
 }
 
-const SETTLED = ["finished", "walkover", "bye"];
-
 function side(
   entryId: Id | null,
   slotLabel: string | undefined,
@@ -74,9 +79,10 @@ export function toRow(fixture: BoardFixture, entries: Map<Id, Entry>): BoardRow 
     home,
     away,
     playable: home.entry !== null && away.entry !== null,
-    settled: SETTLED.includes(fixture.status),
+    settled: isSettledStatus(fixture.status),
     live: fixture.status === "live",
     walkover: fixture.status === "walkover",
+    cancelled: isCancelledStatus(fixture.status),
   };
 }
 
@@ -233,10 +239,16 @@ export interface Progress {
 /**
  * Byes count as played because nobody can play them: leaving them in the
  * denominator means the count never reaches the end of a bracket that had one.
+ *
+ * A cancelled match leaves the denominator altogether, for the same reason
+ * pointing the other way. It is not work outstanding and it is not a result
+ * either — it is a match that is not going to happen, and counting it as
+ * unplayed would leave a finished day reading "10 of 12 matches in" for ever.
  */
 export function progress(rows: BoardRow[]): Progress {
+  const counted = rows.filter((row) => !row.cancelled);
   return {
-    played: rows.filter((row) => row.settled).length,
-    total: rows.length,
+    played: counted.filter((row) => row.settled).length,
+    total: counted.length,
   };
 }
