@@ -13,11 +13,11 @@ Two public screens, and the two the organiser drives them from.
 
 ## Why two routes and not one responsive layout
 
-They share almost nothing but data. A projector cycles panels on a timer, has
-no interaction, and is sized in `vmin` so it fills a 1280×720 or a 1920×1080
-the same way. A phone has tabs, scrolls, and is sized in `rem`. Collapsing them
-into one component would mean every layout rule carrying a "which screen is
-this" condition.
+They share almost nothing but data. A projector cycles panels on a timer, is
+driven by nobody most of the day, and is sized in `vmin` so it fills a 1280×720
+or a 1920×1080 the same way. A phone has tabs, scrolls, and is sized in `rem`.
+Collapsing them into one component would mean every layout rule carrying a
+"which screen is this" condition.
 
 What they *do* share lives in `src/lib/` and `src/api/` — the payload hook, the
 bracket round shape, the tiebreak wording, name formatting. Round titles were
@@ -141,7 +141,10 @@ score is. The line that matters is the second one: "changed 3–1 to 2–4".
   criteria that actually separated it are printed underneath. That sentence is
   the difference between a table and an argument.
 - **The rotation bar fills over one panel's dwell time**, so the room can see
-  the screen is about to change.
+  the screen is about to change. Its segments are buttons: clicking one jumps
+  to that panel and restarts the dwell, which is how an organiser answers "put
+  the pool B table back up" without waiting out the loop. Rotation carries on
+  from there — a screen nobody touches again is back to unattended.
 - **The rotation closes on a credit**, and on the sponsors when there are any.
   It is the one panel that is never empty, and the one that closes a locked
   mode too — a screen pinned to "now playing" is exactly where a sponsor slot

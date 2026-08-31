@@ -16,6 +16,8 @@ const DEFAULT_ROTATE_SECONDS = 15;
 export function ProjectorScreen({ token }: { token: string }) {
   const { payload, error, stale, loading } = useDisplayPayload(token);
   const [index, setIndex] = useState(0);
+  // Bumped on every dot click so re-picking the current panel restarts its sweep.
+  const [cycle, setCycle] = useState(0);
   const [clock, setClock] = useState(() => new Date());
 
   const panels = useMemo(() => (payload ? buildPanels(payload) : []), [payload]);
@@ -34,7 +36,7 @@ export function ProjectorScreen({ token }: { token: string }) {
       rotateSeconds * 1000,
     );
     return () => clearTimeout(timer);
-  }, [index, panels.length, rotateSeconds]);
+  }, [index, cycle, panels.length, rotateSeconds]);
 
   // The panel list shrinks when a match ends; do not point past the end.
   useEffect(() => {
@@ -89,17 +91,26 @@ export function ProjectorScreen({ token }: { token: string }) {
       </main>
 
       {panels.length > 1 && (
-        <footer className="screen__dots" aria-hidden>
+        <footer className="screen__dots">
           {panels.map((p, i) => (
-            <span
-              key={`${p.kind}-${p.index}`}
+            <button
+              key={`${p.kind}-${p.index}-${cycle}`}
+              type="button"
               className={i === index ? "dot dot--on" : "dot"}
               style={
                 i === index
                   ? ({ "--rotate": `${rotateSeconds}s` } as React.CSSProperties)
                   : undefined
               }
-            />
+              onClick={() => {
+                setIndex(i);
+                setCycle((c) => c + 1);
+              }}
+              aria-current={i === index}
+              title={p.title}
+            >
+              <span className="dot__label">{p.title}</span>
+            </button>
           ))}
         </footer>
       )}
