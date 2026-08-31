@@ -11,6 +11,7 @@ backend/
     ├── generate.go             bracket + round-robin generators, plan commit
     ├── standings.go            table computation, tiebreaks, pool_rank slots
     ├── resolve.go              outcome derivation, slot propagation, hooks
+    ├── realtime.go             nudges screens when what they show changes
     ├── display.go              the assembled projector payload
     └── routes.go               generate, resolve and display endpoints
 ```

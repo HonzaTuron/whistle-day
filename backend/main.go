@@ -25,6 +25,7 @@ func main() {
 
 	tournament.RegisterHooks(app)
 	tournament.RegisterHistory(app)
+	tournament.RegisterRealtime(app)
 	tournament.RegisterSubscriptionGuard(app)
 	tournament.RegisterRoutes(app)
 	mcp.RegisterMCPServer(app)

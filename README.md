@@ -126,7 +126,8 @@ its final positions.
 | `POST /api/stages/{stage}/generate` | Generate pools, slots and fixtures. `?dry_run=1` returns the plan without writing, so preview and commit run the same generator. Refuses to overwrite played fixtures. |
 | `POST /api/stages/{stage}/resolve` | Re-resolve a stage. The repair path for corrected scores and for slots written after the fixture they source from. Idempotent. |
 | `POST /api/stages/{stage}/pair` | Draw a Swiss stage's next round. Normally unnecessary — finishing a round is what draws the next one — so this is the repair path. Idempotent; answers `{"round": -1}` when there is nothing to draw, and `rematch: true` when the field had run out of fresh opponents. |
-| `GET /api/display/{token}` | The whole projector screen in one response. Public — the token is the only credential. Poll it with `If-None-Match`; an unchanged tournament answers 304. |
+| `GET /api/display/{token}` | The whole projector screen in one response. Public — the token is the only credential. Read it with `If-None-Match`; an unchanged tournament answers 304. |
+| `GET /api/realtime` | PocketBase's stream. A screen subscribes to `tournament/{id}` and is told when to re-read the line above — the nudge carries no data of its own. |
 
 ## Behaviour worth knowing about
 

@@ -30,10 +30,31 @@ exists.
 Everything comes from `GET /api/display/:token` — one request, no auth. See
 `src/api/display.ts`.
 
-- Polls every 4s with `If-None-Match`, so an unchanged tournament costs a 304.
+- **The server says when.** The screen opens `GET /api/realtime`, subscribes to
+  `tournament/{id}` — the id comes from its first payload — and re-reads the
+  endpoint whenever the server nudges it. A point tapped at the side of a court
+  is on the wall a fifth of a second later, which is what a hall that just
+  watched the rally expects of a scoreboard.
+- **The nudge carries nothing.** It says there is news; the payload still comes
+  from the one endpoint, with one set of rules, one ETag and one place for a
+  bug to live. Sending the assembled screen down the socket would be a second
+  way to build it and a second way to get it wrong.
+- **Nudges are coalesced.** One result is a fixture, two tables and a slot —
+  four writes and four nudges — so the read waits 200ms for the burst to end
+  and sees a finished state rather than four half-applied ones.
+- **The poll is still there, at 60s.** A stream through a venue's wifi is not a
+  thing to bet a tournament on, and its failure is the quiet one: the socket
+  looks open and stops delivering. A minute is far too slow to run a hall on
+  and far too fast to leave a wall wrong for the rest of the day.
+- Every read sends `If-None-Match`, so an unchanged tournament costs a 304.
 - On a failed request the last good payload stays on screen and is marked
   stale. A blank projector in a sports hall is worse than a slightly old one.
-- A 404 stops the polling: a bad token will not fix itself.
+- A 404 stops the reading and closes the stream: a bad token will not fix
+  itself.
+
+Reconnecting is the browser's job — `EventSource` retries on its own — but a
+new connection is a new PocketBase client id with no subscriptions on it, so
+the screen subscribes on every `PB_CONNECT` rather than once.
 
 Vite proxies `/api` to `127.0.0.1:8090`, so the screens and the API are
 same-origin and the token in the URL is all that is ever needed.

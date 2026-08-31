@@ -268,9 +268,14 @@ Three details that matter for a screen:
 - **Unresolved sides carry a label.** A fixture side with no entry yet sends
   `{ "entry": "", "label": "Winner SF1" }`, so the projector always has
   something to draw.
-- **Polling is cheap.** The response is tagged; send it back in
+- **Reading is cheap.** The response is tagged; send it back in
   `If-None-Match` and an unchanged tournament answers 304. The tag excludes
   the generation timestamp, so it only changes when the tournament does.
+- **A screen is told when to read.** Every write to anything a screen renders
+  broadcasts a nudge on `tournament/{id}` over PocketBase's realtime stream —
+  the fact of the change, never the change itself. Screens still hold a slow
+  poll underneath: a socket that looks open and has stopped delivering is the
+  failure worth designing for.
 
 A draft tournament returns 404 rather than 403, so the endpoint cannot be used
 to probe for unpublished events.
@@ -295,7 +300,7 @@ than two columns that can disagree about a distinction nothing yet makes.
 and needs no login, so an unsubscribed tournament sends `sponsors: []` rather
 than sending them with a flag for the browser to respect. The owner is only
 looked up when a theme actually has sponsors in it, so an ordinary screen
-polling every four seconds does not read the user table at all, and neither a
+re-reading the payload does not touch the user table at all, and neither a
 theme that will not parse nor an owner who cannot be loaded fails the payload —
 that costs the sponsors, not the scoreboard.
 
