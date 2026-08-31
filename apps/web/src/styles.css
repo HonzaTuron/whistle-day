@@ -2330,10 +2330,15 @@ th,
   gap: 0.6vmin;
 }
 
+/* code | home | score | away, in fixed columns so every row on a court lines
+   up with the row above it. The names face inwards towards the score, which is
+   the shape a scoreboard has and the reason the middle column is the one that
+   never moves. */
 .courtschedule__fixture {
   display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 0.3vmin 1vmin;
+  grid-template-columns: 5vmin 1fr 9vmin 1fr;
+  align-items: center;
+  gap: 0 1vmin;
   padding: 0.8vmin 1vmin;
   border-radius: 0.4vmin;
   background: var(--surface-2);
@@ -2346,50 +2351,63 @@ th,
 }
 
 .courtschedule__code {
+  display: grid;
   color: var(--muted);
   font-size: 1.5vmin;
   letter-spacing: 0.06em;
 }
 
+/* Under the code rather than beside the score: it belongs to the match, not
+   to the result, and it must not push the score column out of line. */
 .courtschedule__live {
-  font-size: 1.4vmin;
+  font-size: 1.2vmin;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.1em;
   color: var(--live);
 }
 
-.courtschedule__teams {
-  display: contents;
-}
-
-.courtschedule__teams > span {
+.courtschedule__team {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.courtschedule__teams > span:nth-child(1) {
-  text-align: left;
-}
-
-.courtschedule__teams > span:nth-child(3) {
+.courtschedule__team.is-home {
   text-align: right;
 }
 
-.courtschedule__teams .is-winner {
+.courtschedule__team.is-winner {
   font-weight: 800;
   color: var(--accent);
 }
 
-.courtschedule__vs {
+.courtschedule__score {
+  display: grid;
+  justify-items: center;
   text-align: center;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+}
+
+/* "vs" is not a score, and reading like one at ten metres is the whole
+   problem: an unplayed match should recede. */
+.courtschedule__score.is-empty {
   color: var(--muted);
   font-weight: 600;
 }
 
-.courtschedule__fixture.is-live .courtschedule__vs {
+.courtschedule__fixture.is-live .courtschedule__score {
   color: var(--live);
+}
+
+/* The set in progress, under the sets won. Small on purpose: from the back of
+   a hall the 1–1 is the match and this is the detail. */
+.courtschedule__set {
+  font-size: 1.2vmin;
+  font-weight: 600;
+  white-space: nowrap;
+  color: var(--muted);
 }
 
 /* ==========================================================================

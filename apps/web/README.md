@@ -140,6 +140,13 @@ score is. The line that matters is the second one: "changed 3–1 to 2–4".
 - **A tie is explained.** When a table needed more than points to rank, the
   criteria that actually separated it are printed underneath. That sentence is
   the difference between a table and an argument.
+- **A court's matches are a scoreboard, not a list.** The court schedule's
+  columns are fixed widths — code, home, score, away — because each row is its
+  own grid, and content-sized columns put every row's score wherever that row's
+  names happened to end. A live match shows the sets it has won with the set in
+  progress underneath it; a match yet to start shows "vs" rather than the 0–0
+  it carries on the wire, which on a wall reads as a goalless draw somebody has
+  already played.
 - **The rotation bar fills over one panel's dwell time**, so the room can see
   the screen is about to change. Its segments are buttons: clicking one jumps
   to that panel and restarts the dwell, which is how an organiser answers "put

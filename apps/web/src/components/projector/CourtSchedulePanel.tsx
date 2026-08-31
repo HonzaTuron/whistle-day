@@ -65,6 +65,17 @@ export function CourtSchedulePanel({ payload }: { payload: DisplayPayload }) {
   );
 }
 
+const PLAYED = ["finished", "walkover", "bye"];
+
+/**
+ * One match on a court, as a scoreboard line: code, the two names facing a
+ * score between them, and the score itself.
+ *
+ * The columns are fixed widths rather than sized to their contents, because
+ * every row is its own grid — content-sized columns would put each row's score
+ * wherever that row's names happened to end, which across ten rows reads as a
+ * list nobody aligned.
+ */
 function FixtureBadge({
   fixture,
   payload,
@@ -75,22 +86,47 @@ function FixtureBadge({
   live?: boolean;
 }) {
   const decided = fixture.winner !== "";
+  const played = PLAYED.includes(fixture.status);
+  // A match yet to start has 0–0 on the wire, which on a wall reads as a
+  // goalless draw somebody has already played.
+  const score =
+    played || live ? `${fixture.home.score}–${fixture.away.score}` : "vs";
+  // Sets are won one at a time; the one being played is the last one sent.
+  const current = live ? fixture.games?.at(-1) : undefined;
 
   return (
     <div className={live ? "courtschedule__fixture is-live" : "courtschedule__fixture"}>
-      <span className="courtschedule__code">{fixture.code}</span>
-      <span className="courtschedule__teams">
-        <span className={decided && fixture.winner === fixture.home.entry ? "is-winner" : ""}>
-          {sideName(fixture.home, payload.entries, "short")}
-        </span>
-        <span className="courtschedule__vs">
-          {live && !decided ? "vs" : fixture.home.score != null ? `${fixture.home.score}–${fixture.away.score}` : "vs"}
-        </span>
-        <span className={decided && fixture.winner === fixture.away.entry ? "is-winner" : ""}>
-          {sideName(fixture.away, payload.entries, "short")}
-        </span>
+      <span className="courtschedule__code">
+        {fixture.code}
+        {live && <small className="courtschedule__live">Live</small>}
       </span>
-      {live && <span className="courtschedule__live">Live</span>}
+
+      <span
+        className={
+          "courtschedule__team is-home" +
+          (decided && fixture.winner === fixture.home.entry ? " is-winner" : "")
+        }
+      >
+        {sideName(fixture.home, payload.entries, "short")}
+      </span>
+
+      <span className={"courtschedule__score" + (score === "vs" ? " is-empty" : "")}>
+        {score}
+        {current && (
+          <small className="courtschedule__set">
+            {`set ${current.number} · ${current.home}–${current.away}`}
+          </small>
+        )}
+      </span>
+
+      <span
+        className={
+          "courtschedule__team" +
+          (decided && fixture.winner === fixture.away.entry ? " is-winner" : "")
+        }
+      >
+        {sideName(fixture.away, payload.entries, "short")}
+      </span>
     </div>
   );
 }
