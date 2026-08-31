@@ -10,8 +10,20 @@ import { timeOfDay } from "../../lib/format";
  * left alone shows nothing, because the row above it already says what the
  * score is. The point of the list is the second line: a corrected result, and
  * what it used to be.
+ *
+ * `crew` turns an actor id into a name. It matters exactly as much as the
+ * tournament has people in it: on a one-phone day every row has the same
+ * author and saying so is noise, so a name is only drawn when more than one
+ * person can write. Names come from the staff row rather than the account,
+ * because an account is only visible to itself.
  */
-export function MatchHistory({ fixture }: { fixture: string }) {
+export function MatchHistory({
+  fixture,
+  crew,
+}: {
+  fixture: string;
+  crew: Map<string, string>;
+}) {
   const [events, setEvents] = useState<FixtureEvent[] | null>(null);
 
   useEffect(() => {
@@ -38,7 +50,12 @@ export function MatchHistory({ fixture }: { fixture: string }) {
       {events.map((event) => (
         <li key={event.id}>
           <span className="history__when">{timeOfDay(event.created)}</span>
-          <span className="history__what">{describe(event)}</span>
+          <span className="history__what">
+            {describe(event)}
+            {crew.size > 1 && event.actor && crew.has(event.actor) ? (
+              <span className="history__who"> · {crew.get(event.actor)}</span>
+            ) : null}
+          </span>
         </li>
       ))}
     </ol>

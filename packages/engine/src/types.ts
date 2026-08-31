@@ -77,6 +77,23 @@ export interface Staff {
   role: StaffRole;
 }
 
+/**
+ * A join link: one QR code, one role, however many people scan it.
+ *
+ * The token is the whole credential, exactly as it is for a `Display` — which
+ * is why there is one row per role rather than one per person. Withdrawing a
+ * link that got out is `active: false`; removing one person who already used
+ * it is deleting their `Staff` row.
+ */
+export interface Invite {
+  id: Id;
+  tournament: Id;
+  /** Unguessable URL token — this is the invitation's only credential. */
+  token: string;
+  role: StaffRole;
+  active: boolean;
+}
+
 export interface Court {
   id: Id;
   tournament: Id;

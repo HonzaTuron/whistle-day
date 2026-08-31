@@ -22,6 +22,8 @@ interface Props {
   courts: Court[];
   allFixtures: BoardFixture[];
   entries: Map<Id, Entry>;
+  /** Actor id to the name they gave when they joined, for the history. */
+  crew: Map<Id, string>;
   saving: boolean;
   onSave: (home: number, away: number, sets: SetScore[]) => void;
   onWalkover: (winner: string) => void;
@@ -55,6 +57,7 @@ export function MatchSheet({
   courts,
   allFixtures,
   entries,
+  crew,
   saving,
   onSave,
   onWalkover,
@@ -441,7 +444,7 @@ export function MatchSheet({
               </p>
             ) : null}
 
-            <MatchHistory fixture={row.fixture.id} />
+            <MatchHistory fixture={row.fixture.id} crew={crew} />
 
             <div className="sheet__actions">
               <button

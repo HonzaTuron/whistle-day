@@ -23,7 +23,8 @@ erDiagram
     tournaments ||--o{ stages    : "has stages"
     tournaments ||--o{ entries   : "has participants"
     tournaments ||--o{ courts    : ""
-    tournaments ||--o{ staff     : ""
+    tournaments ||--o{ staff     : "who may operate it"
+    tournaments ||--o{ invites   : "join codes"
     tournaments ||--o{ displays  : "projector screens"
     stages      ||--o{ pools     : "groups / bracket sides"
     stages      ||--o{ slots     : ""
@@ -41,7 +42,8 @@ erDiagram
 | Collection | What it is |
 |---|---|
 | `tournaments` | The event. Owner, sport, scoring and tiebreak config. |
-| `staff` | Who may operate it (`organizer` / `referee` / `scorer`). |
+| `staff` | Who may operate it (`organizer` / `referee` / `scorer`), and the name they gave when they joined. |
+| `invites` | A join code: one unguessable token per role, scanned off the organiser's phone. |
 | `courts` | Playing areas. Used by the schedule and the projector. |
 | `entries` | A participant — team or individual. `short_name` is what the projector draws. |
 | `stages` | A phase. `position` + `format` + `config`. |
@@ -90,6 +92,39 @@ Generating such a bracket is one call:
 Qualifiers are ordered by rank first, then by pool — A1 B1 C1 D1 A2 B2 C2 D2 —
 which, combined with standard bracket seeding, guarantees no two entries from
 the same pool meet in round 1.
+
+## How a second person gets in
+
+`staff` gates every write below a tournament and there is no way to insert a
+row into it directly — its create rule is owner-only, and the person joining is
+by definition not the owner. `invites` is the way in.
+
+An invite is a token, a role, and an `active` flag. It is modelled on
+`displays` rather than on an email address: the referee is standing next to the
+organiser, so the unguessable token on a QR code is both the invitation and the
+authentication. There is one row per role, not per person — the organiser shows
+the referee code to whoever turns up, all morning.
+
+`POST /api/staff/join` is what turns one into a `staff` row. It takes a session
+rather than a name, because the account already exists by the time it is
+called: the join screen makes a device account the same way the wizard makes
+the organiser's, and a referee who has claimed theirs simply arrives as the
+account they already have. The route writes the staff row with `app.Save`,
+which does not go through collection rules — the invite is the authority
+instead, and only the owner could have minted it.
+
+Two revocations, and they are not the same one:
+
+| | |
+|---|---|
+| `invites.active = false` | Withdraws the *link*. A code that got out stops working; everyone who already used it stays. |
+| Delete the `staff` row | Removes one *person*. The device in their pocket stops writing immediately. |
+
+The name on the staff row is what that person typed when they scanned. It is
+there rather than on the account because the users collection lets an account
+view itself and nobody else — so without it, an owner could hold a complete
+`fixture_events` log of who changed which result and be unable to render a
+single one of those names.
 
 ## The table a pool cannot produce
 

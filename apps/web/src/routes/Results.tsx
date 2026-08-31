@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ensureOrganiser,
   clearResult,
+  ensureInvite,
   loadBoard,
   rememberedTournament,
   rememberTournament,
@@ -11,11 +12,16 @@ import {
   saveWalkover,
   setLive,
   setSchedule,
+  removeStaff,
+  storedSession,
+  resetInvite,
   updateDisplay,
   type Board,
   type Session,
+  type StaffRecord,
 } from "../api/organiser";
-import type { Display } from "@seedly/engine";
+import type { Display, StaffRole } from "@seedly/engine";
+import { CrewSheet } from "../components/results/CrewSheet";
 import { FixtureRow } from "../components/results/FixtureRow";
 import { MatchSheet } from "../components/results/MatchSheet";
 import { ScreenSheet } from "../components/results/ScreenSheet";
@@ -39,6 +45,9 @@ export function Results({ id }: { id: string }) {
   const [tab, setTab] = useState<Tab>("todo");
   const [selected, setSelected] = useState<string | null>(null);
   const [settings, setSettings] = useState(false);
+  const [crew, setCrew] = useState(false);
+  const [invite, setInvite] = useState<{ role: StaffRole; url: string } | null>(null);
+  const [inviting, setInviting] = useState(false);
   const [screenState, setScreenState] = useState<"idle" | "saving" | "failed">(
     "idle",
   );
@@ -88,6 +97,24 @@ export function Results({ id }: { id: string }) {
   const visible = rows.filter((row) => (tab === "done" ? row.settled : !row.settled));
   const open = selected ? rows.find((row) => row.fixture.id === selected) ?? null : null;
   const token = board.token;
+  // Read rather than awaited: the board has already loaded, so the session it
+  // loaded with is on the device by now.
+  const isOwner = board.tournament.owner === storedSession()?.userId;
+
+  /**
+   * Who wrote what, for the match history.
+   *
+   * The owner is in here under a generic label rather than a name: they never
+   * scanned a join code, so nobody ever typed one for them, and their account
+   * is only visible to itself. That is enough — the question the history
+   * answers is "was this me or was this somebody else", and one named side is
+   * all that takes. A map of one means a one-phone day, and the history draws
+   * no names at all.
+   */
+  const crewNames = new Map<string, string>([
+    [board.tournament.owner, "Organiser"],
+    ...board.staff.map((member) => [member.user, member.name || "Someone"] as const),
+  ]);
 
   /**
    * Setting the screen up is the one write that does not read the board back.
@@ -139,6 +166,34 @@ export function Results({ id }: { id: string }) {
     }
   };
 
+  /**
+   * The join code for one role, minted the first time it is asked for.
+   *
+   * The sheet asks for a role and gets a code back, rather than the whole set
+   * up front: a tournament nobody delegates should not be carrying three live
+   * tokens that were never shown to anyone.
+   */
+  const showInvite = async (role: StaffRole, fresh: boolean) => {
+    setInviting(true);
+    setError(null);
+    try {
+      const active = await getSession();
+      const record = fresh
+        ? await resetInvite(active, id, role)
+        : await ensureInvite(active, id, role);
+      setInvite({ role, url: `${window.location.origin}/join/${record.token}` });
+    } catch (thrown) {
+      setError(
+        thrown instanceof Error ? thrown.message : "Could not make a join code.",
+      );
+    } finally {
+      setInviting(false);
+    }
+  };
+
+  const dropStaff = (member: StaffRecord) =>
+    void write((active) => removeStaff(active, member.id), false);
+
   return (
     <div className="results">
       {error ? (
@@ -157,22 +212,36 @@ export function Results({ id }: { id: string }) {
             {done.played} of {done.total} matches in
           </p>
         </div>
-        {token ? (
-          <div className="results__screens">
+        <div className="results__screens">
+          {token ? (
             <Link to="/display/$token" params={{ token }} className="results__screen">
               Screen
             </Link>
-            {board.screen ? (
-              <button
-                type="button"
-                className="results__screen results__screen--settings"
-                onClick={() => setSettings(true)}
-              >
-                Set up
-              </button>
-            ) : null}
-          </div>
-        ) : null}
+          ) : null}
+          {token && board.screen ? (
+            <button
+              type="button"
+              className="results__screen results__screen--settings"
+              onClick={() => setSettings(true)}
+            >
+              Set up
+            </button>
+          ) : null}
+          {/*
+            Handing out access is the owner's alone — `invites.createRule` is
+            owner-only on the server, so offering the button to a referee would
+            be offering them a request that comes back 403.
+          */}
+          {isOwner ? (
+            <button
+              type="button"
+              className="results__screen results__screen--settings"
+              onClick={() => setCrew(true)}
+            >
+              Crew {board.staff.length > 0 ? `· ${board.staff.length}` : ""}
+            </button>
+          ) : null}
+        </div>
       </header>
 
       <StageProgress stages={board.stages} pools={board.pools} fixtures={board.fixtures} />
@@ -223,6 +292,18 @@ export function Results({ id }: { id: string }) {
         )}
       </main>
 
+      {crew ? (
+        <CrewSheet
+          crew={board.staff}
+          link={invite}
+          busy={inviting}
+          onRole={(role) => void showInvite(role, false)}
+          onReset={() => invite && void showInvite(invite.role, true)}
+          onRemove={dropStaff}
+          onClose={() => setCrew(false)}
+        />
+      ) : null}
+
       {settings && board.screen ? (
         <ScreenSheet
           screen={board.screen}
@@ -241,6 +322,7 @@ export function Results({ id }: { id: string }) {
           courts={board.courts}
           allFixtures={board.fixtures}
           entries={entries}
+          crew={crewNames}
           saving={saving}
           /**
            * Points first, then the result. Both orders save the same rows, but

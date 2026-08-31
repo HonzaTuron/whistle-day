@@ -188,6 +188,135 @@ func RegisterRoutes(app core.App) {
 			return e.JSON(http.StatusOK, map[string]any{"email": data.Email})
 		}).Bind(apis.RequireAuth())
 
+		// What a join link is for, before anyone commits to using it.
+		//
+		// Public, like the display payload and for the same reason: the
+		// unguessable token is the credential, and a join screen that could
+		// not name the tournament would be asking someone to accept a blank
+		// invitation. It answers with a name and a role and never the row —
+		// holding the token reveals what you are being invited to, nothing
+		// else about the event.
+		//
+		// A draft tournament is visible here, unlike on the display endpoint.
+		// Screens are found by a token printed on a wall, so drafts are hidden
+		// there to stop the endpoint being used to probe for unpublished
+		// events; an invite token is handed to one person on purpose, and
+		// setting the crew up before publishing is an ordinary thing to do.
+		se.Router.GET("/api/staff/invite/{token}", func(e *core.RequestEvent) error {
+			invite, err := findInvite(e.App, e.Request.PathValue("token"))
+			if err != nil {
+				return e.NotFoundError("this invitation is not valid", err)
+			}
+
+			tournament, err := e.App.FindRecordById("tournaments", invite.GetString("tournament"))
+			if err != nil {
+				return e.NotFoundError("this invitation is not valid", err)
+			}
+
+			return e.JSON(http.StatusOK, map[string]any{
+				"name": tournament.GetString("name"),
+				"role": invite.GetString("role"),
+			})
+		})
+
+		// Accept one, as whoever is signed in on this device.
+		//
+		// The account is not created here. The caller arrives already
+		// authenticated — usually as a device account the join screen made the
+		// same way the wizard makes the organiser's, occasionally as a real
+		// one belonging to a referee who has claimed theirs and works every
+		// weekend. Both are the same request, which is the whole reason this
+		// takes a session rather than a name: joining twice from two devices
+		// is two device accounts, and joining twice as a claimed account is
+		// the same person twice.
+		//
+		// The staff row is written with e.App.Save, which does not go through
+		// collection rules — `staff.createRule` is owner-only and the person
+		// joining is by definition not the owner. The invite is the authority
+		// instead, and it could only have been minted by the owner.
+		se.Router.POST("/api/staff/join", func(e *core.RequestEvent) error {
+			auth := e.Auth
+			if auth == nil || auth.Collection().Name != "users" {
+				return e.UnauthorizedError("sign in first", nil)
+			}
+
+			data := struct {
+				Token string `json:"token"`
+				Name  string `json:"name"`
+			}{}
+			if err := e.BindBody(&data); err != nil {
+				return e.BadRequestError("could not read the request", err)
+			}
+
+			invite, err := findInvite(e.App, data.Token)
+			if err != nil {
+				return e.NotFoundError("this invitation is not valid", err)
+			}
+
+			tournamentID := invite.GetString("tournament")
+			tournament, err := e.App.FindRecordById("tournaments", tournamentID)
+			if err != nil {
+				return e.NotFoundError("this invitation is not valid", err)
+			}
+
+			joined := func(role string) error {
+				return e.JSON(http.StatusOK, map[string]any{
+					"tournament": tournamentID,
+					"name":       tournament.GetString("name"),
+					"role":       role,
+				})
+			}
+
+			// The owner scanning their own code is a no-op rather than an
+			// error: they already have everything the invite grants, and a
+			// staff row would be a second, weaker claim on the same access.
+			if tournament.GetString("owner") == auth.Id {
+				return joined("owner")
+			}
+
+			role := invite.GetString("role")
+			existing, _ := e.App.FindFirstRecordByFilter(
+				"staff",
+				"tournament = {:tournament} && user = {:user}",
+				map[string]any{"tournament": tournamentID, "user": auth.Id},
+			)
+
+			// Scanning a link does what the link says, including when that is
+			// a change: the referee code makes a referee of someone who was an
+			// organiser. The alternative — first scan wins, silently — makes
+			// promoting somebody impossible without deleting them first, and
+			// which code was shown is the owner's decision either way.
+			name := staffName(data.Name, role)
+
+			if existing != nil {
+				if existing.GetString("role") == role && existing.GetString("name") == name {
+					return joined(role)
+				}
+				existing.Set("role", role)
+				existing.Set("name", name)
+				if err := e.App.Save(existing); err != nil {
+					return e.BadRequestError("could not join this tournament", err)
+				}
+				return joined(role)
+			}
+
+			collection, err := e.App.FindCollectionByNameOrId("staff")
+			if err != nil {
+				return e.InternalServerError("could not join this tournament", err)
+			}
+
+			member := core.NewRecord(collection)
+			member.Set("tournament", tournamentID)
+			member.Set("user", auth.Id)
+			member.Set("role", role)
+			member.Set("name", name)
+			if err := e.App.Save(member); err != nil {
+				return e.BadRequestError("could not join this tournament", err)
+			}
+
+			return joined(role)
+		}).Bind(apis.RequireAuth())
+
 		// One assembled payload for a projector screen.
 		//
 		// Public on purpose: the unguessable token is the only credential, so
@@ -268,6 +397,51 @@ func claimError(err error) string {
 		return "that email is already in use, or is not a valid address"
 	}
 	return "could not save the account"
+}
+
+// staffName cleans up what somebody typed into the join screen.
+//
+// The box is optional and skipping it is a reasonable thing to do when a
+// referee is being handed a phone mid-match, so an empty one falls back to the
+// role. "Referee" in a crew list is worth more than a blank line, and it still
+// tells two rows apart from the third that says "Jana".
+func staffName(typed, role string) string {
+	name := strings.TrimSpace(typed)
+	if name == "" {
+		switch role {
+		case "organizer":
+			return "Organiser"
+		case "scorer":
+			return "Scorer"
+		default:
+			return "Referee"
+		}
+	}
+	if len([]rune(name)) > 60 {
+		name = string([]rune(name)[:60])
+	}
+	return name
+}
+
+// findInvite resolves a join token to a live invitation. Deactivating a row is
+// how a link that got out is withdrawn, so an inactive one is not merely
+// ignored here — it is indistinguishable from a token that never existed.
+func findInvite(app core.App, token string) (*core.Record, error) {
+	if token == "" {
+		return nil, fmt.Errorf("no token")
+	}
+	invite, err := app.FindFirstRecordByFilter(
+		"invites",
+		"token = {:token} && active = true",
+		map[string]any{"token": token},
+	)
+	if err != nil {
+		return nil, err
+	}
+	if invite == nil {
+		return nil, fmt.Errorf("no such invitation")
+	}
+	return invite, nil
 }
 
 // requireStaff mirrors the staffOnly collection rule for custom routes, which

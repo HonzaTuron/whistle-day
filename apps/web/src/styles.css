@@ -2924,3 +2924,189 @@ th,
   font-size: 0.7rem;
   color: var(--muted);
 }
+
+/* ==========================================================================
+   The crew — joining a tournament, and the list of who has
+   ========================================================================== */
+
+/* A button sized for a row rather than for a thumb reaching across a phone.
+   Only used where two of them sit side by side inside a list item. */
+.btn--small {
+  min-height: 36px;
+  padding: 0 0.8rem;
+  font-size: 0.8rem;
+}
+
+/* --- the join screen ------------------------------------------------------
+   Whoever is reading this was handed a phone half a minute ago. It is the
+   account screen's layout on purpose: one column, generous spacing, nothing
+   competing for the tap. */
+
+.join {
+  min-height: 100%;
+  max-width: 28rem;
+  margin: 0 auto;
+  display: grid;
+  align-content: start;
+  gap: 1.25rem;
+  padding: calc(env(safe-area-inset-top) + 3rem) 1.25rem
+    calc(2rem + env(safe-area-inset-bottom));
+}
+
+.join__eyebrow {
+  margin: 0;
+  color: var(--accent);
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.join__title {
+  margin: 0;
+  font-size: 1.9rem;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+}
+
+.join__lead {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.join__field {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.join__field span {
+  font-size: 0.85rem;
+  font-weight: 650;
+}
+
+.join__field input {
+  min-height: 52px;
+  padding: 0 1rem;
+  border: 1px solid var(--line);
+  border-radius: 0.75rem;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 1.05rem;
+}
+
+.join__field input:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.join__field small {
+  color: var(--muted);
+  font-size: 0.78rem;
+  line-height: 1.4;
+}
+
+.join__warning {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.78rem;
+  line-height: 1.5;
+}
+
+/* --- the crew sheet ------------------------------------------------------- */
+
+.crew {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.crew__row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.7rem 0.9rem;
+  border: 1px solid var(--line);
+  border-radius: 0.75rem;
+  background: var(--surface);
+}
+
+.crew__who {
+  flex: 1 1 auto;
+  display: grid;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.crew__who strong {
+  font-size: 0.95rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.crew__who small {
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+.crew__remove {
+  flex: 0 0 auto;
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.crew__confirm {
+  flex: 0 0 auto;
+  display: flex;
+  gap: 0.4rem;
+}
+
+.crew__empty {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.crew__invite {
+  display: grid;
+  gap: 0.75rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--line);
+}
+
+.crew__roles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+/* Black on white whatever the theme is doing: a QR inverted into the dark
+   palette scans on about half the phones in a hall. */
+.crew__qr {
+  justify-self: center;
+  padding: 0.75rem;
+  border-radius: 0.75rem;
+  background: #ffffff;
+  line-height: 0;
+}
+
+.crew__qr svg {
+  display: block;
+  width: min(52vw, 200px);
+  height: auto;
+}
+
+/* Who did it, when that is a question worth answering — see MatchHistory. */
+.history__who {
+  color: var(--muted);
+}

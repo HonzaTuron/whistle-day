@@ -965,7 +965,7 @@ try {
 
 
   // =====================================================================
-  console.log("\n12. the best third-placed teams qualify across the pools");
+  console.log("\n15. the best third-placed teams qualify across the pools");
   // =====================================================================
   //
   // Three pools of three: one winner each, plus the best two of the three
@@ -1081,6 +1081,196 @@ try {
     [...poolWinners, thirdName(finalStage[3].entry), thirdName(finalStage[4].entry)].sort());
   check("the runner-up left out is the one the stage table put third",
     qualified.includes(thirdName(finalStage[5].entry)), false);
+
+
+  // =====================================================================
+  console.log("\n16. a second person joins by scanning a code");
+  // =====================================================================
+  // `staff` has gated every write below a tournament since the first
+  // migration and had no way to get a row in it. This is that way, so what is
+  // being checked is not really the endpoint — it is that joining actually
+  // buys the thing it is for: a second phone that can enter a result.
+  const chiefEmail = `chief-${Date.now()}@example.com`;
+  await create("users", {
+    email: chiefEmail, password: "chief-secret-1", passwordConfirm: "chief-secret-1",
+  });
+  const chiefAuth = await api("POST", "/api/collections/users/auth-with-password", {
+    identity: chiefEmail, password: "chief-secret-1",
+  });
+
+  const hall = await create("tournaments", {
+    name: "Hall Cup", slug: `hall-${Date.now()}`,
+    status: "published", owner: chiefAuth.record.id,
+  });
+  const [hallA, hallB] = await Promise.all([
+    create("entries", { tournament: hall.id, name: "Alpha", seed: 1, status: "active" }),
+    create("entries", { tournament: hall.id, name: "Beta", seed: 2, status: "active" }),
+  ]);
+  const hallStage = await create("stages", {
+    tournament: hall.id, position: 0, name: "Final",
+    format: "single_elim", status: "draft",
+  });
+  await api("POST", `/api/stages/${hallStage.id}/generate`);
+  const hallFixture = (await api(
+    "GET", `/api/collections/fixtures/records?filter=(stage='${hallStage.id}')`)).items[0];
+
+  // Minted by the owner through the ordinary collection API, exactly as the
+  // crew sheet does it — the token is the client's to generate, like a
+  // screen's.
+  const refToken = `ref${Date.now()}`;
+  const orgToken = `org${Date.now()}`;
+  const mint = (value: string, role: string, auth: string) =>
+    fetch(`${BASE}/api/collections/invites/records`, {
+      method: "POST",
+      headers: { "content-type": "application/json", Authorization: auth },
+      body: JSON.stringify({ tournament: hall.id, token: value, role, active: true }),
+    });
+
+  const minted = await mint(refToken, "referee", chiefAuth.token);
+  check("the owner can mint a join code", minted.status, 200);
+  const refInvite = await minted.json();
+  await mint(orgToken, "organizer", chiefAuth.token);
+
+  // The crew sheet reads before it writes — it reuses a live code rather than
+  // minting one per visit — so the list rule is on the path, not beside it.
+  const ownList = await fetch(
+    `${BASE}/api/collections/invites/records` +
+      `?filter=(tournament='${hall.id}' %26%26 role='referee' %26%26 active=true)`,
+    { headers: { Authorization: chiefAuth.token } },
+  );
+  check("the owner can find a code they already minted", ownList.status, 200);
+  check("and finds exactly the live one", (await ownList.json()).items.length, 1);
+
+  // The preview is public: a join screen that could not name the tournament
+  // would be asking somebody to accept a blank invitation.
+  const preview16 = await fetch(`${BASE}/api/staff/invite/${refToken}`);
+  check("a join code names its tournament without a login", preview16.status, 200);
+  const previewBody = await preview16.json();
+  check("and says what it is for", [previewBody.name, previewBody.role], ["Hall Cup", "referee"]);
+
+  const unknown = await fetch(`${BASE}/api/staff/invite/nonsense`);
+  check("a token nobody minted is not valid", unknown.status, 404);
+
+  // The referee's phone: a device account it never had to type for, which is
+  // what `ensureOrganiser` makes on the join screen.
+  const refEmail = `referee-${Date.now()}@device.seedly.local`;
+  await create("users", {
+    email: refEmail, password: "device-secret-1", passwordConfirm: "device-secret-1",
+    name: "Organiser",
+  });
+  const refAuth = await api("POST", "/api/collections/users/auth-with-password", {
+    identity: refEmail, password: "device-secret-1",
+  });
+
+  // Codes are the owner's to see as well as to mint: a crew member who could
+  // list them could re-scan the organiser one.
+  const strangerList = await fetch(
+    `${BASE}/api/collections/invites/records?filter=(tournament='${hall.id}')`,
+    { headers: { Authorization: refAuth.token } },
+  );
+  check("a stranger listing codes gets none",
+    (await strangerList.json()).items?.length ?? 0, 0);
+
+  const scoreIt = (auth: string, home: number, away: number) =>
+    fetch(`${BASE}/api/collections/fixtures/records/${hallFixture.id}`, {
+      method: "PATCH",
+      headers: { "content-type": "application/json", Authorization: auth },
+      body: JSON.stringify({ status: "finished", home_score: home, away_score: away }),
+    });
+
+  // The point of the whole feature, stated as a before and after.
+  const strangerWrite = await scoreIt(refAuth.token, 2, 0);
+  check("a stranger cannot enter a result", strangerWrite.status === 200, false);
+
+  const join = (body: unknown, auth?: string) =>
+    fetch(`${BASE}/api/staff/join`, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        ...(auth ? { Authorization: auth } : {}),
+      },
+      body: JSON.stringify(body),
+    });
+
+  const anonymousJoin = await join({ token: refToken });
+  check("joining needs an account on the device", anonymousJoin.status, 401);
+
+  const badJoin = await join({ token: "nonsense" }, refAuth.token);
+  check("a made-up code joins nothing", badJoin.status, 404);
+
+  const joined = await join({ token: refToken, name: "  Jana  " }, refAuth.token);
+  check("scanning the code joins the tournament", joined.status, 200);
+  const joinedBody = await joined.json();
+  check("and lands on the right tournament",
+    [joinedBody.tournament, joinedBody.role], [hall.id, "referee"]);
+
+  const afterJoin = await scoreIt(refAuth.token, 2, 0);
+  check("having joined, the same phone can enter a result", afterJoin.status, 200);
+
+  const crew = await api(
+    "GET", `/api/collections/staff/records?filter=(tournament='${hall.id}')`);
+  check("the crew is one referee", crew.totalItems, 1);
+  check("named as they typed it, trimmed", crew.items[0].name, "Jana");
+
+  // The log is why the name is asked for at all: with two people writing,
+  // "changed 2–0 to 2–1" is a different sentence depending on who did it.
+  const log = await api(
+    "GET", `/api/collections/fixture_events/records?filter=(fixture='${hallFixture.id}')`);
+  check("the result is logged against whoever entered it",
+    log.items[0].actor, refAuth.record.id);
+
+  // Idempotent: a phone that gets locked and reopened re-scans the same code.
+  const rejoined = await join({ token: refToken, name: "Jana" }, refAuth.token);
+  check("scanning the same code twice is not an error", rejoined.status, 200);
+  const stillOne = await api(
+    "GET", `/api/collections/staff/records?filter=(tournament='${hall.id}')`);
+  check("and does not add a second row", stillOne.totalItems, 1);
+
+  // A link does what the link says, including when that is a promotion.
+  const promoted = await join({ token: orgToken, name: "Jana" }, refAuth.token);
+  check("the co-organiser code promotes rather than duplicating", promoted.status, 200);
+  const promotedCrew = await api(
+    "GET", `/api/collections/staff/records?filter=(tournament='${hall.id}')`);
+  check("still one row, now an organiser",
+    [promotedCrew.totalItems, promotedCrew.items[0].role], [1, "organizer"]);
+
+  // The owner scanning their own code has everything it grants already.
+  const ownerJoin = await join({ token: refToken }, chiefAuth.token);
+  check("the owner scanning their own code is a no-op", ownerJoin.status, 200);
+  check("and is told so", (await ownerJoin.json()).role, "owner");
+  const unchanged = await api(
+    "GET", `/api/collections/staff/records?filter=(tournament='${hall.id}')`);
+  check("the owner does not become their own staff", unchanged.totalItems, 1);
+
+  // Escalation: an invite mints staff, so writing one has to be owner-only or
+  // it is a way around `staff`'s own owner-only create rule.
+  const selfMinted = await mint(`self${Date.now()}`, "organizer", refAuth.token);
+  check("a crew member cannot mint their own codes", selfMinted.status === 200, false);
+
+  // Withdrawing a link that got out. Anyone already on the crew stays — they
+  // are a staff row now, and the invite was only ever the door.
+  await fetch(`${BASE}/api/collections/invites/records/${refInvite.id}`, {
+    method: "PATCH",
+    headers: { "content-type": "application/json", Authorization: chiefAuth.token },
+    body: JSON.stringify({ active: false }),
+  });
+
+  const withdrawn = await fetch(`${BASE}/api/staff/invite/${refToken}`);
+  check("a withdrawn code stops naming its tournament", withdrawn.status, 404);
+
+  const lateEmail = `late-${Date.now()}@device.seedly.local`;
+  await create("users", {
+    email: lateEmail, password: "device-secret-2", passwordConfirm: "device-secret-2",
+  });
+  const lateAuth = await api("POST", "/api/collections/users/auth-with-password", {
+    identity: lateEmail, password: "device-secret-2",
+  });
+  const lateJoin = await join({ token: refToken }, lateAuth.token);
+  check("and stops letting anybody new in", lateJoin.status, 404);
+
+  const survivors = await api(
+    "GET", `/api/collections/staff/records?filter=(tournament='${hall.id}')`);
+  check("while whoever already joined stays on the crew", survivors.totalItems, 1);
 
 } catch (error) {
   console.error("\nsmoke run threw:");

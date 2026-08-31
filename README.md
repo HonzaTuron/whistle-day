@@ -3,11 +3,13 @@
 Tournament organiser with arbitrary stage ordering — groups, playoff, Swiss, in
 any sequence — and a public projector view.
 
-**Status: a whole tournament runs off a phone.** Name it, add the teams one by
-one, pick how the day should run, and you get a link and a QR code. Then run
-the day: put matches on courts, mark what is being played, and enter results as
-they come in. The tables rebuild, the playoff seeded from them fills itself in,
-the next Swiss round draws itself, and the wall keeps up on its own.
+**Status: a whole tournament runs off a phone — or off as many phones as there
+are courts.** Name it, add the teams one by one, pick how the day should run,
+and you get a link and a QR code. Then run the day: put matches on courts, mark
+what is being played, and enter results as they come in. The tables rebuild,
+the playoff seeded from them fills itself in, the next Swiss round draws
+itself, and the wall keeps up on its own. Hand a referee a second QR code and
+they run their court from their own phone.
 
 ```
 seedly/
@@ -66,6 +68,7 @@ Re-running `bun run seed` replaces the demo rather than adding a second one.
 |---|---|
 | `/new` | The organiser: name, teams, courts, format, and a link for the wall. |
 | `/t/:id` | Running the day: courts, times, what is live, a score for each, and how the wall is set up. |
+| `/join/:token` | The other end of a crew QR code: say who you are, tap once, start refereeing. |
 | `/account` | Put an email on the device account, or sign in on another device. |
 | `/display/:token` | The projector: unattended, rotates itself, read from across a hall. |
 | `/m/:token` | A phone: tabs, scrolling, one person looking for one thing. |
@@ -126,6 +129,8 @@ its final positions.
 | `POST /api/stages/{stage}/generate` | Generate pools, slots and fixtures. `?dry_run=1` returns the plan without writing, so preview and commit run the same generator. Refuses to overwrite played fixtures. |
 | `POST /api/stages/{stage}/resolve` | Re-resolve a stage. The repair path for corrected scores and for slots written after the fixture they source from. Idempotent. |
 | `POST /api/stages/{stage}/pair` | Draw a Swiss stage's next round. Normally unnecessary — finishing a round is what draws the next one — so this is the repair path. Idempotent; answers `{"round": -1}` when there is nothing to draw, and `rematch: true` when the field had run out of fresh opponents. |
+| `GET /api/staff/invite/{token}` | What a join code is for — a name and a role, nothing else. Public, so the join screen can say what is being accepted before anyone accepts it. |
+| `POST /api/staff/join` | Accept one, as whoever is signed in on this device. Idempotent; re-scanning a different role's code changes the role rather than adding a second row. |
 | `GET /api/display/{token}` | The whole projector screen in one response. Public — the token is the only credential. Read it with `If-None-Match`; an unchanged tournament answers 304. |
 | `GET /api/realtime` | PocketBase's stream. A screen subscribes to `tournament/{id}` and is told when to re-read the line above — the nudge carries no data of its own. |
 
@@ -168,6 +173,23 @@ its final positions.
   no sponsors at all, so there is nothing on a public endpoint for a screen to
   un-hide, and no account can sell itself the upgrade — the date sits on a
   record its owner may otherwise write, so a hook refuses that write.
+- **A crew joins by QR, and claims by email.** The referee is standing next to
+  the organiser, so the invitation is something held up and scanned: proximity
+  is the authentication, and anyone close enough to scan the code is someone
+  already being handed a court. There is one code per role rather than per
+  person — typing names into a phone in a hall is the friction the code exists
+  to avoid — and the name is asked for at the far end, by the person who knows
+  it. It lands on the `staff` row rather than the account, because the users
+  collection lets an account view itself and nobody else, so an owner holding
+  a complete log of who changed which result could otherwise render none of
+  those names. Email is the upgrade, not the entry: a referee who works every
+  weekend claims their device account at `/account` and signs in anywhere,
+  which is the same bargain the organiser's own account makes.
+- **Minting an invite is owner-only, and deliberately not `staffOnly`.** An
+  invite mints staff, so anything looser would be a way around `staff`'s own
+  owner-only create rule — a scorer who could write there could issue
+  themselves an organiser token. The cost is that a co-organiser cannot invite
+  anyone, which is the right way round for that mistake to fall.
 - **Every fixture side is renderable.** When a slot has no entry yet the
   projector payload sends its label instead — "Winner SF1", "1. A", "TBD" — so
   a screen never has to draw a blank box.
@@ -195,7 +217,11 @@ a draw without a round trip. They are now Go only, and preview goes through
 4. **Nobody can be added once a stage is generated.** The wizard takes the
    teams and the generator takes them all; a late arrival means starting the
    draw again.
-5. **Nothing sells a subscription.** `users.subscription_until` is what the
+5. **Roles are recorded, not enforced.** `staff.role` is set by which code
+   someone scanned and shown in the crew list, and every crew member can do
+   everything `/t/:id` offers. The distinction that *is* enforced is owner
+   versus crew: handing out codes and removing people are the owner's alone.
+6. **Nothing sells a subscription.** `users.subscription_until` is what the
    sponsor slots read, and the only things that set it are an admin and
    whatever writes the record server-side. There is no checkout, no provider
    and no webhook.

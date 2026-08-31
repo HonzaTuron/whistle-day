@@ -6,9 +6,11 @@ import type {
   FixtureEvent,
   Game,
   Id,
+  Invite,
   Pool,
   Slot,
   Stage,
+  StaffRole,
 } from "@seedly/engine";
 
 /**
@@ -207,6 +209,12 @@ export interface TournamentRecord {
   name: string;
   slug: string;
   status: string;
+  /**
+   * Who owns it. Read on the results screen to decide whether this device is
+   * looking at its own tournament or one it was invited to help run — the
+   * difference between the two is who may hand out the join codes.
+   */
+  owner: Id;
 }
 
 const records = <T>(session: Session, collection: string, query: string) =>
@@ -260,14 +268,21 @@ export async function signIn(email: string, password: string): Promise<Session> 
 }
 
 /**
- * The tournaments this account owns, newest first — what a device that has
+ * The tournaments this account can run, newest first — what a device that has
  * just signed in needs before it can show anything.
+ *
+ * Owned *or* joined. A referee who claimed their account and signed in on a
+ * new phone owns nothing at all; a list filtered on ownership would tell them
+ * they have no tournaments while they are standing at the court they were
+ * invited to. The filter mirrors the `staffOnly` rule the server already
+ * applies to every write below a tournament.
  */
 export const myTournaments = (session: Session) =>
   records<TournamentRecord>(
     session,
     "tournaments",
-    `filter=(owner='${session.userId}')&sort=-created&perPage=50`,
+    `filter=(owner='${session.userId}' || staff_via_tournament.user?='${session.userId}')` +
+      `&sort=-created&perPage=50`,
   );
 
 /** A URL-safe slug, with a random tail because `tournaments.slug` is unique. */
@@ -405,6 +420,14 @@ export interface Board {
    * makes more than one, so this is the wall the "Screen" link points at.
    */
   screen: Display | null;
+  /**
+   * Everyone who can write to this tournament.
+   *
+   * Loaded with the board rather than on demand because the match history
+   * needs it to put a name against a correction, and that is read inside a
+   * sheet that should not be waiting on a request to say who changed a score.
+   */
+  staff: StaffRecord[];
 }
 
 /**
@@ -426,7 +449,8 @@ export interface BoardFixture extends Fixture {
 export const stamp = (date: Date) => date.toISOString().replace("T", " ");
 
 export async function loadBoard(session: Session, id: Id): Promise<Board> {
-  const [tournament, entries, stages, pools, courts, fixtures, screens] = await Promise.all([
+  const [tournament, entries, stages, pools, courts, fixtures, screens, crew] =
+    await Promise.all([
     loadTournament(session, id),
     records<Entry>(session, "entries", `filter=(tournament='${id}')&sort=seed&perPage=200`),
     records<Stage>(session, "stages", `filter=(tournament='${id}')&sort=position&perPage=50`),
@@ -440,6 +464,13 @@ export async function loadBoard(session: Session, id: Id): Promise<Board> {
     ),
     // Staff can read their own screens; the public still needs the token.
     records<Display>(session, "displays", `filter=(tournament='${id}')&perPage=5`),
+    // A crew can see itself. An empty list is the ordinary case — most
+    // tournaments are run by the one phone that created them.
+    records<StaffRecord>(
+      session,
+      "staff",
+      `filter=(tournament='${id}')&sort=created&perPage=100`,
+    ),
   ]);
 
   return {
@@ -451,6 +482,7 @@ export async function loadBoard(session: Session, id: Id): Promise<Board> {
     fixtures,
     token: screens[0]?.token ?? "",
     screen: screens[0] ?? null,
+    staff: crew,
   };
 }
 
@@ -703,6 +735,133 @@ export function rememberedTournament(): RunningTournament | null {
     return null;
   }
 }
+
+// ---------------------------------------------------------------------------
+// the crew
+// ---------------------------------------------------------------------------
+
+/**
+ * One person on the crew, as the owner's phone sees them.
+ *
+ * `name` lives on this row rather than on the account behind it. The users
+ * collection lets an account view itself and nobody else, so expanding `user`
+ * would give the owner a list of ids; and the question being asked here is not
+ * "who is this account" but "who is this, at this tournament".
+ */
+export interface StaffRecord {
+  id: Id;
+  tournament: Id;
+  user: Id;
+  name: string;
+  role: StaffRole;
+  created: string;
+}
+
+export const loadStaff = (session: Session, tournament: Id) =>
+  records<StaffRecord>(
+    session,
+    "staff",
+    `filter=(tournament='${tournament}')&sort=created&perPage=100`,
+  );
+
+/**
+ * Take somebody off the crew.
+ *
+ * This is the revocation that matters day to day: one person, one row, and the
+ * device in their pocket stops being able to write the moment it is gone.
+ * Withdrawing the *link* is a different question — see `resetInvite`.
+ */
+export const removeStaff = (session: Session, id: Id) =>
+  api<null>(`/api/collections/staff/records/${id}`, {
+    method: "DELETE",
+    token: session.token,
+  });
+
+/**
+ * The live join link for one role, made on first ask.
+ *
+ * One link per role, not per person: the organiser shows the referee code to
+ * whoever turns up, all morning. Minting a token per name would mean typing
+ * names into a phone in a hall, which is the friction the QR exists to avoid —
+ * the name is asked for at the other end, by the person who knows it.
+ *
+ * Created lazily so that a tournament nobody delegates never carries tokens
+ * that were never shown to anyone.
+ */
+export async function ensureInvite(
+  session: Session,
+  tournament: Id,
+  role: StaffRole,
+): Promise<Invite> {
+  const existing = await records<Invite>(
+    session,
+    "invites",
+    `filter=(tournament='${tournament}' && role='${role}' && active=true)&perPage=1`,
+  );
+  if (existing[0]) return existing[0];
+
+  return api<Invite>("/api/collections/invites/records", {
+    method: "POST",
+    token: session.token,
+    body: { tournament, token: randomString(22), role, active: true },
+  });
+}
+
+/**
+ * Withdraw a link that got out, and put a fresh one in its place.
+ *
+ * Deactivating rather than deleting: the old row is what a stale QR code still
+ * points at, and a token that resolves to an inactive invite is refused by the
+ * server in the same breath as one that never existed. Anyone who already
+ * joined on the old link stays on the crew — they are a `staff` row now, and
+ * this was only ever the door they came through.
+ */
+export async function resetInvite(
+  session: Session,
+  tournament: Id,
+  role: StaffRole,
+): Promise<Invite> {
+  const live = await records<Invite>(
+    session,
+    "invites",
+    `filter=(tournament='${tournament}' && role='${role}' && active=true)&perPage=20`,
+  );
+
+  for (const invite of live) {
+    await api<Invite>(`/api/collections/invites/records/${invite.id}`, {
+      method: "PATCH",
+      token: session.token,
+      body: { active: false },
+    });
+  }
+
+  return ensureInvite(session, tournament, role);
+}
+
+/** What a join code is for, read before anyone signs up to anything. */
+export const previewInvite = (token: string) =>
+  api<{ name: string; role: StaffRole }>(`/api/staff/invite/${token}`);
+
+export interface JoinResult {
+  tournament: Id;
+  name: string;
+  role: StaffRole | "owner";
+}
+
+/**
+ * Accept an invitation as whoever this device is.
+ *
+ * The account comes from `ensureOrganiser`, which is the same call the wizard
+ * makes: a referee's phone gets a device account it never had to type for, and
+ * a referee who has claimed theirs and signed in joins as the account they
+ * already have. Both are one request from here.
+ */
+export const joinWithInvite = (session: Session, token: string, name: string) =>
+  api<JoinResult>("/api/staff/join", {
+    method: "POST",
+    token: session.token,
+    body: { token, name },
+  });
 
 // ---------------------------------------------------------------------------
 // the draft this device is in the middle of

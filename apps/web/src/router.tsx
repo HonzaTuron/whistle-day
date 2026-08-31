@@ -8,6 +8,7 @@ import { MobileScreen } from "./components/mobile/MobileScreen";
 import { ProjectorScreen } from "./components/projector/ProjectorScreen";
 import { Account } from "./routes/Account";
 import { Create } from "./routes/Create";
+import { Join } from "./routes/Join";
 import { Landing } from "./routes/Landing";
 import { Results } from "./routes/Results";
 
@@ -43,6 +44,16 @@ const resultsRoute = createRoute({
   },
 });
 
+/** The other end of a QR code: a second person on a second phone. */
+const joinRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/join/$token",
+  component: function JoinRoute() {
+    const { token } = joinRoute.useParams();
+    return <Join token={token} />;
+  },
+});
+
 /** The projector: unattended, rotating, read from across a hall. */
 const displayRoute = createRoute({
   getParentRoute: () => rootRoute,
@@ -67,6 +78,7 @@ const routeTree = rootRoute.addChildren([
   indexRoute,
   createRouteEntry,
   accountRoute,
+  joinRoute,
   resultsRoute,
   displayRoute,
   mobileRoute,

@@ -113,7 +113,7 @@ export function Account() {
               else to pick your tournaments up there.
             </>
           ) : canClaim ? (
-            "Everything you have set up so far lives in this browser and nowhere else. An email and a password give it somewhere to live."
+            "The way back into your tournament lives in this browser and nowhere else — whether you set it up or were handed a code at the door. An email and a password give it somewhere else to live."
           ) : (
             "Nothing has been set up on this device. Sign in and whatever you run from another one comes with you."
           )}
