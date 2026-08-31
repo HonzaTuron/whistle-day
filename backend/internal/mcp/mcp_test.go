@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/mark3labs/mcp-go/mcp"
@@ -213,22 +214,22 @@ func TestCreateStage(t *testing.T) {
 			"tournament_id": tournament["id"],
 			"name":          "Groups",
 			"format":        "round_robin",
-"position":      float64(0),
-	}))
-	if e != nil {
-		t.Fatalf("create stage: %v", e)
-	}
-	var data map[string]any
-	json.Unmarshal([]byte(r.Content[0].(mcp.TextContent).Text), &data)
-	if data["name"] != "Groups" {
-		t.Fatalf("name = %v", data["name"])
-	}
-	if data["format"] != "round_robin" {
-		t.Fatalf("format = %v", data["format"])
-	}
-	if data["status"] != "draft" {
-		t.Fatalf("status = %v", data["status"])
-	}
+			"position":      float64(0),
+		}))
+		if e != nil {
+			t.Fatalf("create stage: %v", e)
+		}
+		var data map[string]any
+		json.Unmarshal([]byte(r.Content[0].(mcp.TextContent).Text), &data)
+		if data["name"] != "Groups" {
+			t.Fatalf("name = %v", data["name"])
+		}
+		if data["format"] != "round_robin" {
+			t.Fatalf("format = %v", data["format"])
+		}
+		if data["status"] != "draft" {
+			t.Fatalf("status = %v", data["status"])
+		}
 	})
 
 	t.Run("with config", func(t *testing.T) {
@@ -992,5 +993,272 @@ func TestCompleteFlow(t *testing.T) {
 	json.Unmarshal([]byte(r.Content[0].(mcp.TextContent).Text), &updated)
 	if updated[len(updated)-1]["round"] != float64(1) {
 		t.Fatalf("final round = %v", updated[len(updated)-1]["round"])
+	}
+}
+
+// ---------------------------------------------------------------------------
+// stage_rank: qualifying on a comparison across pools
+// ---------------------------------------------------------------------------
+
+// call runs one MCP tool and unmarshals its JSON result into out.
+func call(t *testing.T, fn func(context.Context, mcp.CallToolRequest) (*mcp.CallToolResult, error),
+	name string, args map[string]any, out any) {
+	t.Helper()
+	r, err := fn(ctx, toolArgs(name, args))
+	if err != nil {
+		t.Fatalf("%s: %v", name, err)
+	}
+	if out == nil {
+		return
+	}
+	if err := json.Unmarshal([]byte(r.Content[0].(mcp.TextContent).Text), out); err != nil {
+		t.Fatalf("%s: unmarshal: %v", name, err)
+	}
+}
+
+// playPool settles every fixture in one pool, with descending scores so the
+// table comes out in a definite order rather than a tied heap.
+func playPool(t *testing.T, s *SeedlyMCP, stageID, poolID string) {
+	t.Helper()
+	var fixtures []map[string]any
+	call(t, s.listFixtures, "list_fixtures",
+		map[string]any{"stage_id": stageID, "pool_id": poolID}, &fixtures)
+
+	for i, f := range fixtures {
+		call(t, s.updateFixture, "update_fixture", map[string]any{
+			"id": f["id"], "status": "finished",
+			"home_score": float64(3), "away_score": float64(i % 3),
+		}, nil)
+	}
+}
+
+func entriesAt(table []map[string]any, from, to int) map[string]bool {
+	set := map[string]bool{}
+	for _, row := range table {
+		if p := int(row["position"].(float64)); p >= from && p <= to {
+			set[row["entry"].(string)] = true
+		}
+	}
+	return set
+}
+
+// A playoff can be seeded on "the best runners-up" — a comparison between
+// teams who were never in the same pool. It runs through the stage table and
+// the stage_rank slots that read it, all the way from create_stage to a
+// bracket with both sides of every match filled in.
+func TestStageRankSeedsAPlayoff(t *testing.T) {
+	app := newTestApp(t)
+	defer app.Cleanup()
+	s := New(app)
+
+	var cup map[string]any
+	call(t, s.createTournament, "create_tournament", map[string]any{"name": "Stage Rank Cup"}, &cup)
+
+	for i := 1; i <= 12; i++ {
+		call(t, s.addEntry, "add_entry", map[string]any{
+			"tournament_id": cup["id"], "name": fmt.Sprintf("Team %d", i), "seed": float64(i),
+		}, nil)
+	}
+
+	var groups map[string]any
+	call(t, s.createStage, "create_stage", map[string]any{
+		"tournament_id": cup["id"], "name": "Groups", "format": "round_robin",
+		"position": float64(0), "config": `{"poolCount":4,"advancePerPool":1}`,
+	}, &groups)
+	call(t, s.generateStage, "generate_stage", map[string]any{"stage_id": groups["id"]}, nil)
+
+	// Four pool winners, plus all four runners-up on merit: an eight-team
+	// bracket where half the seeds cannot be named until every group is in.
+	var playoff map[string]any
+	call(t, s.createStage, "create_stage", map[string]any{
+		"tournament_id": cup["id"], "name": "Playoff", "format": "single_elim",
+		"position": float64(1),
+		"config": fmt.Sprintf(
+			`{"seedFrom":{"stage":%q,"advancePerPool":1,"bestOfNext":4}}`, groups["id"]),
+	}, &playoff)
+	call(t, s.generateStage, "generate_stage", map[string]any{"stage_id": playoff["id"]}, nil)
+
+	var pools []map[string]any
+	call(t, s.listPools, "list_pools", map[string]any{"stage_id": groups["id"]}, &pools)
+	if len(pools) != 4 {
+		t.Fatalf("pools = %d, want 4", len(pools))
+	}
+
+	// --- three pools in, one still playing ---------------------------------
+	//
+	// The pool winners of a finished pool go through immediately; a best
+	// runner-up cannot, because the pool still playing might produce a better
+	// one. This is the difference between pool_rank and stage_rank.
+	for _, pool := range pools[:3] {
+		playPool(t, s, groups["id"].(string), pool["id"].(string))
+	}
+
+	// The table itself is kept up to date throughout, exactly as a pool table
+	// is — the third-place race is the thing everybody wants to watch. What
+	// waits for the last group is anything being *seeded* from it.
+	var early []map[string]any
+	call(t, s.getStageTable, "get_stage_table", map[string]any{"stage_id": groups["id"]}, &early)
+	if len(early) != 12 {
+		t.Fatalf("provisional stage table = %d rows, want 12", len(early))
+	}
+
+	var midway []map[string]any
+	call(t, s.listFixtures, "list_fixtures",
+		map[string]any{"stage_id": playoff["id"], "round": float64(0)}, &midway)
+	resolved := 0
+	for _, f := range midway {
+		if f["home_entry"] != "" {
+			resolved++
+		}
+		if f["away_entry"] != "" {
+			resolved++
+		}
+	}
+	if resolved != 3 {
+		t.Fatalf("resolved seeds = %d, want the 3 finished pools' winners only", resolved)
+	}
+
+	// --- the last pool finishes --------------------------------------------
+	playPool(t, s, groups["id"].(string), pools[3]["id"].(string))
+
+	var table []map[string]any
+	call(t, s.getStageTable, "get_stage_table", map[string]any{"stage_id": groups["id"]}, &table)
+	if len(table) != 12 {
+		t.Fatalf("stage table = %d rows, want 12", len(table))
+	}
+	for i, row := range table {
+		if got := int(row["position"].(float64)); got != i+1 {
+			t.Fatalf("row %d has position %d", i, got)
+		}
+	}
+
+	// Positions 1-4 are the four pool winners and 5-8 the four runners-up,
+	// whatever their records: a runner-up never outranks a winner.
+	winners, runnersUp := map[string]bool{}, map[string]bool{}
+	for _, pool := range pools {
+		var poolTable []map[string]any
+		call(t, s.listStandings, "list_standings", map[string]any{"pool_id": pool["id"]}, &poolTable)
+		winners[poolTable[0]["entry"].(string)] = true
+		runnersUp[poolTable[1]["entry"].(string)] = true
+	}
+
+	assertSameEntries(t, "tier 1", entriesAt(table, 1, 4), winners)
+	assertSameEntries(t, "tier 2", entriesAt(table, 5, 8), runnersUp)
+
+	// --- and the bracket is full -------------------------------------------
+	var bracket []map[string]any
+	call(t, s.listFixtures, "list_fixtures",
+		map[string]any{"stage_id": playoff["id"], "round": float64(0)}, &bracket)
+	if len(bracket) != 4 {
+		t.Fatalf("round 0 fixtures = %d, want 4", len(bracket))
+	}
+	for _, f := range bracket {
+		if f["home_entry"] == "" || f["away_entry"] == "" {
+			t.Fatalf("%v still unresolved: %v v %v", f["code"], f["home_entry"], f["away_entry"])
+		}
+		if f["status"] != "ready" {
+			t.Fatalf("%v status = %v, want ready", f["code"], f["status"])
+		}
+	}
+}
+
+func assertSameEntries(t *testing.T, what string, got, want map[string]bool) {
+	t.Helper()
+	if len(got) != len(want) {
+		t.Fatalf("%s: %d entries, want %d", what, len(got), len(want))
+	}
+	for entry := range want {
+		if !got[entry] {
+			t.Fatalf("%s: %s missing", what, entry)
+		}
+	}
+}
+
+// Snaked pools are not always equal — ten teams in three pools is 4/3/3 — and
+// a team from the pool of four has played a match the others have not. The
+// stage table drops that bottom place and disregards the results against it,
+// so every row it holds is over the same number of matches.
+func TestStageTableEvensOutUnequalPools(t *testing.T) {
+	app := newTestApp(t)
+	defer app.Cleanup()
+	s := New(app)
+
+	var cup map[string]any
+	call(t, s.createTournament, "create_tournament", map[string]any{"name": "Uneven Cup"}, &cup)
+	for i := 1; i <= 10; i++ {
+		call(t, s.addEntry, "add_entry", map[string]any{
+			"tournament_id": cup["id"], "name": fmt.Sprintf("Team %d", i), "seed": float64(i),
+		}, nil)
+	}
+
+	var groups map[string]any
+	call(t, s.createStage, "create_stage", map[string]any{
+		"tournament_id": cup["id"], "name": "Groups", "format": "round_robin",
+		"position": float64(0), "config": `{"poolCount":3,"advancePerPool":1}`,
+	}, &groups)
+	call(t, s.generateStage, "generate_stage", map[string]any{"stage_id": groups["id"]}, nil)
+
+	var pools []map[string]any
+	call(t, s.listPools, "list_pools", map[string]any{"stage_id": groups["id"]}, &pools)
+	for _, pool := range pools {
+		playPool(t, s, groups["id"].(string), pool["id"].(string))
+	}
+
+	var table []map[string]any
+	call(t, s.getStageTable, "get_stage_table", map[string]any{"stage_id": groups["id"]}, &table)
+
+	// Three pools, and the smallest holds three: nine rows, not ten. The team
+	// that came fourth in the pool of four has no counterpart to be compared
+	// against and is left out rather than ranked against nobody.
+	if len(table) != 9 {
+		t.Fatalf("stage table = %d rows, want 9", len(table))
+	}
+	for _, row := range table {
+		if played := int(row["played"].(float64)); played != 2 {
+			t.Fatalf("%v played %d matches in the stage table, want 2 for everyone",
+				row["entry"], played)
+		}
+	}
+}
+
+// bestOfNext asks for a place every pool has to have. A stage whose pools are
+// too small to offer one is a config error, not a bracket quietly seeded from
+// the tier below.
+func TestBestOfNextRejectsPoolsWithoutThatPlace(t *testing.T) {
+	app := newTestApp(t)
+	defer app.Cleanup()
+	s := New(app)
+
+	var cup map[string]any
+	call(t, s.createTournament, "create_tournament", map[string]any{"name": "Too Small"}, &cup)
+	for i := 1; i <= 4; i++ {
+		call(t, s.addEntry, "add_entry", map[string]any{
+			"tournament_id": cup["id"], "name": fmt.Sprintf("Team %d", i), "seed": float64(i),
+		}, nil)
+	}
+
+	var groups map[string]any
+	call(t, s.createStage, "create_stage", map[string]any{
+		"tournament_id": cup["id"], "name": "Groups", "format": "round_robin",
+		"position": float64(0), "config": `{"poolCount":2,"advancePerPool":2}`,
+	}, &groups)
+	call(t, s.generateStage, "generate_stage", map[string]any{"stage_id": groups["id"]}, nil)
+
+	var playoff map[string]any
+	call(t, s.createStage, "create_stage", map[string]any{
+		"tournament_id": cup["id"], "name": "Playoff", "format": "single_elim",
+		"position": float64(1),
+		"config": fmt.Sprintf(
+			`{"seedFrom":{"stage":%q,"advancePerPool":2,"bestOfNext":2}}`, groups["id"]),
+	}, &playoff)
+
+	// Pools of two, both teams already through: there is no third place.
+	_, err := s.generateStage(ctx, toolArgs("generate_stage",
+		map[string]any{"stage_id": playoff["id"]}))
+	if err == nil {
+		t.Fatal("expected generate to refuse a 3rd place that does not exist")
+	}
+	if !strings.Contains(err.Error(), "too few") {
+		t.Fatalf("error = %v, want it to say the pool is too small", err)
 	}
 }

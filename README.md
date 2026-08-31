@@ -82,8 +82,8 @@ bun run check   # typecheck + go vet/test + smoke
 | Command | What it covers |
 |---|---|
 | `bun run typecheck` | TypeScript 7 |
-| `bun run pb:test` | `go vet` + 51 unit tests: generators, pairing, tiebreaks, outcomes |
-| `bun run smoke` | 110 assertions against a real PocketBase on a temp data dir |
+| `bun run pb:test` | `go vet` + 116 unit tests: generators, pairing, tiebreaks, outcomes |
+| `bun run smoke` | 122 assertions against a real PocketBase on a temp data dir |
 
 The smoke run is the one that matters. It boots the server, generates a
 two-pool group stage and a playoff seeded from it, plays every group fixture
@@ -101,6 +101,7 @@ POST /api/stages/{groups}/generate             # commit it
 
 # 2. playoff, seeded from the groups
 #    stages.config = { "seedFrom": { "stage": "<groups>", "advancePerPool": 2 } }
+#    add "bestOfNext": 4 to take the best four third-placed teams as well
 POST /api/stages/{playoff}/generate
 
 # 3. play. Nothing else to call — closing a fixture does the rest, including
@@ -152,6 +153,13 @@ its final positions.
 - **Head-to-head is computed among the tied group only**, from the fixtures
   those entries played against each other — which is why ranking is recursive
   rather than one comparator chain.
+- **A stage has a table as well as its pools**, for the one question a pool
+  table cannot answer: which of the third-placed teams were the best. It runs
+  tier by tier — every pool's winner, then every runner-up, then every third —
+  so a runner-up never outranks a winner, and positions 9..12 of a four-pool
+  stage *are* the third places. Within a tier, results against anyone finishing
+  below the smallest pool's last place are disregarded, so teams out of a pool
+  of four and a pool of three are compared over the same number of matches.
 - **Every fixture side is renderable.** When a slot has no entry yet the
   projector payload sends its label instead — "Winner SF1", "1. A", "TBD" — so
   a screen never has to draw a blank box.
@@ -167,9 +175,11 @@ a draw without a round trip. They are now Go only, and preview goes through
 
 1. **Ladder.** `stages.format` accepts it and nothing generates it. Round
    robin, single and double elimination and Swiss all do.
-2. **`stage_rank` slot resolution.** `pool_rank` works. `stage_rank` needs a
-   stage-wide table, which does not exist yet — pools are ranked, stages are
-   not.
+2. **A best-of-next bracket can draw two teams from one pool together.** The
+   ordinary qualifiers are laid out so that cannot happen; which pools the
+   best-of-next teams come from is not known until the groups have been played,
+   and the bracket is drawn before that. Competitions that care fix it with a
+   published table of every possible combination.
 3. **Schedule conflicts are surfaced, not prevented.** The organiser is warned
    when a team is already down for another match at the same time; nothing
    stops them going ahead, because reshuffling a schedule passes through

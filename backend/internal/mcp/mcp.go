@@ -73,6 +73,7 @@ func (s *SeedlyMCP) registerTools() {
 	s.mcp.AddTool(getFixtureTool(), s.getFixture)
 	s.mcp.AddTool(listEntriesTool(), s.listEntries)
 	s.mcp.AddTool(listStandingsTool(), s.listStandings)
+	s.mcp.AddTool(getStageTableTool(), s.getStageTable)
 	s.mcp.AddTool(updateFixtureTool(), s.updateFixture)
 	s.mcp.AddTool(generateStageTool(), s.generateStage)
 	s.mcp.AddTool(resolveStageTool(), s.resolveStage)
@@ -286,6 +287,31 @@ func (s *SeedlyMCP) listStandings(ctx context.Context, req mcp.CallToolRequest) 
 	))
 }
 
+func getStageTableTool() mcp.Tool {
+	return mcp.NewTool("get_stage_table",
+		mcp.WithDescription(
+			"Get a stage's cross-pool table: every pool's first place, then every "+
+				"second, then every third, ranked within each of those tiers. This is "+
+				"what \"the best third-placed teams\" is decided on, and what a "+
+				"stage_rank slot reads. Provisional until every pool in the stage has "+
+				"finished — readable throughout, but nothing is seeded from it until then.",
+		),
+		mcp.WithString("stage_id", mcp.Required(), mcp.Description("Stage ID")),
+	)
+}
+
+func (s *SeedlyMCP) getStageTable(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	sid := req.GetArguments()["stage_id"].(string)
+	records, err := tournament.StageTable(s.app, sid)
+	if err != nil {
+		return nil, fmt.Errorf("get stage table: %w", err)
+	}
+	return resultJSON(toMapSlice(records,
+		"id", "position", "entry", "played", "won", "drawn", "lost",
+		"score_for", "score_against", "points",
+	))
+}
+
 func updateFixtureTool() mcp.Tool {
 	return mcp.NewTool("update_fixture",
 		mcp.WithDescription("Update a fixture's score and status (settle a match)"),
@@ -448,11 +474,11 @@ func (s *SeedlyMCP) createTournament(ctx context.Context, req mcp.CallToolReques
 	r.Set("status", "draft")
 	r.Set("owner", owner.Id)
 	r.Set("scoring", map[string]any{
-		"bestOf":       1,
-		"pointsWin":    3,
-		"pointsDraw":   1,
-		"pointsLoss":   0,
-		"tiebreakers":  []string{"points", "head_to_head", "score_diff", "score_for", "seed"},
+		"bestOf":      1,
+		"pointsWin":   3,
+		"pointsDraw":  1,
+		"pointsLoss":  0,
+		"tiebreakers": []string{"points", "head_to_head", "score_diff", "score_for", "seed"},
 	})
 
 	if err := s.app.Save(r); err != nil {
@@ -610,10 +636,10 @@ func (s *SeedlyMCP) createDisplay(ctx context.Context, req mcp.CallToolRequest) 
 	}
 
 	return resultJSON(map[string]any{
-		"id":           r.Id,
-		"name":         name,
-		"token":        token,
-		"display_url":  fmt.Sprintf("http://127.0.0.1:8090/api/display/%s", token),
+		"id":            r.Id,
+		"name":          name,
+		"token":         token,
+		"display_url":   fmt.Sprintf("http://127.0.0.1:8090/api/display/%s", token),
 		"projector_url": fmt.Sprintf("http://127.0.0.1:8090/display/%s", token),
 	})
 }

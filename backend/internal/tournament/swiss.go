@@ -539,7 +539,7 @@ func swissTable(app core.App, stage, pool *core.Record, throughRound int) ([]swi
 	}
 	cfg := scoringConfig(tournament)
 
-	rows, played, err := tallyPool(app, stage, pool, cfg, throughRound)
+	rows, played, err := tallyPool(app, stage, pool, cfg, throughRound, nil)
 	if err != nil {
 		return nil, err
 	}

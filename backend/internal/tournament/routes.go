@@ -306,20 +306,31 @@ func requireStaff(e *core.RequestEvent, tournamentID string) error {
 func resolveSourceStages(app core.App, plan *StagePlan) error {
 	seen := map[string]bool{}
 	for _, slot := range plan.Slots {
-		if slot.SourceType != "pool_rank" || slot.SourcePool == "" {
+		sourceStage := ""
+		switch slot.SourceType {
+		case "pool_rank":
+			if slot.SourcePool == "" {
+				continue
+			}
+			pool, err := app.FindRecordById("pools", slot.SourcePool)
+			if err != nil {
+				continue
+			}
+			sourceStage = pool.GetString("stage")
+		case "stage_rank":
+			sourceStage = slot.SourceStage
+		default:
 			continue
 		}
-		pool, err := app.FindRecordById("pools", slot.SourcePool)
-		if err != nil {
-			continue
-		}
-		sourceStage := pool.GetString("stage")
-		if seen[sourceStage] {
+		if sourceStage == "" || seen[sourceStage] {
 			continue
 		}
 		seen[sourceStage] = true
 
 		if _, err := ResolvePoolRanks(app, sourceStage); err != nil {
+			return err
+		}
+		if _, err := ResolveStageRanks(app, sourceStage); err != nil {
 			return err
 		}
 	}

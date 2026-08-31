@@ -60,6 +60,11 @@ type StagePlan struct {
 type SeedSource struct {
 	Stage          string `json:"stage"`
 	AdvancePerPool int    `json:"advancePerPool"`
+	// BestOfNext is how many teams from the next place down also go through —
+	// the "best four third-placed teams" rule, when advancePerPool is 2. They
+	// are compared across pools through the stage table, which is what
+	// stage_rank slots read. Zero means only the automatic qualifiers go.
+	BestOfNext int `json:"bestOfNext"`
 }
 
 type StageConfig struct {
@@ -198,11 +203,12 @@ func fixtureCode(fixturesInRound, index int) string {
 // bracketSeed is one round-1 position: either a known entry, or a placeholder
 // pointing at a table in an earlier stage.
 type bracketSeed struct {
-	Entry      string
-	Label      string
-	SourceType string
-	SourcePool string
-	SourceRank int
+	Entry       string
+	Label       string
+	SourceType  string
+	SourcePool  string
+	SourceStage string
+	SourceRank  int
 }
 
 // PlanSingleElimination builds a full bracket.
@@ -238,8 +244,9 @@ func PlanSingleElimination(seeds []bracketSeed, cfg StageConfig) *StagePlan {
 			draft.Entry = s.Entry
 			draft.SourceType = s.SourceType
 			draft.Label = s.Label
-			if s.SourcePool != "" {
+			if s.SourcePool != "" || s.SourceStage != "" {
 				draft.SourcePool = s.SourcePool
+				draft.SourceStage = s.SourceStage
 				draft.SourcePosition = s.SourceRank
 			}
 		}
@@ -426,6 +433,13 @@ func seededEntries(app core.App, tournamentID string) ([]*core.Record, error) {
 // Qualifiers are ordered by rank first, then by pool: A1 B1 C1 D1 A2 B2 C2 D2.
 // Combined with the standard bracket order that guarantees no two entries from
 // the same pool meet in round 1 (A1 draws D2, D1 draws A2, and so on).
+//
+// BestOfNext qualifiers come after all of those, as the lowest seeds, and they
+// break that guarantee: which pools they came from is not known until the
+// groups have been played, and the bracket is drawn before that. Competitions
+// that care fix it with a published lookup table of every possible
+// combination; this does not, so a bracket with best-of-next seeds can put two
+// teams from one pool together in round 1.
 func qualifierSeeds(app core.App, source SeedSource) ([]bracketSeed, error) {
 	pools, err := app.FindRecordsByFilter(
 		"pools", "stage = {:stage}", "position", 0, 0,
@@ -457,7 +471,79 @@ func qualifierSeeds(app core.App, source SeedSource) ([]bracketSeed, error) {
 			})
 		}
 	}
+
+	best, err := bestOfNextSeeds(app, source, pools, perPool)
+	if err != nil {
+		return nil, err
+	}
+	return append(seeds, best...), nil
+}
+
+// bestOfNextSeeds builds the "best third-placed teams" seeds: the ones that
+// qualify on a comparison across pools rather than on a position within one.
+//
+// They read the stage table, whose tiers run in order — every pool's first
+// place, then every second, then every third. So with four pools and two
+// qualifying automatically, the third-placed teams are stage positions 9..12,
+// and the best two of them are 9 and 10.
+func bestOfNextSeeds(
+	app core.App, source SeedSource, pools []*core.Record, perPool int,
+) ([]bracketSeed, error) {
+	if source.BestOfNext <= 0 {
+		return nil, nil
+	}
+	if source.BestOfNext > len(pools) {
+		return nil, fmt.Errorf(
+			"bestOfNext is %d but there are only %d pools to take one from each of",
+			source.BestOfNext, len(pools))
+	}
+
+	// Every pool must actually have that place to offer. A pool short of one is
+	// not a near miss — it is a stage table with a hole in the tier being
+	// qualified from, which would silently seed the bracket from the tier below.
+	for _, pool := range pools {
+		size, err := app.CountRecords(
+			"slots",
+			dbx.NewExp("pool = {:pool} AND round = 0", dbx.Params{"pool": pool.Id}),
+		)
+		if err != nil {
+			return nil, err
+		}
+		if int(size) <= perPool {
+			return nil, fmt.Errorf(
+				"pool %s has %d entries, too few for a %d place to qualify from",
+				pool.GetString("name"), size, perPool+1)
+		}
+	}
+
+	base := perPool * len(pools)
+	seeds := make([]bracketSeed, 0, source.BestOfNext)
+	for i := 1; i <= source.BestOfNext; i++ {
+		seeds = append(seeds, bracketSeed{
+			SourceType:  "stage_rank",
+			SourceStage: source.Stage,
+			SourceRank:  base + i,
+			Label:       fmt.Sprintf("%s best %s", ordinal(i), ordinal(perPool+1)),
+		})
+	}
 	return seeds, nil
+}
+
+// ordinal renders 1 as "1st". Slot labels are what the projector draws while a
+// slot is unresolved, and "1st best 3rd" is how it is said out loud.
+func ordinal(n int) string {
+	suffix := "th"
+	if n%100 < 11 || n%100 > 13 {
+		switch n % 10 {
+		case 1:
+			suffix = "st"
+		case 2:
+			suffix = "nd"
+		case 3:
+			suffix = "rd"
+		}
+	}
+	return fmt.Sprintf("%d%s", n, suffix)
 }
 
 // PlanStage produces the plan for a stage without writing anything.
@@ -745,8 +831,9 @@ func PlanDoubleElimination(seeds []bracketSeed, cfg StageConfig) *StagePlan {
 			draft.Entry = s.Entry
 			draft.SourceType = s.SourceType
 			draft.Label = s.Label
-			if s.SourcePool != "" {
+			if s.SourcePool != "" || s.SourceStage != "" {
 				draft.SourcePool = s.SourcePool
+				draft.SourceStage = s.SourceStage
 				draft.SourcePosition = s.SourceRank
 			}
 		}

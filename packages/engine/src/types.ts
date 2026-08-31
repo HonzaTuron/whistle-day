@@ -131,6 +131,13 @@ export type StageStatus = "draft" | "seeded" | "live" | "finished";
 export interface SeedSource {
   stage: Id;
   advancePerPool: number;
+  /**
+   * How many teams from the next place down also go through, chosen across the
+   * pools rather than within one — the "best four third-placed teams" rule.
+   * They become `stage_rank` slots, which read the source stage's cross-pool
+   * table and only fill once every pool in it has finished.
+   */
+  bestOfNext?: number;
 }
 
 export interface StageConfig {

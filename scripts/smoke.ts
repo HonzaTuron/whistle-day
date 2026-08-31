@@ -885,6 +885,125 @@ try {
     [swissName(swissSemis[0].home_entry), swissName(swissSemis[0].away_entry)],
     [swissName(finalTable[0].entry), swissName(finalTable[3].entry)]);
 
+
+  // =====================================================================
+  console.log("\n12. the best third-placed teams qualify across the pools");
+  // =====================================================================
+  //
+  // Three pools of three: one winner each, plus the best two of the three
+  // runners-up. Which two is not a position in any pool table — it is a
+  // comparison between teams who never played each other, which is what the
+  // stage table and its stage_rank slots exist for.
+  const thirds = await create("tournaments", {
+    name: "Thirds Cup", slug: `thirds-${Date.now()}`, status: "published",
+    owner: organiser.id,
+  });
+  const nine: Record<string, any> = {};
+  for (let i = 1; i <= 9; i++) {
+    nine[`T${i}`] = await create("entries", {
+      tournament: thirds.id, name: `T${i}`, seed: i, status: "active",
+    });
+  }
+  const thirdName = (id: string) =>
+    Object.entries(nine).find(([, t]) => t.id === id)?.[0] ?? "?";
+
+  const thirdGroups = await create("stages", {
+    tournament: thirds.id, position: 0, name: "Groups",
+    format: "round_robin", status: "draft",
+    config: { poolCount: 3, advancePerPool: 1 },
+  });
+  await api("POST", `/api/stages/${thirdGroups.id}/generate`);
+
+  const thirdPlayoff = await create("stages", {
+    tournament: thirds.id, position: 1, name: "Playoff",
+    format: "single_elim", status: "draft",
+    config: { seedFrom: { stage: thirdGroups.id, advancePerPool: 1, bestOfNext: 2 } },
+  });
+  const thirdPlan = await api("POST", `/api/stages/${thirdPlayoff.id}/generate?dry_run=1`);
+  const stageRankSlots = thirdPlan.plan.slots.filter(
+    (s: any) => s.source_type === "stage_rank");
+  check("the plan asks for two best-of-next seeds", stageRankSlots.length, 2);
+  check("they point at the stage, not a pool",
+    stageRankSlots.every((s: any) => s.source_stage === thirdGroups.id && s.source_pool === ""),
+    true);
+  // Three pools, one qualifying automatically, so the runners-up are stage
+  // positions 4, 5 and 6 — and the best two of them are 4 and 5.
+  check("and at the first two places of the runners-up tier",
+    stageRankSlots.map((s: any) => s.source_position).sort((x: number, y: number) => x - y),
+    [4, 5]);
+
+  await api("POST", `/api/stages/${thirdPlayoff.id}/generate`);
+
+  const thirdPools = (await api(
+    "GET", `/api/collections/pools/records?filter=(stage='${thirdGroups.id}')&sort=position`)).items;
+  const thirdFixtures = async (poolId: string) => (await api(
+    "GET", `/api/collections/fixtures/records?filter=(pool='${poolId}')&sort=round,position`)).items;
+  // The stage-wide rows are the ones with no pool, picked out here rather than
+  // asked for with `pool=''` — what an unset relation compares equal to inside
+  // a filter is not what this section is trying to find out.
+  const stageTable = async () => (await api(
+    "GET",
+    `/api/collections/standings/records?filter=(stage='${thirdGroups.id}')&sort=position`,
+  )).items.filter((r: any) => r.pool === "");
+  const thirdSemis = async () => (await api(
+    "GET", `/api/collections/fixtures/records?filter=(stage='${thirdPlayoff.id}'%26%26round=0)&sort=position`)).items;
+
+  // Play the first two pools; the third is still out.
+  for (const pool of thirdPools.slice(0, 2)) {
+    for (const f of await thirdFixtures(pool.id)) {
+      await patch("fixtures", f.id, { status: "finished", home_score: 2, away_score: 0 });
+    }
+  }
+
+  check("the stage table is kept up to date while the groups run",
+    (await stageTable()).length, 9);
+  check("but nothing is seeded from it yet",
+    (await thirdSemis()).flatMap((f: any) => [f.home_entry, f.away_entry])
+      .filter((e: string) => e !== "").length,
+    2); // the two finished pools' winners, on pool_rank — no runners-up
+
+  // The last pool comes in.
+  for (const f of await thirdFixtures(thirdPools[2].id)) {
+    await patch("fixtures", f.id, { status: "finished", home_score: 2, away_score: 0 });
+  }
+
+  const finalStage = await stageTable();
+  check("the stage table holds every pool's three places", finalStage.length, 9);
+  check("positions run 1..9 with no gaps",
+    finalStage.map((r: any) => r.position), [1, 2, 3, 4, 5, 6, 7, 8, 9]);
+
+  const poolWinners = new Set<string>();
+  const poolRunnersUp = new Set<string>();
+  for (const pool of thirdPools) {
+    const table = (await api(
+      "GET", `/api/collections/standings/records?filter=(pool='${pool.id}')&sort=position`)).items;
+    poolWinners.add(thirdName(table[0].entry));
+    poolRunnersUp.add(thirdName(table[1].entry));
+  }
+  check("the first tier is exactly the pool winners",
+    finalStage.slice(0, 3).map((r: any) => thirdName(r.entry)).sort(),
+    [...poolWinners].sort());
+  check("the second tier is exactly the runners-up",
+    finalStage.slice(3, 6).map((r: any) => thirdName(r.entry)).sort(),
+    [...poolRunnersUp].sort());
+
+  // Five qualifiers into a bracket of eight, so three of the round-1 places
+  // are byes. Nothing should still be *waiting*: a seed is either a named team
+  // or a declared bye, and a match against a bye has already settled itself.
+  const seededSemis = await thirdSemis();
+  check("no seed in the bracket is left waiting",
+    seededSemis.every((f: any) => f.status === "bye" || f.status === "ready"), true);
+
+  const qualified = seededSemis
+    .flatMap((f: any) => [f.home_entry, f.away_entry])
+    .filter((e: string) => e !== "")
+    .map(thirdName);
+  check("the best two runners-up went through and the third did not",
+    [...qualified].sort(),
+    [...poolWinners, thirdName(finalStage[3].entry), thirdName(finalStage[4].entry)].sort());
+  check("the runner-up left out is the one the stage table put third",
+    qualified.includes(thirdName(finalStage[5].entry)), false);
+
 } catch (error) {
   console.error("\nsmoke run threw:");
   console.error(error instanceof Error ? error.message : error);

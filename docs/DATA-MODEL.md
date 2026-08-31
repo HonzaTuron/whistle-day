@@ -91,6 +91,44 @@ Qualifiers are ordered by rank first, then by pool — A1 B1 C1 D1 A2 B2 C2 D2 �
 which, combined with standard bracket seeding, guarantees no two entries from
 the same pool meet in round 1.
 
+## The table a pool cannot produce
+
+One format does not fit the above: *the best four third-placed teams also go
+through*. That is a comparison between teams who were never in the same pool
+and never played each other, so there is no position in any pool table that
+expresses it. It is what `stage_rank` slots and the stage-wide table exist for,
+and `"bestOfNext": 4` alongside `advancePerPool` is how a stage asks for one.
+
+A stage table is stored in `standings` like any other, with `pool` unset. Two
+rules make it a fair ranking rather than a merged list.
+
+**Group position comes first.** The table runs tier by tier: every pool's
+winner, then every runner-up, then every third place. A runner-up never
+outranks a winner however good its record. That is what the rulebooks say, and
+it is what gives a position in the table a meaning worth pointing a slot at —
+with four pools and two qualifying automatically, positions 9..12 *are* the
+third-placed teams, in order, so the best two of them are 9 and 10.
+
+**Records are compared over the same number of matches.** Snaked pools are not
+always equal — ten teams in three pools is 4/3/3 — and a team out of the pool
+of four has played a match the others have not. So the table keeps the top `m`
+places of every pool, where `m` is the smallest pool, and disregards every
+result against the teams below that. It is a re-tally rather than a re-sort:
+you cannot subtract a match from a total after the fact and still get the
+tiebreaks right.
+
+The pool tables themselves are untouched by any of this. Truncation decides the
+order *within* a tier; which tier a team is in comes from its own pool's real
+table.
+
+Like a pool table, a stage table is kept up to date from the first result and
+is provisional until the last one — the third-place race is the thing everyone
+in the hall is watching. And like `pool_rank`, nothing is *seeded* from it
+until it is final. The difference is what "final" means: a `pool_rank` slot
+fills as soon as its own pool is complete, while a `stage_rank` slot waits for
+every pool in the stage, because the group still playing may yet produce a
+better third place.
+
 ## The one format that cannot be written up front
 
 A bracket and a round robin are generated once and played to the end. A Swiss
@@ -239,9 +277,11 @@ to probe for unpublished events.
 
 ## What the model does not solve yet
 
-- **`stage_rank` resolution.** `pool_rank` works. `stage_rank` needs a
-  stage-wide table across pools, which nothing computes — pools are ranked,
-  stages are not.
+- **A best-of-next bracket can draw two pool-mates together in round 1.** The
+  ordinary qualifiers are laid out so that cannot happen. Which pools the
+  best-of-next teams came from is not known when the bracket is drawn, so they
+  are appended as the lowest seeds and the guarantee does not extend to them.
+  Competitions that care publish a lookup table of every possible combination.
 - **The ladder generator.** `stages.format` accepts `ladder` and nothing
   builds one. Round robin, single and double elimination and Swiss all do.
 - **Schedule conflicts are a warning, not a constraint.** The organiser screen

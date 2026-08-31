@@ -105,7 +105,10 @@ func afterFixtureWrite(app core.App, fixture *core.Record, previousStatus string
 	if _, err := PairNextRound(app, stageID); err != nil {
 		return err
 	}
-	_, err := ResolvePoolRanks(app, stageID)
+	if _, err := ResolvePoolRanks(app, stageID); err != nil {
+		return err
+	}
+	_, err := ResolveStageRanks(app, stageID)
 	return err
 }
 

@@ -86,31 +86,46 @@ func ComputeStandings(app core.App, stageID string) error {
 	}
 
 	return app.RunInTransaction(func(tx core.App) error {
+		tables := []poolTable{}
 		for _, pool := range pools {
 			if pool.GetString("kind") != "group" {
 				continue // brackets do not have tables
 			}
-			if err := computePoolTable(tx, stage, pool, cfg); err != nil {
+			rows, err := computePoolTable(tx, stage, pool, cfg)
+			if err != nil {
 				return err
 			}
+			tables = append(tables, poolTable{Pool: pool, Ranked: rows})
 		}
-		return nil
+		return computeStageTable(tx, stage, cfg, tables)
 	})
+}
+
+// poolTable is one pool's finished table, kept so the stage-wide table can be
+// built from the same ranking rather than a second one.
+type poolTable struct {
+	Pool   *core.Record
+	Ranked []*standingRow
 }
 
 // allRounds asks tallyPool for the table as it finally stands, as opposed to
 // as it stood at the end of some round.
 const allRounds = math.MaxInt
 
-func computePoolTable(app core.App, stage, pool *core.Record, cfg ScoringConfig) error {
-	rows, played, err := tallyPool(app, stage, pool, cfg, allRounds)
+func computePoolTable(
+	app core.App, stage, pool *core.Record, cfg ScoringConfig,
+) ([]*standingRow, error) {
+	rows, played, err := tallyPool(app, stage, pool, cfg, allRounds, nil)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	rankGroup(rows, cfg.Tiebreakers, 0, played)
 
 	advance := pool.GetInt("advance_count")
-	return writeTable(app, stage.Id, pool.Id, rows, advance)
+	if err := writeTable(app, stage.Id, pool.Id, rows, advance); err != nil {
+		return nil, err
+	}
+	return rows, nil
 }
 
 // tallyPool builds one pool's rows from the fixtures that have been played in
@@ -123,8 +138,13 @@ func computePoolTable(app core.App, stage, pool *core.Record, cfg ScoringConfig)
 // to be drawn from the rounds behind it and never from a table that already
 // includes the round being drawn — which, once the bye in it has settled
 // itself, would redraw the round it is standing in, for ever.
+//
+// ignore drops every fixture involving one of those entries, and the entries
+// themselves. It is empty for a pool table and used only by the stage-wide
+// table, which has to compare records of equal length across uneven pools.
 func tallyPool(
 	app core.App, stage, pool *core.Record, cfg ScoringConfig, throughRound int,
+	ignore map[string]bool,
 ) ([]*standingRow, []*core.Record, error) {
 	// The participant set comes from the slots, not the fixtures, so an entry
 	// that has not played yet still appears in the table on zero.
@@ -140,7 +160,7 @@ func tallyPool(
 	order := []string{}
 	for _, slot := range slots {
 		entryID := slot.GetString("entry")
-		if entryID == "" {
+		if entryID == "" || ignore[entryID] {
 			continue
 		}
 		if _, seen := rows[entryID]; seen {
@@ -172,6 +192,9 @@ func tallyPool(
 	played := make([]*core.Record, 0, len(fixtures))
 	for _, f := range fixtures {
 		if f.GetInt("round") > throughRound {
+			continue
+		}
+		if ignore[f.GetString("home_entry")] || ignore[f.GetString("away_entry")] {
 			continue
 		}
 		status := f.GetString("status")
@@ -418,11 +441,38 @@ func headToHead(rows []*standingRow, fixtures []*core.Record) map[string]int {
 // persistence
 // ---------------------------------------------------------------------------
 
-func writeTable(app core.App, stageID, poolID string, ranked []*standingRow, advance int) error {
-	existing, err := app.FindRecordsByFilter(
-		"standings", "stage = {:stage} && pool = {:pool}", "", 0, 0,
-		dbx.Params{"stage": stageID, "pool": poolID},
+// tableRows reads the stored table for one pool, or — for the empty pool id —
+// the stage-wide table.
+//
+// The stage-wide rows are picked out in Go rather than with `pool = ”`,
+// because what an unset relation compares equal to inside a filter string is
+// not worth resting a table on.
+func tableRows(app core.App, stageID, poolID string) ([]*core.Record, error) {
+	if poolID != "" {
+		return app.FindRecordsByFilter(
+			"standings", "stage = {:stage} && pool = {:pool}", "", 0, 0,
+			dbx.Params{"stage": stageID, "pool": poolID},
+		)
+	}
+
+	all, err := app.FindRecordsByFilter(
+		"standings", "stage = {:stage}", "position", 0, 0,
+		dbx.Params{"stage": stageID},
 	)
+	if err != nil {
+		return nil, err
+	}
+	rows := make([]*core.Record, 0, len(all))
+	for _, r := range all {
+		if r.GetString("pool") == "" {
+			rows = append(rows, r)
+		}
+	}
+	return rows, nil
+}
+
+func writeTable(app core.App, stageID, poolID string, ranked []*standingRow, advance int) error {
+	existing, err := tableRows(app, stageID, poolID)
 	if err != nil {
 		return err
 	}
