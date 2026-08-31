@@ -19,6 +19,27 @@ export interface DisplayState {
   loading: boolean;
 }
 
+/**
+ * A screen is not always newer than the server it polls — a projector left open
+ * across a deploy, or pointed at an older instance, is handed a payload without
+ * whatever that build did not send yet. Every list here is read with `.length`
+ * somewhere, so one absent key throws and takes the whole wall black. Filling
+ * them in costs a spread per poll and turns a missing feature into a missing
+ * panel.
+ */
+function withEmptyLists(payload: DisplayPayload): DisplayPayload {
+  return {
+    ...payload,
+    entries: payload.entries ?? {},
+    courts: payload.courts ?? [],
+    stages: payload.stages ?? [],
+    now_playing: payload.now_playing ?? [],
+    next_up: payload.next_up ?? [],
+    recent: payload.recent ?? [],
+    sponsors: payload.sponsors ?? [],
+  };
+}
+
 export function useDisplayPayload(token: string): DisplayState {
   const [state, setState] = useState<DisplayState>({
     payload: null,
@@ -62,7 +83,7 @@ export function useDisplayPayload(token: string): DisplayState {
           throw new Error(`server returned ${response.status}`);
         } else {
           etag.current = response.headers.get("etag");
-          const payload = (await response.json()) as DisplayPayload;
+          const payload = withEmptyLists((await response.json()) as DisplayPayload);
           setState({ payload, error: null, stale: false, loading: false });
         }
       } catch {
