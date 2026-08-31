@@ -220,6 +220,22 @@ th,
   color: var(--muted);
 }
 
+/* --- stage table (cross-pool) ------------------------------------------- */
+
+.stage-table {
+  height: 100%;
+  display: grid;
+  align-content: center;
+  gap: 1vmin;
+}
+
+.stage-table__subtitle {
+  margin: 0;
+  text-align: center;
+  font-size: 2.2vmin;
+  color: var(--muted);
+}
+
 .table {
   width: 100%;
   border-collapse: collapse;

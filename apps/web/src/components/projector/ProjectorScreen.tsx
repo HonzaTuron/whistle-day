@@ -6,6 +6,7 @@ import { CourtSchedulePanel } from "./CourtSchedulePanel";
 import { FixtureListPanel } from "./FixtureListPanel";
 import { NowPlayingPanel } from "./NowPlayingPanel";
 import { StageProgressPanel } from "./StageProgressPanel";
+import { StageTablePanel } from "./StageTablePanel";
 import { StandingsPanel } from "./StandingsPanel";
 import { buildPanels } from "./panels";
 
@@ -135,5 +136,9 @@ function PanelBody({
       return <CourtSchedulePanel payload={payload} />;
     case "stage_progress":
       return <StageProgressPanel payload={payload} />;
+    case "stage_table": {
+      const stage = payload.stages[panel.index];
+      return stage ? <StageTablePanel payload={payload} stage={stage} /> : null;
+    }
   }
 }

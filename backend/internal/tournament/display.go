@@ -121,12 +121,13 @@ type displayPool struct {
 }
 
 type displayStage struct {
-	ID       string        `json:"id"`
-	Position int           `json:"position"`
-	Name     string        `json:"name"`
-	Format   string        `json:"format"`
-	Status   string        `json:"status"`
-	Pools    []displayPool `json:"pools"`
+	ID         string            `json:"id"`
+	Position   int               `json:"position"`
+	Name       string            `json:"name"`
+	Format     string            `json:"format"`
+	Status     string            `json:"status"`
+	Pools      []displayPool     `json:"pools"`
+	StageTable []displayStanding `json:"stage_table,omitempty"`
 }
 
 // DisplayPayload is everything a projector needs, in one response.
@@ -321,6 +322,27 @@ func BuildDisplayPayload(app core.App, display *core.Record) (*DisplayPayload, e
 
 			poolOut.Rounds = groupByRound(byPool[pool.Id])
 			out.Pools = append(out.Pools, poolOut)
+		}
+
+		// Stage-wide table (cross-pool ranking, e.g. best third-placed teams).
+		stageRows, err := tableRows(app, stage.Id, "")
+		if err != nil {
+			return nil, err
+		}
+		for _, row := range stageRows {
+			out.StageTable = append(out.StageTable, displayStanding{
+				Position:     row.GetInt("position"),
+				Entry:        row.GetString("entry"),
+				Played:       row.GetInt("played"),
+				Won:          row.GetInt("won"),
+				Drawn:        row.GetInt("drawn"),
+				Lost:         row.GetInt("lost"),
+				ScoreFor:     row.GetInt("score_for"),
+				ScoreAgainst: row.GetInt("score_against"),
+				Points:       row.GetInt("points"),
+				Qualified:    row.GetBool("qualified"),
+				Tiebreak:     appliedCriteria(row),
+			})
 		}
 
 		payload.Stages = append(payload.Stages, out)

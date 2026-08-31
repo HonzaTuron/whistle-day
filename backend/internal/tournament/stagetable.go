@@ -76,7 +76,46 @@ func computeStageTable(
 	}
 
 	ranked := stageTiers(truncated, depth, cfg.Tiebreakers, fixtures)
-	return writeTable(app, stage.Id, "", ranked, 0)
+
+	// How many rows advance from the stage table: the sum of every downstream
+	// stage's advancePerPool × number-of-pools + bestOfNext. Zero means none of
+	// the rows are marked as qualified.
+	advance := stageTableAdvance(app, stage.Id)
+	return writeTable(app, stage.Id, "", ranked, advance)
+}
+
+// stageTableAdvance sums every consuming stage's total qualifiers from this
+// stage. With three pools, advancePerPool=2, and bestOfNext=2, the total is
+// 3×2+2 = 8 — the top eight rows of the stage table are qualified.
+func stageTableAdvance(app core.App, stageID string) int {
+	stage, err := app.FindRecordById("stages", stageID)
+	if err != nil {
+		return 0
+	}
+	tournamentID := stage.GetString("tournament")
+
+	all, err := app.FindRecordsByFilter(
+		"stages", "tournament = {:t}", "", 0, 0,
+		dbx.Params{"t": tournamentID},
+	)
+	if err != nil {
+		return 0
+	}
+	total := 0
+	for _, s := range all {
+		cfg, err := stageConfig(s)
+		if err != nil || cfg.SeedFrom == nil || cfg.SeedFrom.Stage != stageID {
+			continue
+		}
+		// Count the group pools in the source stage.
+		pools, _ := app.FindRecordsByFilter(
+			"pools", "stage = {:stage} && kind = 'group'", "", 0, 0,
+			dbx.Params{"stage": stageID},
+		)
+		total += len(pools) * cfg.SeedFrom.AdvancePerPool
+		total += cfg.SeedFrom.BestOfNext
+	}
+	return total
 }
 
 // stageTiers lays the pool tables out tier by tier — every pool's first place,

@@ -529,6 +529,7 @@ export interface DisplayStage {
   format: StageFormat;
   status: StageStatus;
   pools: DisplayPool[];
+  stage_table?: DisplayStanding[];
 }
 
 export interface DisplayTheme {
