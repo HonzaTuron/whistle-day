@@ -129,6 +129,29 @@ still need a signal and say so.
 
 `lib/pending.ts` is pure and is the part with tests — `bun test`.
 
+## Installing it
+
+`vite-plugin-pwa` precaches the built assets, so a reload is not a white
+screen: a phone in a pocket has its tab evicted, somebody pulls to refresh out
+of habit, and on a hall's wifi either of those costs the app until the network
+comes back. It also makes the app installable to a home screen, which gets most
+of what wrapping it in a native shell would — without an install, a store
+review between a fix and the hall, or losing the scan-and-go that `/join/:token`
+is built around.
+
+Nothing prompts and nothing reloads. A new build is fetched in the background
+and waits (`skipWaiting: false`), and the browser hands over the next time the
+app is started with no tab already open. A projector that has been on the wall
+since nine o'clock should not reload itself to pick up a deploy.
+
+`/api` is never cached. Writes must not be intercepted — a queued result
+answered from a cache would look sent and never arrive — and
+`/api/display/:token` is left alone too, even though caching it would help a
+projector that reloads offline: it is read with `If-None-Match` and answers
+304, and a cache in the middle of a conditional request is a good way to pin
+the wall to a payload from an hour ago. Workbox only handles what it has a
+route for, so everything else falls through to the network exactly as before.
+
 ## Running it
 
 ```bash
