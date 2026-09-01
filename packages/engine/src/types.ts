@@ -35,6 +35,13 @@ export interface ScoringConfig {
    * rulebook says otherwise, so an absence never flatters a goal difference.
    */
   walkoverScore?: number;
+  /**
+   * Whether a level score is a legal result. Absent means yes, because that is
+   * what every tournament written before the field existed meant — a plain
+   * `false` default would start refusing results those days were recording.
+   * The server enforces it; a knockout refuses a level score either way.
+   */
+  drawsAllowed?: boolean;
   /** Ordered tiebreak criteria, applied left to right. */
   tiebreakers: Tiebreaker[];
 }

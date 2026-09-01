@@ -37,6 +37,18 @@ function check(label: string, actual: unknown, expected: unknown) {
   }
 }
 
+/** A write that is meant to bounce. The message matters as much as the code:
+ *  an organiser who cannot save a score has to be told which rule stopped it. */
+async function bounces(label: string, write: () => Promise<unknown>, wants: string) {
+  try {
+    await write();
+    check(label, "the write was accepted", `refused: ${wants}`);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    check(label, message.includes("400") && message.includes(wants), true);
+  }
+}
+
 let token = "";
 
 async function api(method: string, path: string, body?: unknown) {
@@ -1501,6 +1513,83 @@ try {
     round3.some((f: any) =>
       f.home_entry === swTeams[0].id || f.away_entry === swTeams[0].id), false);
   check("and it still draws a round at all", round3.length > 0, true);
+
+  // =====================================================================
+  console.log("\n11. a level score, where a level score is not a result");
+  // =====================================================================
+  //
+  // Two sports and one bracket. The interesting case is not that a draw is
+  // refused — it is that refusing it is a decision the tournament made, and
+  // that a knockout refuses one whatever that decision was.
+
+  const scoredCup = async (scoring: Record<string, unknown>) =>
+    create("tournaments", {
+      name: "Scoring Cup", slug: `scoring-${Date.now()}-${Math.random()}`,
+      status: "published", owner: organiser.id, scoring,
+    });
+
+  const levelFixture = async (cup: any, format: string) => {
+    const stage = await create("stages", {
+      tournament: cup.id, position: 0, name: "Stage", format, status: "seeded",
+    });
+    const pool = await create("pools", {
+      stage: stage.id, name: "Main", position: 0,
+      kind: format === "round_robin" ? "group" : "winners",
+    });
+    const home = await create("entries", { tournament: cup.id, name: "H", status: "active" });
+    const away = await create("entries", { tournament: cup.id, name: "A", status: "active" });
+    return create("fixtures", {
+      tournament: cup.id, stage: stage.id, pool: pool.id,
+      round: 0, position: 0, code: "M1", status: "ready",
+      home_entry: home.id, away_entry: away.id,
+    });
+  };
+
+  // A volleyball day: two points a win, and no match ends level.
+  const volley = await scoredCup({ pointsWin: 2, pointsLoss: 0, drawsAllowed: false });
+  const volleyMatch = await levelFixture(volley, "round_robin");
+  await bounces(
+    "a tournament scored without draws refuses a level score",
+    () => patch("fixtures", volleyMatch.id, {
+      status: "finished", home_score: 1, away_score: 1,
+    }),
+    "without draws",
+  );
+  const stillOpen = await get("fixtures", volleyMatch.id);
+  check("and the fixture is left as it was", stillOpen.status, "ready");
+  check("an ordinary result still saves", (await patch("fixtures", volleyMatch.id, {
+    status: "finished", home_score: 2, away_score: 1,
+  })).status, "finished");
+
+  // A football day, where a draw is a result and worth a point to each side.
+  const football = await scoredCup({
+    pointsWin: 3, pointsDraw: 1, pointsLoss: 0, drawsAllowed: true,
+  });
+  const footballMatch = await levelFixture(football, "round_robin");
+  const levelResult = await patch("fixtures", footballMatch.id, {
+    status: "finished", home_score: 1, away_score: 1,
+  });
+  check("a tournament scored with draws accepts one", levelResult.status, "finished");
+  check("and it decides nothing", [levelResult.winner, levelResult.loser], ["", ""]);
+
+  // The tournament written before the field existed, which means football.
+  const legacy = await scoredCup({ pointsWin: 3, pointsDraw: 1 });
+  const legacyMatch = await levelFixture(legacy, "round_robin");
+  check("a tournament that never said is still allowed its draws",
+    (await patch("fixtures", legacyMatch.id, {
+      status: "finished", home_score: 1, away_score: 1,
+    })).status, "finished");
+
+  // And the case no rulebook overrides: somebody has to go through.
+  const knockout = await scoredCup({ pointsWin: 3, pointsDraw: 1, drawsAllowed: true });
+  const knockoutMatch = await levelFixture(knockout, "single_elim");
+  await bounces(
+    "a knockout refuses a level score even where draws are allowed",
+    () => patch("fixtures", knockoutMatch.id, {
+      status: "finished", home_score: 1, away_score: 1,
+    }),
+    "cannot end level",
+  );
 
 } catch (error) {
   console.error("\nsmoke run threw:");

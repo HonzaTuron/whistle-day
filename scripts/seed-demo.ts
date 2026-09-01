@@ -154,12 +154,17 @@ const tournament = await create("tournaments", {
   status: "live",
   owner: organiser.id,
   starts_on: todayAt(9, 0),
+  // The volleyball preset from apps/web/src/lib/scoring.ts. `drawsAllowed`
+  // is the part worth having in the demo: the server refuses a level score
+  // here, which is the whole reason the wizard asks what is being played.
   scoring: {
     bestOf: 5,
-    pointsWin: 3,
+    pointsWin: 2,
     pointsDraw: 0,
     pointsLoss: 0,
-    tiebreakers: ["points", "head_to_head", "score_diff", "score_for", "seed"],
+    drawsAllowed: false,
+    walkoverScore: 2,
+    tiebreakers: ["points", "head_to_head", "score_diff", "sub_diff", "score_for", "seed"],
   },
 });
 console.log(`  tournament ${tournament.name}`);

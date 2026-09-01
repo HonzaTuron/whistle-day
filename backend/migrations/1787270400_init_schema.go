@@ -139,7 +139,8 @@ func init() {
 			sel("status", true, "draft", "published", "live", "finished", "archived"),
 			b.rel("owner", "users", true, false),
 			img("logo", 5242880),
-			// { bestOf, pointsPerSet, winBy, pointsWin, pointsDraw, pointsLoss, tiebreakers }
+			// { bestOf, pointsPerSet, winBy, pointsWin, pointsDraw, pointsLoss,
+			//   walkoverScore, drawsAllowed, tiebreakers }
 			jsn("scoring"),
 			// { timezone, public_results, allow_self_registration }
 			jsn("settings"),

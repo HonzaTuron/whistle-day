@@ -1326,6 +1326,62 @@ th,
   outline-offset: 2px;
 }
 
+/* The sport, asked on the same screen as the name because it is one tap with
+   a right answer already selected — not a screen of its own. */
+.wiz__sports {
+  margin: 1.25rem 0 0;
+  padding: 0;
+  border: 0;
+}
+
+.wiz__sports legend {
+  padding: 0;
+  margin-bottom: 0.5rem;
+  font-size: 0.8rem;
+  font-weight: 650;
+  color: var(--muted);
+}
+
+.wiz__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.wiz__chip {
+  flex: 0 0 auto;
+  min-height: 44px;
+  padding: 0 1rem;
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.wiz__chip.is-active {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #06210f;
+}
+
+.wiz__chip:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* One line that changes with the chip, so the answer is visible before the
+   day is running rather than only on the scoring sheet afterwards. */
+.wiz__chip-hint {
+  margin: 0.55rem 0 0;
+  min-height: 1.2rem;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
 .wiz__input--sub,
 .wiz__input--row {
   min-height: 48px;
@@ -1793,9 +1849,14 @@ th,
   font-variant-numeric: tabular-nums;
 }
 
+/* Five of these — screen, set up, teams, scoring, crew — need 382px, and a
+   390px phone has 350 to give once the padding is off. They wrap rather than
+   push the tournament's name out of its own header. */
 .results__screens {
-  flex: 0 0 auto;
+  flex: 0 1 auto;
   display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
   gap: 0.35rem;
 }
 
@@ -1915,6 +1976,74 @@ th,
 
 .rotation__grip svg {
   fill: currentColor;
+}
+
+/* A points column is a stepper, not a text field: nobody types "3" on a phone
+   in a hall, and a number input there brings a keyboard over the sheet. */
+.points {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.points__col {
+  display: grid;
+  gap: 0.3rem;
+  justify-items: center;
+}
+
+.points__label {
+  font-size: 0.75rem;
+  font-weight: 650;
+  color: var(--muted);
+}
+
+.points__steps {
+  display: grid;
+  grid-template-columns: 44px 3rem 44px;
+  align-items: center;
+  border: 1px solid var(--line);
+  border-radius: 0.6rem;
+  background: var(--surface);
+  overflow: hidden;
+}
+
+.points__step {
+  min-height: 44px;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 1.2rem;
+  cursor: pointer;
+}
+
+.points__step:active {
+  background: var(--surface-2);
+}
+
+.points__step:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+.points__value {
+  text-align: center;
+  font-family: var(--numeric);
+  font-size: 1.1rem;
+  font-weight: 650;
+}
+
+/* Points is always first and is not draggable, so it is drawn as part of the
+   list without the affordances of one — no grip, no hover, no cursor. */
+.rotation__row.is-fixed {
+  grid-template-columns: 1fr;
+  border-color: var(--line);
+  background: var(--surface);
+}
+
+.rotation__row.is-fixed .rotation__pick {
+  cursor: default;
 }
 
 .rotation__off {

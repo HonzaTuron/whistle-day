@@ -30,6 +30,12 @@ import { FormatStep } from "../components/create/FormatStep";
 import { NameStep } from "../components/create/NameStep";
 import { TeamsStep } from "../components/create/TeamsStep";
 import { defaultPreset, type PresetId } from "../lib/presets";
+import {
+  DEFAULT_SPORT,
+  matchSport,
+  sportById,
+  type SportId,
+} from "../lib/scoring";
 
 type Step = "name" | "teams" | "courts" | "format" | "done";
 
@@ -59,6 +65,7 @@ export function Create() {
   const [teams, setTeams] = useState<TeamRecord[]>([]);
   const [courts, setCourts] = useState<CourtRecord[]>([]);
   const [preset, setPreset] = useState<PresetId>("groups");
+  const [sport, setSport] = useState<SportId>(DEFAULT_SPORT);
   const [resumable, setResumable] = useState<Resumable | null>(null);
   const [busy, setBusy] = useState(false);
   const [launching, setLaunching] = useState<LaunchStep | null>(null);
@@ -139,8 +146,12 @@ export function Create() {
   const submitName = (name: string) =>
     void run(async (active) => {
       if (tournament) {
-        // Coming back from a later step to fix a typo.
-        setTournament(await renameDraft(active, tournament.id, name));
+        // Coming back from a later step to fix a typo — or to correct the
+        // sport, which is the same trip and has to land the same way.
+        const picked = sportById(sport);
+        setTournament(
+          await renameDraft(active, tournament.id, name, picked.sport, picked.scoring),
+        );
       } else {
         // Starting fresh with an abandoned draft still around: it was going to
         // be offered on this screen and was not taken, so it goes.
@@ -148,7 +159,7 @@ export function Create() {
           await deleteDraft(active, resumable.tournament.id).catch(() => undefined);
           setResumable(null);
         }
-        setTournament(await createDraft(active, name));
+        setTournament(await createDraft(active, name, sport));
       }
       setStep("teams");
     });
@@ -158,6 +169,12 @@ export function Create() {
     setTournament(resumable.tournament);
     setTeams(resumable.teams);
     setCourts(resumable.courts);
+    // A resumed draft was already scored as something. The chip follows the
+    // record rather than the record following the chip, or picking a draft up
+    // would silently re-score it as whatever this screen happened to show.
+    setSport(
+      matchSport(resumable.tournament.sport, resumable.tournament.scoring) ?? DEFAULT_SPORT,
+    );
     nextSeed.current =
       resumable.teams.reduce((highest, team) => Math.max(highest, team.seed), 0) + 1;
     setResumable(null);
@@ -272,6 +289,7 @@ export function Create() {
       {step === "name" ? (
         <NameStep
           initial={tournament?.name ?? ""}
+          sport={sport}
           busy={busy}
           resume={
             resumable
@@ -283,6 +301,7 @@ export function Create() {
                 }
               : null
           }
+          onSport={setSport}
           onNext={submitName}
         />
       ) : null}

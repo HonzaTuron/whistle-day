@@ -18,8 +18,21 @@ type ScoringConfig struct {
 	// Credited to whoever turned up when the other side did not. Zero unless a
 	// rulebook says otherwise — most award a nominal 3-0 or 2-0, and leaving it
 	// at 0 at least keeps an absence from flattering anyone's goal difference.
-	WalkoverScore int      `json:"walkoverScore"`
-	Tiebreakers   []string `json:"tiebreakers"`
+	WalkoverScore int `json:"walkoverScore"`
+	// DrawsAllowed is a pointer because absent and false are different answers.
+	// Every tournament written before this field existed means "football", and
+	// a plain bool would read those as "volleyball" and start refusing the
+	// level scores they were happily recording yesterday. Read it through
+	// DrawsAllowedOr rather than dereferencing it.
+	DrawsAllowed *bool    `json:"drawsAllowed"`
+	Tiebreakers  []string `json:"tiebreakers"`
+}
+
+// DrawsAllowedOr reports whether a level score is a legal result, treating an
+// unset field as yes — which is what every record written before the field
+// existed meant.
+func (c ScoringConfig) DrawsAllowedOr() bool {
+	return c.DrawsAllowed == nil || *c.DrawsAllowed
 }
 
 // DefaultTiebreakers is what most rulebooks say, in the order they say it.

@@ -9,10 +9,12 @@ import type {
   Id,
   Invite,
   Pool,
+  ScoringConfig,
   Slot,
   Stage,
   StaffRole,
 } from "@seedly/engine";
+import { sportById, type SportId } from "../lib/scoring";
 
 /**
  * The organiser's side of the API — the half that writes.
@@ -210,6 +212,14 @@ export interface TournamentRecord {
   name: string;
   slug: string;
   status: string;
+  /** What is being played. Set from the sport chips on the first screen. */
+  sport: string;
+  /**
+   * How the tables are worked out. Written at creation from the sport, and
+   * editable afterwards from the scoring sheet — the server reads it on every
+   * result, so a correction here rebuilds every table the next result touches.
+   */
+  scoring: ScoringConfig | null;
   /**
    * Who owns it. Read on the results screen to decide whether this device is
    * looking at its own tournament or one it was invited to help run — the
@@ -312,7 +322,12 @@ function slugify(name: string): string {
   return `${base || "tournament"}-${randomString(5)}`;
 }
 
-export async function createDraft(session: Session, name: string): Promise<TournamentRecord> {
+export async function createDraft(
+  session: Session,
+  name: string,
+  sport: SportId,
+): Promise<TournamentRecord> {
+  const picked = sportById(sport);
   const tournament = await api<TournamentRecord>("/api/collections/tournaments/records", {
     method: "POST",
     token: session.token,
@@ -321,16 +336,12 @@ export async function createDraft(session: Session, name: string): Promise<Tourn
       slug: slugify(name),
       status: "draft",
       owner: session.userId,
-      // Generic defaults: one game per fixture, three points for a win, draws
-      // possible. A sport-specific setup (best of five, no draws) is a later
-      // screen; guessing it here would be worse than a sane default.
-      scoring: {
-        bestOf: 1,
-        pointsWin: 3,
-        pointsDraw: 1,
-        pointsLoss: 0,
-        tiebreakers: ["points", "head_to_head", "score_diff", "score_for", "seed"],
-      },
+      sport: picked.sport,
+      // The sport is the whole question the first screen asks about scoring.
+      // Every number it implies is still editable from the scoring sheet on
+      // the results screen, because a local league that plays for two points
+      // is not a preset going wrong.
+      scoring: picked.scoring,
     },
   });
 
@@ -338,11 +349,45 @@ export async function createDraft(session: Session, name: string): Promise<Tourn
   return tournament;
 }
 
-export const renameDraft = (session: Session, id: Id, name: string) =>
+/**
+ * Change how the day is scored, mid-day if need be.
+ *
+ * Nothing is recomputed by this write on its own: `standings` is rebuilt when
+ * a result lands, so a table already on the wall keeps the points it was built
+ * with until the next fixture in its pool is settled. That is worth saying on
+ * the screen rather than papering over here — re-tallying every stage from a
+ * settings sheet is a much larger write than the one the organiser asked for,
+ * and `POST /api/stages/{stage}/resolve` is the button that already means it.
+ */
+export const updateScoring = (
+  session: Session,
+  id: Id,
+  scoring: ScoringConfig,
+  sport: string,
+) =>
   api<TournamentRecord>(`/api/collections/tournaments/records/${id}`, {
     method: "PATCH",
     token: session.token,
-    body: { name },
+    body: { scoring, sport },
+  });
+
+/**
+ * The first screen, submitted a second time. It carries the sport as well as
+ * the name because they are the same screen: going back to correct one and
+ * having the other silently ignored is the kind of thing nobody notices until
+ * the tables are wrong.
+ */
+export const renameDraft = (
+  session: Session,
+  id: Id,
+  name: string,
+  sport: string,
+  scoring: ScoringConfig,
+) =>
+  api<TournamentRecord>(`/api/collections/tournaments/records/${id}`, {
+    method: "PATCH",
+    token: session.token,
+    body: { name, sport, scoring },
   });
 
 /** One tournament record, draft or running. */

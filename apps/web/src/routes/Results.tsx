@@ -17,16 +17,18 @@ import {
   storedSession,
   resetInvite,
   updateDisplay,
+  updateScoring,
   withdrawEntry,
   type Board,
   type Session,
   type StaffRecord,
 } from "../api/organiser";
-import type { Display, Entry, StaffRole } from "@seedly/engine";
+import type { Display, Entry, ScoringConfig, StaffRole } from "@seedly/engine";
 import { CrewSheet } from "../components/results/CrewSheet";
 import { FixtureRow } from "../components/results/FixtureRow";
 import { TeamsSheet } from "../components/results/TeamsSheet";
 import { MatchSheet } from "../components/results/MatchSheet";
+import { ScoringSheet } from "../components/results/ScoringSheet";
 import { ScreenSheet } from "../components/results/ScreenSheet";
 import { StageProgress } from "../components/results/StageProgress";
 import { progress, sections, toRow } from "../lib/board";
@@ -48,11 +50,15 @@ export function Results({ id }: { id: string }) {
   const [tab, setTab] = useState<Tab>("todo");
   const [selected, setSelected] = useState<string | null>(null);
   const [settings, setSettings] = useState(false);
+  const [scoring, setScoring] = useState(false);
   const [crew, setCrew] = useState(false);
   const [roster, setRoster] = useState(false);
   const [invite, setInvite] = useState<{ role: StaffRole; url: string } | null>(null);
   const [inviting, setInviting] = useState(false);
   const [screenState, setScreenState] = useState<"idle" | "saving" | "failed">(
+    "idle",
+  );
+  const [scoringState, setScoringState] = useState<"idle" | "saving" | "failed">(
     "idle",
   );
   const [saving, setSaving] = useState(false);
@@ -148,6 +154,34 @@ export function Results({ id }: { id: string }) {
       setScreenState("idle");
     } catch {
       setScreenState("failed");
+      await refresh();
+    }
+  };
+
+  /**
+   * Scoring saves the way the screen does, and for the same reason: the sheet
+   * is the only thing rendering it, and a round trip between a tap and the
+   * chip lighting up is a chip that flickers back to what it was.
+   *
+   * No stage is re-tallied here. `standings` is rebuilt when a result lands,
+   * so a table already on the wall keeps the points it was built with until
+   * the next fixture in its pool is settled — which the sheet says in as many
+   * words, because firing a resolve of every stage off a settings tap is a far
+   * larger write than the one anybody asked for.
+   */
+  const writeScoring = async (next: ScoringConfig, sport: string) => {
+    setBoard((prev) =>
+      prev
+        ? { ...prev, tournament: { ...prev.tournament, scoring: next, sport } }
+        : prev,
+    );
+    setScoringState("saving");
+
+    try {
+      await updateScoring(await getSession(), id, next, sport);
+      setScoringState("idle");
+    } catch {
+      setScoringState("failed");
       await refresh();
     }
   };
@@ -268,6 +302,13 @@ export function Results({ id }: { id: string }) {
           >
             Teams
           </button>
+          <button
+            type="button"
+            className="results__screen results__screen--settings"
+            onClick={() => setScoring(true)}
+          >
+            Scoring
+          </button>
           {isOwner ? (
             <button
               type="button"
@@ -360,6 +401,16 @@ export function Results({ id }: { id: string }) {
           state={screenState}
           onChange={(patch) => void writeScreen(patch)}
           onClose={() => setSettings(false)}
+        />
+      ) : null}
+
+      {scoring ? (
+        <ScoringSheet
+          sport={board.tournament.sport}
+          scoring={board.tournament.scoring}
+          state={scoringState}
+          onChange={(next, sport) => void writeScoring(next, sport)}
+          onClose={() => setScoring(false)}
         />
       ) : null}
 

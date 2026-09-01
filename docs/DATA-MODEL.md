@@ -241,6 +241,48 @@ but only while neither it nor anything after it has been played. A corrected
 score has to produce the table it would have produced at the time; matches
 already played cannot be unplayed to match it.
 
+## How a day is scored
+
+`tournaments.scoring` is one JSON column and the server has always read it:
+points for a win, a draw and a loss, what a walkover is credited as, and the
+tiebreak order. What it did not have until recently was anything that *wrote*
+it other than a hardcoded default, so every tournament was scored 3-1-0 with
+draws possible — football's rules, applied to halls full of volleyball.
+
+The wizard now asks for a sport instead of for a points table. That is the
+whole trick: "volleyball" is a question somebody holding a clipboard can
+answer, and "how many points for a win, and can a match end level" is one they
+can only answer by looking it up — for a sport whose answer has been the same
+every year they have run it. The presets live in
+`apps/web/src/lib/scoring.ts` and every number they imply stays editable from
+the scoring sheet, because a league that awards two points for a win is not a
+preset going wrong.
+
+**`drawsAllowed` is a pointer, and that is the point.** Absent, `false` and
+`true` are three different states and only two of them are a decision. Every
+tournament written before the field existed meant football, so a plain bool
+defaulting to `false` would start refusing the level scores those days were
+recording happily the afternoon before. `ScoringConfig.DrawsAllowedOr()` is the
+only way it is read.
+
+**A level score is refused at the write, not tidied up at the tally.** Two
+separate reasons, and confusing them would produce the wrong rule:
+
+| | |
+|---|---|
+| `drawsAllowed: false` | The rulebook's. A sport with no draws should not have a table crediting one. |
+| A knockout stage | Nobody's rulebook. A level score leaves `winner` empty, and the slot waiting on it never fills. |
+
+The second holds whatever the scoring says, which is why the guard reads the
+stage's format before it reads the tournament's config. Refusing at the write
+is what makes it visible: a draw silently tallied is a table that is wrong, and
+a draw silently dropped in a bracket is a projector still showing "Winner SF1"
+an hour after SF1 was played. Neither announces itself. A 400 does.
+
+It costs nothing on the ordinary path — the guard reads no records at all until
+the score is level *and* the fixture is finished, which is a case that mostly
+does not arise.
+
 ## Deliberate impurities
 
 **`fixtures.home_entry` / `away_entry` are denormalised from the slots.**
@@ -401,6 +443,10 @@ unaffected. The field is writable — just not by the account it is about.
 - **Schedule conflicts are a warning, not a constraint.** The organiser screen
   says when a team is already down for another match within the hour and a
   half; the database will happily store it either way.
+- **`scoring.bestOf` is stored and read by nothing.** The presets write it and
+  `ScoringConfig` in Go has no field for it, so no code knows that a best-of-
+  three is over when somebody has won two sets. `games` holds the sets and the
+  match sheet counts them; ending the match is still the organiser's call.
 - ~~**Result history.**~~ Done: `fixture_events` is append-only and written
   only by the request hooks, so it records what a *person* did — the resolver
   rewrites fixtures constantly and none of that is somebody changing a result.

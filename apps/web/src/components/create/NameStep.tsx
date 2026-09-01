@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { SPORTS, sportById, type SportId } from "../../lib/scoring";
 import { WizardShell } from "./WizardShell";
 
 interface Resume {
@@ -10,21 +11,31 @@ interface Resume {
 
 interface Props {
   initial: string;
+  sport: SportId;
   busy: boolean;
   resume: Resume | null;
+  onSport: (sport: SportId) => void;
   onNext: (name: string) => void;
 }
 
 /**
- * The first screen asks for one thing, because the first screen is where
- * people decide whether this is going to be quick.
+ * The first screen asks for a name and what is being played, because the first
+ * screen is where people decide whether this is going to be quick.
  *
- * Everything else a tournament record needs — a slug, an owner, scoring
- * defaults — is derived or defaulted. The record is created the moment this is
- * submitted, so every team typed after it is saved as it is typed rather than
- * held in a tab that an incoming phone call can kill.
+ * The sport is a second question and deliberately not a second screen. It is
+ * one tap with a right answer already selected, and it is the only question
+ * about scoring anybody should have to answer: three points for a win with
+ * draws possible is correct for football and wrong for every sport played in a
+ * hall, and a tournament that never gets asked is a tournament scored as
+ * football by default. The numbers behind each chip are on the scoring sheet
+ * once the day is running, for the league whose rules are its own.
+ *
+ * Everything else a tournament record needs — a slug, an owner — is derived.
+ * The record is created the moment this is submitted, so every team typed
+ * after it is saved as it is typed rather than held in a tab that an incoming
+ * phone call can kill.
  */
-export function NameStep({ initial, busy, resume, onNext }: Props) {
+export function NameStep({ initial, sport, busy, resume, onSport, onNext }: Props) {
   const [name, setName] = useState(initial);
   const trimmed = name.trim();
   const ready = trimmed.length > 0 && !busy;
@@ -100,6 +111,26 @@ export function NameStep({ initial, busy, resume, onNext }: Props) {
           enterKeyHint="next"
         />
       </form>
+
+      <fieldset className="wiz__sports">
+        <legend>What's being played?</legend>
+        <div className="wiz__chips">
+          {SPORTS.map((option) => (
+            <button
+              key={option.id}
+              type="button"
+              className={
+                option.id === sport ? "wiz__chip is-active" : "wiz__chip"
+              }
+              aria-pressed={option.id === sport}
+              onClick={() => onSport(option.id)}
+            >
+              {option.label}
+            </button>
+          ))}
+        </div>
+        <p className="wiz__chip-hint">{sportById(sport).hint}</p>
+      </fieldset>
     </WizardShell>
   );
 }

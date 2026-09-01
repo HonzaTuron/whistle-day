@@ -7,7 +7,10 @@
 package tournament
 
 import (
+	"net/http"
+
 	"github.com/pocketbase/dbx"
+	"github.com/pocketbase/pocketbase/apis"
 	"github.com/pocketbase/pocketbase/core"
 )
 
@@ -26,10 +29,16 @@ func RegisterHooks(app core.App) {
 	// Derive winner/loser from the score BEFORE the write, so the stored
 	// outcome can never disagree with the stored score.
 	app.OnRecordCreate("fixtures").BindFunc(func(e *core.RecordEvent) error {
+		if err := guardLevelScore(e.App, e.Record); err != nil {
+			return err
+		}
 		deriveOutcome(e.Record)
 		return e.Next()
 	})
 	app.OnRecordUpdate("fixtures").BindFunc(func(e *core.RecordEvent) error {
+		if err := guardLevelScore(e.App, e.Record); err != nil {
+			return err
+		}
 		deriveOutcome(e.Record)
 		return e.Next()
 	})
@@ -121,6 +130,48 @@ func recomputeForGame(app core.App, game *core.Record) error {
 		return nil
 	}
 	return ComputeStandings(app, fixture.GetString("stage"))
+}
+
+// guardLevelScore refuses to store a finished fixture whose sides are level,
+// in the two cases where a draw is not a result anybody can mean.
+//
+// Without it a level score is accepted and quietly does nothing: deriveOutcome
+// leaves winner and loser empty, and the table credits a draw that the sport
+// does not have while a bracket simply stops — the slot waiting on the winner
+// of that match never fills, and the first anyone knows is a projector showing
+// "Winner SF1" an hour after SF1 was played.
+//
+// It reads nothing until the score is actually level and the fixture actually
+// finished, so the ordinary write pays for neither lookup.
+func guardLevelScore(app core.App, f *core.Record) error {
+	if f.GetString("status") != "finished" {
+		return nil
+	}
+	if f.GetInt("home_score") != f.GetInt("away_score") {
+		return nil
+	}
+
+	// A knockout has to produce somebody to put in the next round, whatever
+	// the rulebook says about draws in the group stage.
+	stage, err := app.FindRecordById("stages", f.GetString("stage"))
+	if err != nil {
+		return err
+	}
+	switch stage.GetString("format") {
+	case "single_elim", "double_elim":
+		return apis.NewApiError(http.StatusBadRequest,
+			"A knockout match cannot end level — somebody has to go through.", nil)
+	}
+
+	tournament, err := app.FindRecordById("tournaments", f.GetString("tournament"))
+	if err != nil {
+		return err
+	}
+	if scoringConfig(tournament).DrawsAllowedOr() {
+		return nil
+	}
+	return apis.NewApiError(http.StatusBadRequest,
+		"This tournament is scored without draws, so a match cannot end level.", nil)
 }
 
 // deriveOutcome fills winner/loser from the fixture's status and score.

@@ -4,8 +4,8 @@ Tournament organiser with arbitrary stage ordering — groups, playoff, Swiss, i
 any sequence — and a public projector view.
 
 **Status: a whole tournament runs off a phone — or off as many phones as there
-are courts.** Name it, add the teams one by one, pick how the day should run,
-and you get a link and a QR code. Then run the day: put matches on courts, mark
+are courts.** Name it, say what is being played, add the teams one by one, pick
+how the day should run, and you get a link and a QR code. Then run the day: put matches on courts, mark
 what is being played, and enter results as they come in. The tables rebuild,
 the playoff seeded from them fills itself in, the next Swiss round draws
 itself, and the wall keeps up on its own. Hand a referee a second QR code and
@@ -71,8 +71,8 @@ Re-running `bun run seed` replaces the demo rather than adding a second one.
 
 | Route | For |
 |---|---|
-| `/new` | The organiser: name, teams, courts, format, and a link for the wall. |
-| `/t/:id` | Running the day: courts, times, what is live, a score for each, and how the wall is set up. |
+| `/new` | The organiser: name, sport, teams, courts, format, and a link for the wall. |
+| `/t/:id` | Running the day: courts, times, what is live, a score for each, how the day is scored, and how the wall is set up. |
 | `/join/:token` | The other end of a crew QR code: say who you are, tap once, start refereeing. |
 | `/account` | Put an email on the device account, or sign in on another device. |
 | `/display/:token` | The projector: unattended, rotates itself, read from across a hall. |
@@ -90,8 +90,8 @@ bun run check   # typecheck + go vet/test + smoke
 | Command | What it covers |
 |---|---|
 | `bun run typecheck` | TypeScript 7 |
-| `bun run pb:test` | `go vet` + 116 unit tests: generators, pairing, tiebreaks, outcomes |
-| `bun run smoke` | 122 assertions against a real PocketBase on a temp data dir |
+| `bun run pb:test` | `go vet` + 129 unit tests: generators, pairing, tiebreaks, outcomes |
+| `bun run smoke` | 194 assertions against a real PocketBase on a temp data dir |
 
 The smoke run is the one that matters. It boots the server, generates a
 two-pool group stage and a playoff seeded from it, plays every group fixture
@@ -143,6 +143,24 @@ its final positions.
 
 ## Behaviour worth knowing about
 
+- **The sport is the only scoring question anybody is asked.** Three points for
+  a win with a draw possible is right for football and wrong for every sport
+  played in a hall, so the wizard asks what is being played on the same screen
+  as the name — one tap, with a right answer already selected — and the points,
+  the walkover credit and the tiebreak order follow from it. What follows is
+  still editable, from "Scoring" on `/t/:id`, because a league that plays for
+  two points is not a preset going wrong. `tournaments.scoring` is what all of
+  it writes, and the server has always read it; until now nothing but a
+  hardcoded default ever wrote it.
+- **A level score is refused where a level score is not a result.** Two cases,
+  and only one of them is a rulebook's. A tournament whose scoring says
+  `drawsAllowed: false` will not store one, because the alternative is a table
+  quietly crediting a draw in a sport that has none. A knockout will not store
+  one whatever its scoring says, because somebody has to go through — a level
+  score there leaves `winner` empty, and the first anyone knows is a projector
+  still showing "Winner SF1" an hour after SF1 was played. The field is a
+  pointer on the wire: absent means draws are fine, which is what every
+  tournament written before it existed meant.
 - **Corrections re-propagate.** Editing a score hours later reruns the chain,
   including the tables. Standings are recomputed from scratch rather than
   accumulated, because incremental accumulation is exactly where a corrected
@@ -258,3 +276,10 @@ a draw without a round trip. They are now Go only, and preview goes through
    sponsor slots read, and the only things that set it are an admin and
    whatever writes the record server-side. There is no checkout, no provider
    and no webhook.
+7. **`scoring.bestOf` is written and never read.** The sport presets store it —
+   3 for volleyball, 1 for everything else — and no Go code has a field for it,
+   so nothing knows a match is over when a side has won two sets. The match
+   sheet counts the sets that were entered and the organiser decides when to
+   save. Making it real means the sheet ending a match on its own and refusing
+   a result that does not match the format, which reaches into the set-by-set
+   entry path rather than sitting beside it.

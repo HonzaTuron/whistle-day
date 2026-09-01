@@ -5,7 +5,7 @@ Two public screens, and the two the organiser drives them from.
 | Route | For |
 |---|---|
 | `/new` | The organiser setting a tournament up, on a phone, in a hall. |
-| `/t/:id` | Running the day: the match list, and a score for each. |
+| `/t/:id` | Running the day: the match list, a score for each, and how the day is scored. |
 | `/account` | Claiming the device account, and signing in on another device. |
 | `/display/:token` | The projector: unattended, rotates itself, read from across a hall. |
 | `/m/:token` | A phone: held by one person looking for one thing. |
@@ -72,9 +72,9 @@ Then open `http://localhost:5173/display/hala-1` or `/m/hala-1` — or
 
 ## Setting a tournament up
 
-`/new` is four questions and a QR code: a name, the teams one at a time, how
-many courts, and how the day should run. Three things about it are worth
-knowing before changing it.
+`/new` is four questions and a QR code: a name and what is being played, the
+teams one at a time, how many courts, and how the day should run. Four things
+about it are worth knowing before changing it.
 
 **The account is created behind the organiser's back.** Every write rule needs
 `@request.auth.id`, and a signup form in front of someone holding a clipboard
@@ -108,6 +108,22 @@ actually entered, because "16 matches, about three hours" is the decision an
 organiser is really making. Pool counts, Swiss rounds and advancement are
 derived from the team count, and a preset only appears once there are enough
 teams for it to mean anything.
+
+**The sport is a second question and deliberately not a second screen.** It
+sits under the name field as a row of chips, because it is one tap with a right
+answer already selected — and because the alternative is a fifth screen asking
+about scoring before anybody has a reason to care. It is the only question
+about scoring anyone is asked: `lib/scoring.ts` turns the chip into the points,
+the walkover credit and the tiebreak order that `tournaments.scoring` carries,
+and the server reads that on every result. The default chip is the generic one
+rather than the most popular one, since a day quietly scored as volleyball
+because nobody tapped anything is worse than one scored as nothing in
+particular.
+
+The chip on a *resumed* draft follows the record rather than the other way
+round, and `matchSport` matches on the scoring rather than on `sport` — a
+volleyball day whose points were edited by hand is no longer the volleyball
+preset and should not claim to be.
 
 ## Entering results
 
@@ -195,6 +211,12 @@ Three consequences worth keeping:
   as "w/o" through `lib/format.ts` — which exists because each of them used to
   format scores by hand, and the projector duly announced a 0:0 for a match
   nobody played.
+- **A level score can come back refused.** In a tournament scored without draws
+  and in every knockout, the server will not store one. The sheet stays open
+  with the score still in it and the banner carries the server's own sentence,
+  which is the point of writing those messages for an organiser rather than for
+  a log: "somebody has to go through" is actionable and "validation failed" is
+  not.
 - **Un-settling a fixture clears propagation.** Changing a settled fixture back
   to "ready" or "pending" clears every downstream slot that sourced its entry
   from it — the brackets unroll. Change the score instead, or flip the status
@@ -204,6 +226,30 @@ Every change to a result is logged, and the sheet shows the log for the match
 it is open on — but only when there is something to say. A match entered once
 and left alone shows nothing, because the row above it already says what the
 score is. The line that matters is the second one: "changed 3–1 to 2–4".
+
+## Setting the day's scoring
+
+"Scoring" on `/t/:id` is where the sport stops being a preset: the points, the
+walkover credit, whether a match can end level, and the order the tiebreaks run
+in. Like the screen sheet it saves on change, and like the screen sheet it
+shares `lib/reorder.ts` — the tiebreak order and the panel rotation are the
+same drag over a different list, and the round-titles lesson above is why that
+is a hook rather than a second copy.
+
+- **It does not re-tally.** `standings` is rebuilt when a result lands, so a
+  table already on the wall keeps the points it was built with until the next
+  fixture in its pool is settled. The sheet says so rather than firing a
+  resolve of every stage off a settings tap, which is a far larger write than
+  the one anybody asked for — `POST /api/stages/{stage}/resolve` is the button
+  that already means it.
+- **The draw column disappears when there are no draws.** A control that can
+  only ever be set wrong is worse than one that is not there.
+- **Points is drawn in the tiebreak list and cannot be moved.** A table ordered
+  by anything before its own points column is not a table, so it is in the list
+  for orientation and out of the drag.
+- **A points column is a stepper, not a text field.** Nobody types a 3 on a
+  phone in a hall, and a number input brings a keyboard up over the sheet. The
+  buttons send a step rather than a value, the same way the match sheet's do.
 
 ## Setting the screen up
 

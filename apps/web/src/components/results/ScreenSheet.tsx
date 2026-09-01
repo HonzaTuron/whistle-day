@@ -7,7 +7,9 @@ import type {
   Pool,
   Stage,
 } from "@seedly/engine";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
+import { useReorder } from "../../lib/reorder";
+import { Grip, Group } from "./SheetParts";
 
 interface Props {
   screen: Display;
@@ -113,63 +115,10 @@ export function ScreenSheet({
       panels: next.length === ORDER.length && next.every((p, i) => p === ORDER[i]) ? [] : next,
     });
 
-  // Dragging: the order under the finger is local until it is let go, so the
-  // list moves as it is dragged without a write per row it passes over.
-  const [dragging, setDragging] = useState<{ at: number; order: DisplayPanel[] } | null>(
-    null,
-  );
-  const rows = useRef<(HTMLLIElement | null)[]>([]);
-  const shown = dragging?.order ?? rotation;
-
-  const moveTo = (from: number, to: number, order: DisplayPanel[]) => {
-    const next = [...order];
-    next.splice(to, 0, ...next.splice(from, 1));
-    return next;
-  };
-
-  const onGripDown = (index: number) => (event: React.PointerEvent<HTMLElement>) => {
-    event.preventDefault();
-    try {
-      // Without it the pointer leaves the handle on the first row it crosses
-      // and the moves stop arriving. Losing the capture is not worth losing
-      // the drag over, so it is not allowed to throw.
-      event.currentTarget.setPointerCapture(event.pointerId);
-    } catch {
-      // Nothing to do: the drag still works while the pointer is over a row.
-    }
-    setDragging({ at: index, order: rotation });
-  };
-
-  const onGripMove = (event: React.PointerEvent<HTMLElement>) => {
-    if (!dragging) return;
-    // Which row is the pointer over? Measured rather than assumed, because a
-    // hint that wraps makes a taller row than the one above it.
-    const y = event.clientY;
-    let target = dragging.at;
-    for (let i = 0; i < shown.length; i++) {
-      const rect = rows.current[i]?.getBoundingClientRect();
-      if (!rect) continue;
-      if (y > rect.top + rect.height / 2) target = i;
-      else break;
-    }
-    if (target !== dragging.at) {
-      setDragging({ at: target, order: moveTo(dragging.at, target, dragging.order) });
-    }
-  };
-
-  const onGripUp = () => {
-    if (!dragging) return;
-    const order = dragging.order;
-    setDragging(null);
-    if (order.some((panel, i) => panel !== rotation[i])) setRotation(order);
-  };
-
-  /** The keyboard's way to do the same thing, on the same handle. */
-  const nudge = (index: number, by: number) => {
-    const to = index + by;
-    if (to < 0 || to >= rotation.length) return;
-    setRotation(moveTo(index, to, rotation));
-  };
+  // The order under the finger is local until it is let go, so the list moves
+  // as it is dragged without a write per row it passes over. Shared with the
+  // tiebreak order on the scoring sheet — same interaction, different list.
+  const drag = useReorder(rotation, setRotation);
 
   return (
     <div className="sheet" role="dialog" aria-modal="true" aria-label="Screen">
@@ -197,15 +146,13 @@ export function ScreenSheet({
             neither can be hit by accident while reaching for the other.
           */}
           <ul className="rotation">
-            {shown.map((panel, index) => (
+            {drag.shown.map((panel, index) => (
               <li
                 key={panel}
-                ref={(node) => {
-                  rows.current[index] = node;
-                }}
+                ref={drag.rowRef(index)}
                 className={
                   "rotation__row" +
-                  (dragging?.at === index ? " is-dragging" : "")
+                  (drag.draggingAt === index ? " is-dragging" : "")
                 }
               >
                 <label className="rotation__pick">
@@ -228,20 +175,7 @@ export function ScreenSheet({
                   type="button"
                   className="rotation__grip"
                   aria-label={`Move ${NAMES.get(panel)?.label}`}
-                  onPointerDown={onGripDown(index)}
-                  onPointerMove={onGripMove}
-                  onPointerUp={onGripUp}
-                  onPointerCancel={onGripUp}
-                  onKeyDown={(event) => {
-                    if (event.key === "ArrowUp") {
-                      event.preventDefault();
-                      nudge(index, -1);
-                    }
-                    if (event.key === "ArrowDown") {
-                      event.preventDefault();
-                      nudge(index, 1);
-                    }
-                  }}
+                  {...drag.gripProps(index)}
                 >
                   <Grip />
                 </button>
@@ -397,28 +331,6 @@ export function ScreenSheet({
 }
 
 /** Six dots: the handle everything else with a draggable row uses. */
-function Grip() {
-  return (
-    <svg viewBox="0 0 10 16" width="10" height="16" aria-hidden focusable="false">
-      {[3, 8, 13].map((y) =>
-        [2, 8].map((x) => <circle key={`${x}-${y}`} cx={x} cy={y} r="1.3" />),
-      )}
-    </svg>
-  );
-}
-
-function Group({ label, children }: { label: string; children: React.ReactNode }) {
-  const [id] = useState(() => `group-${Math.random().toString(36).slice(2, 8)}`);
-  return (
-    <section className="setting" aria-labelledby={id}>
-      <h3 className="setting__label" id={id}>
-        {label}
-      </h3>
-      {children}
-    </section>
-  );
-}
-
 function Filter({
   label,
   on,
