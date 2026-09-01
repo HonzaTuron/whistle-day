@@ -1,19 +1,13 @@
 import { Link } from "@tanstack/react-router";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import {
   ensureOrganiser,
-  clearResult,
   ensureInvite,
   loadBoard,
-  rememberedTournament,
   rememberTournament,
-  saveGames,
-  saveResult,
-  saveWalkover,
-  setLive,
-  setSchedule,
   reinstateEntry,
   removeStaff,
+  statusAfterClearing,
   storedSession,
   resetInvite,
   updateDisplay,
@@ -23,6 +17,17 @@ import {
   type Session,
   type StaffRecord,
 } from "../api/organiser";
+import { readBoard, writeBoard } from "../api/cache";
+import {
+  acknowledge,
+  dismissRejections,
+  enqueue,
+  flush,
+  getSnapshot,
+  sentSoFar,
+  subscribe,
+} from "../api/outbox";
+import { overlay, waitingFixtures, type Intent } from "../lib/pending";
 import type { Display, Entry, ScoringConfig, StaffRole } from "@seedly/engine";
 import { CrewSheet } from "../components/results/CrewSheet";
 import { FixtureRow } from "../components/results/FixtureRow";
@@ -44,6 +49,27 @@ type Tab = "todo" | "done";
  * predict what a result changed. One result can move four tables and fill two
  * slots two stages away; a client that guessed at that would be wrong in ways
  * nobody could see until the projector disagreed with the hall.
+ *
+ * ## What happens when the hall has no signal
+ *
+ * The reading and the writing are decoupled from the network separately, and
+ * neither of them changes the rule above.
+ *
+ * Reading: the last board is kept on the device (`api/cache.ts`) and drawn
+ * immediately, then replaced by whatever the server says. A reload mid-outage
+ * is a match list, not a spinner and an error.
+ *
+ * Writing: a tap goes into a queue (`api/outbox.ts`) that is durable before
+ * the sheet closes, and the queue is sent whenever there is a signal. What is
+ * on screen is the server's board with the queue laid over it — so the match
+ * shows its score straight away, and the bracket it feeds does not move until
+ * the server has actually been told. Those are the honest two halves of
+ * working offline, and pretending otherwise is how a projector ends up
+ * disagreeing with the hall.
+ *
+ * Only the match sheet's writes are queued. Taking a team out, handing out a
+ * join code and the settings sheets all still need a signal, because each of
+ * them means something the device cannot work out on its own.
  */
 export function Results({ id }: { id: string }) {
   const [board, setBoard] = useState<Board | null>(null);
@@ -64,15 +90,34 @@ export function Results({ id }: { id: string }) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  /** The board on screen is the cached one, and the server has not answered. */
+  const [stale, setStale] = useState(false);
 
   const session = useRef<Promise<Session> | null>(null);
   const getSession = () => (session.current ??= ensureOrganiser());
 
+  const queue = useSyncExternalStore(subscribe, getSnapshot);
+  /**
+   * The queue is global — a device could in principle be holding work for two
+   * tournaments — but this screen is about one, so the entries it draws and
+   * the number it reports are filtered to it.
+   */
+  const held = queue.entries.filter((entry) => entry.tournament === id);
+  const waiting = held.filter((entry) => entry.state === "queued").length;
+  const refused = queue.rejections.filter((one) => one.tournament === id);
+
   const refresh = useCallback(async () => {
+    // Taken before the load, not after: an entry sent while this is in flight
+    // may not be in the response, and dropping it here is the one-render blink
+    // the `sent` state exists to prevent.
+    const accounted = sentSoFar();
     try {
       const loaded = await loadBoard(await getSession(), id);
       setBoard(loaded);
       setError(null);
+      setStale(false);
+      writeBoard(id, loaded);
+      acknowledge(accounted);
       // Keeps the landing page's way back pointing at the tournament actually
       // being run, including on a device that signed in rather than creating
       // it here — which is also where the screen token comes from now.
@@ -82,27 +127,79 @@ export function Results({ id }: { id: string }) {
         token: loaded.token,
       });
     } catch (thrown) {
-      setError(
-        thrown instanceof Error && thrown.message.includes("404")
-          ? "This tournament cannot be managed from this device."
-          : thrown instanceof Error
-            ? thrown.message
-            : "Could not load the tournament.",
-      );
+      // A 404 is an answer: this device cannot manage this tournament, and no
+      // amount of cache makes that untrue. Anything else is a phone in a hall,
+      // and whatever is already on screen is better than an error page.
+      const missing = thrown instanceof Error && thrown.message.includes("404");
+      if (missing) {
+        setBoard(null);
+        setError("This tournament cannot be managed from this device.");
+      } else {
+        // Not an error the organiser has to dismiss — the board is on screen
+        // and the queue is holding their work. The stale pill says the rest.
+        setStale(true);
+      }
     } finally {
       setLoading(false);
     }
   }, [id]);
 
+  /**
+   * The cache first, then the server.
+   *
+   * Not a race — the cached board is only put up if the network has not
+   * already answered, so a device with signal never sees the old one flash
+   * past. `cancelled` covers the tournament being switched underneath.
+   */
   useEffect(() => {
+    let cancelled = false;
+
+    void readBoard(id).then((cached) => {
+      if (cancelled || !cached) return;
+      setBoard((live) => live ?? cached);
+      setLoading(false);
+    });
+
     void refresh();
-  }, [refresh]);
+    // A queue left over from the last time this device was open — the tab was
+    // closed in a hall with no signal and reopened in the car park. Nothing
+    // else would try it until the organiser entered another result.
+    void flush();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [id, refresh]);
+
+  /**
+   * Read the board back once the queue has drained.
+   *
+   * The server derives everything a result implies, so the only way to find
+   * out what one changed is to ask. Waiting for the whole queue rather than
+   * refreshing per write means one reload after a burst of six results comes
+   * in off a recovered signal, not six.
+   */
+  const sending = queue.sending;
+  const outstanding = held.length;
+  useEffect(() => {
+    if (!sending && waiting === 0 && outstanding > 0) void refresh();
+  }, [sending, waiting, outstanding, refresh]);
 
   if (loading) return <p className="results__message">Loading…</p>;
   if (!board) return <p className="results__message">{error ?? "Nothing here."}</p>;
 
   const entries = new Map(board.entries.map((entry) => [entry.id, entry]));
-  const rows = board.fixtures.map((fixture) => toRow(fixture, entries));
+  /**
+   * What the server last said, plus what this device has done since.
+   *
+   * Every count on this screen is built from these rather than from
+   * `board.fixtures`, so "14 of 20 matches in" includes the two still sitting
+   * in the queue. A progress bar that ignores the results an organiser just
+   * entered is a progress bar they stop believing.
+   */
+  const fixtures = overlay(board.fixtures, held);
+  const unsent = waitingFixtures(held);
+  const rows = fixtures.map((fixture) => toRow(fixture, entries));
   const done = progress(rows);
   // A cancelled match belongs in neither tab's headline but has to stay
   // findable, so it sits with the settled ones — an organiser who took a team
@@ -187,10 +284,16 @@ export function Results({ id }: { id: string }) {
   };
 
   /**
-   * Every other write goes the same way: send it, read the whole board back,
-   * and only then decide whether the sheet should close. `close` is what
-   * separates recording a result from putting a match on a court — one ends
-   * the interaction, the other is in the middle of it.
+   * The writes that are not queued: send it, read the whole board back, and
+   * only then decide whether the sheet should close.
+   *
+   * Taking a team out and putting one back go through here rather than the
+   * outbox on purpose. Both are one server call that closes fixtures and
+   * retallies every stage in a transaction, and both change who gets drawn
+   * into the next round — a withdrawal held in a queue for ten minutes is a
+   * Swiss round paired around somebody who has already gone home. Failing
+   * loudly while there is no signal is the right answer for those; the
+   * organiser can do it again in a minute, and nothing is wrong in between.
    */
   const write = async (
     work: (active: Session) => Promise<unknown>,
@@ -207,6 +310,24 @@ export function Results({ id }: { id: string }) {
     } finally {
       setSaving(false);
     }
+  };
+
+  /**
+   * The match sheet's writes: recorded here, sent when there is a signal.
+   *
+   * There is no `await` and no spinner. The queue is durable before this
+   * returns, the overlay puts the result on the list in the same render, and
+   * the sheet closes on the tap rather than on a round trip — which is the
+   * behaviour a person standing at the side of a court was always owed, and
+   * happens to be the only behaviour available when the wifi has gone.
+   *
+   * A refusal comes back through the queue's rejections rather than from here,
+   * because by the time the server has one the organiser is two matches away.
+   */
+  const record = (intent: Intent, close: boolean) => {
+    setError(null);
+    enqueue(id, intent);
+    if (close) setSelected(null);
   };
 
   /**
@@ -321,7 +442,65 @@ export function Results({ id }: { id: string }) {
         </div>
       </header>
 
-      <StageProgress stages={board.stages} pools={board.pools} fixtures={board.fixtures} />
+      {/*
+        What the queue is doing, in the one place an organiser will look.
+
+        The failure this exists for is not the outage — it is a person who
+        cannot tell whether their tap landed, entering the same result twice
+        and arguing with the wall about it. So the count is always visible
+        while anything is held, and it says which state it is in: trying, or
+        waiting for a signal that is not there. "Send now" is there for the
+        moment somebody walks to the door and wants to push rather than wait.
+      */}
+      {waiting > 0 ? (
+        <div
+          className={"results__queue" + (queue.offline ? " is-offline" : "")}
+          role="status"
+        >
+          <span>
+            {waiting === 1 ? "1 result" : `${waiting} results`}{" "}
+            {sending
+              ? "sending…"
+              : queue.offline
+                ? "waiting for a signal"
+                : "waiting to send"}
+          </span>
+          {!sending ? (
+            <button type="button" onClick={() => void flush()}>
+              Send now
+            </button>
+          ) : null}
+        </div>
+      ) : stale ? (
+        <div className="results__queue" role="status">
+          <span>Showing the last board this phone saw.</span>
+          <button type="button" onClick={() => void refresh()}>
+            Retry
+          </button>
+        </div>
+      ) : null}
+
+      {/*
+        A refusal, which is a different thing from an outage and has to read
+        like one. The server will not store a level score in a knockout, or in
+        a tournament whose scoring says draws are not a result — the queue
+        drops those rather than retrying forever, and this is where they land.
+      */}
+      {refused.length > 0 ? (
+        <div className="wiz__error" role="alert">
+          <span>
+            {refused.length === 1
+              ? refused[0]!.message
+              : `${refused.length} results were refused: ` +
+                refused.map((one) => one.message).join("; ")}
+          </span>
+          <button type="button" onClick={dismissRejections} aria-label="Dismiss">
+            ✕
+          </button>
+        </div>
+      ) : null}
+
+      <StageProgress stages={board.stages} pools={board.pools} fixtures={fixtures} />
 
       <nav className="results__tabs">
         <button
@@ -360,6 +539,7 @@ export function Results({ id }: { id: string }) {
                     key={row.fixture.id}
                     row={row}
                     courts={board.courts}
+                    unsent={unsent.has(row.fixture.id)}
                     onOpen={() => setSelected(row.fixture.id)}
                   />
                 ))}
@@ -418,7 +598,7 @@ export function Results({ id }: { id: string }) {
         <MatchSheet
           row={open}
           courts={board.courts}
-          allFixtures={board.fixtures}
+          allFixtures={fixtures}
           entries={entries}
           crew={crewNames}
           saving={saving}
@@ -433,31 +613,41 @@ export function Results({ id }: { id: string }) {
            * sub_for and sub_against to a table it is no longer part of.
            */
           onSave={(home, away, sets) =>
-            void write(async (active) => {
-              await saveGames(active, open.fixture.id, sets, true);
-              await saveResult(active, open.fixture.id, home, away);
-            }, true)
+            record({ kind: "result", fixture: open.fixture.id, home, away, sets }, true)
           }
           onWalkover={(winner) =>
-            void write(async (active) => {
-              await saveGames(active, open.fixture.id, [], true);
-              await saveWalkover(active, open.fixture.id, winner);
-            }, true)
+            record({ kind: "walkover", fixture: open.fixture.id, winner }, true)
           }
           onClear={() =>
-            void write(async (active) => {
-              await saveGames(active, open.fixture.id, [], false);
-              await clearResult(active, open.fixture);
-            }, true)
+            record(
+              {
+                kind: "clear",
+                fixture: open.fixture.id,
+                // Decided against the board the organiser is looking at, not
+                // the one the queue drains into an hour later.
+                status: statusAfterClearing(open.fixture),
+              },
+              true,
+            )
           }
           onSchedule={(schedule) =>
-            void write(
-              (active) => setSchedule(active, open.fixture.id, schedule),
+            record(
+              {
+                kind: "schedule",
+                fixture: open.fixture.id,
+                // Built key by key rather than spread: an absent key means
+                // "leave it alone" when two of these are merged in the queue,
+                // and a key present-but-undefined would read as "unset it".
+                ...(schedule.court === undefined ? {} : { court: schedule.court }),
+                ...(schedule.scheduled_at === undefined
+                  ? {}
+                  : { scheduled_at: schedule.scheduled_at }),
+              },
               false,
             )
           }
           onLive={(live) =>
-            void write((active) => setLive(active, open.fixture.id, live), false)
+            record({ kind: "live", fixture: open.fixture.id, live }, false)
           }
           onClose={() => setSelected(null)}
         />

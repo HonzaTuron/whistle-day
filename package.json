@@ -8,8 +8,9 @@
     "apps/*"
   ],
   "scripts": {
-    "check": "bun run typecheck && bun run pb:test && bun run smoke",
+    "check": "bun run typecheck && bun run web:test && bun run pb:test && bun run smoke",
     "typecheck": "tsc --noEmit -p packages/engine/tsconfig.json && tsc --noEmit -p apps/web/tsconfig.json",
+    "web:test": "bun test",
     "pb:test": "cd backend && go vet ./... && go test ./...",
     "pb:build": "cd backend && go build -o pocketbase .",
     "pb:migrate": "cd backend && go run . migrate up",

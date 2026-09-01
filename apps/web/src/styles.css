@@ -2230,6 +2230,64 @@ th,
   color: var(--text);
 }
 
+/*
+ * A result this phone is still holding.
+ *
+ * A dot beside the score rather than anything that dims or replaces it: the
+ * result is recorded and the organiser is right to read it that way. What the
+ * mark says is only that nobody else can see it yet.
+ */
+.match__unsent {
+  margin-left: 0.35rem;
+  color: var(--live);
+  font-size: 0.7em;
+  vertical-align: 0.15em;
+}
+
+/* --- the queue ------------------------------------------------------------ */
+
+/*
+ * What this phone is holding, and whether it is getting anywhere.
+ *
+ * Sits in the flow above the tabs rather than floating like `.wiz__error`,
+ * because it is not an error and it can be on screen for ten minutes at a
+ * time. A banner that covers the top of the match list for that long is worse
+ * than the outage it is reporting.
+ */
+.results__queue {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0 1.25rem 0.5rem;
+  padding: 0.5rem 0.5rem 0.5rem 0.85rem;
+  border: 1px solid var(--line-strong);
+  border-radius: 0.75rem;
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.results__queue.is-offline {
+  border-color: var(--live);
+  color: var(--text);
+}
+
+.results__queue span {
+  flex: 1;
+}
+
+.results__queue button {
+  min-height: 36px;
+  padding: 0 0.75rem;
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  background: none;
+  color: var(--text);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
 /* --- the score sheet ------------------------------------------------------ */
 
 .sheet {

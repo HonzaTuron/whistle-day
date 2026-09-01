@@ -59,6 +59,76 @@ the screen subscribes on every `PB_CONNECT` rather than once.
 Vite proxies `/api` to `127.0.0.1:8090`, so the screens and the API are
 same-origin and the token in the URL is all that is ever needed.
 
+## When the hall has no signal
+
+A sports hall's wifi drops for a minute at a time and its 4G is whatever gets
+through a concrete roof, and the organiser is not going to stop scoring while
+it sorts itself out. Three pieces, each doing one thing.
+
+**`api/outbox.ts` — the writes.** Every write from the match sheet goes into a
+durable queue before the sheet closes and is sent from there. What is queued is
+the *intent* — "this match finished 2–0, with these sets" — and not the
+request, because `saveGames` reads the rows that exist before deciding whether
+to create, patch or delete them, and offline there is nothing to read and no
+record id to patch. Replaying an intent runs the ordinary `api/organiser` write
+with the read back in place, so there is one write path whether or not there
+was a signal.
+
+Two writes to one fixture are collapsed by lane. `result`, `walkover`, `clear`
+and `live` all set `status`, so only the last of them means anything — a match
+rescored three times offline drains as one write. Court and time are a separate
+lane, because moving a match to court two and entering its score twenty minutes
+later must both land. The two lanes touch disjoint columns, so their order does
+not matter.
+
+The queue sends oldest first and **stops at the first failure**. Two fixtures
+in the same pool are not collapsed together, and carrying on past a failure
+would send the second and leave the first — a table rebuilt from a pool missing
+the earlier of two results it should have had. Draining in order means the
+server always sees a prefix of what happened.
+
+**A refusal is not an outage.** A knockout will not store a level score, and
+neither will a tournament whose scoring says draws are not a result; both come
+back 400. Retrying those forever would leave "1 result waiting" on screen all
+afternoon with nothing explaining why, so a 4xx comes out of the queue and goes
+in front of the organiser instead. A 401 is the one exception, since the token
+expires on its own schedule and re-authenticating fixes it.
+
+**`api/cache.ts` — the reads.** The last board is kept in IndexedDB and drawn
+immediately on the way in, then replaced by whatever the server says. A reload
+mid-outage is a match list, not a spinner and then an error. It is a cache and
+nothing more: never merged out of, overwritten by every successful load, and
+worth one round trip if it is lost.
+
+The two storages are the other way round on purpose. The outbox is a few
+hundred bytes and losing it loses a result nobody else has, so it is in
+localStorage, which is synchronous and durable before `enqueue` returns. The
+board is most of a megabyte with five hundred fixtures expanded, and writing
+that synchronously after every result would stutter the one screen that must
+never feel slow.
+
+**`lib/pending.ts` — what the organiser sees.** The server's board with the
+queue laid over it, composed at render rather than written back into the cache:
+a result the server later refuses would otherwise sit in storage looking
+recorded forever. Applying an intent touches the fixture's own fields and
+nothing else — no slots filled, no pool table rebuilt, no playoff place
+promoted. All of that is derived server-side from every fixture at once, and a
+client guessing at it would be wrong in the way this codebase least wants to be
+wrong: invisibly, until the projector disagreed with the hall. So offline, a
+match reads as recorded and the bracket it feeds stands still until the queue
+drains. `winner` is the one exception and is display-only — a recorded match
+that cannot say who won reads as broken — and the server overwrites it on
+arrival.
+
+It is deliberately not a general offline layer. **Taking a team out is not
+queued**, because the answer changes who gets drawn into the next Swiss round,
+and a withdrawal sitting in a queue for ten minutes is a round paired around
+somebody who has already gone home. Neither are join codes, which mint a token
+only the server can make, nor the settings sheets, nor the `/new` wizard. Those
+still need a signal and say so.
+
+`lib/pending.ts` is pure and is the part with tests — `bun test`.
+
 ## Running it
 
 ```bash

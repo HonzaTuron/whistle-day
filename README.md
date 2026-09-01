@@ -90,6 +90,7 @@ bun run check   # typecheck + go vet/test + smoke
 | Command | What it covers |
 |---|---|
 | `bun run typecheck` | TypeScript 7 |
+| `bun run web:test` | 20 tests over the offline queue's collapse and overlay rules |
 | `bun run pb:test` | `go vet` + 129 unit tests: generators, pairing, tiebreaks, outcomes |
 | `bun run smoke` | 194 assertions against a real PocketBase on a temp data dir |
 
@@ -161,6 +162,27 @@ its final positions.
   still showing "Winner SF1" an hour after SF1 was played. The field is a
   pointer on the wire: absent means draws are fine, which is what every
   tournament written before it existed meant.
+- **A result is recorded on the phone before it is sent.** A hall's wifi drops
+  for a minute at a time and nobody is going to stop scoring while it comes
+  back, so every write from the match sheet goes into a durable queue and is
+  sent from there. The sheet closes on the tap rather than on a round trip,
+  which is what a person standing at the side of a court was owed anyway, and
+  happens to be the only thing available when the signal has gone. What is
+  queued is the intent rather than the request — "2–0, with these sets" — so
+  replaying it runs the same write as the online path, with the read it depends
+  on back in place. A match rescored three times offline drains as one write,
+  and the queue stops at the first failure so the server never sees the second
+  of two results without the first.
+- **Offline, a result closes its own match and nothing else.** No slot is
+  filled, no pool table rebuilt, no playoff place promoted — all of that is the
+  server's, derived from every fixture at once, and a client guessing at it
+  would be wrong exactly where this system can least afford it. So the bracket
+  stands still until the queue drains, which is the truth of the situation
+  rather than a picture of one. The organiser's screen also keeps the last
+  board it saw, so a reload mid-outage is a match list rather than an error.
+  Taking a team out is deliberately *not* queued: it decides who gets drawn
+  into the next Swiss round, and one sitting in a queue for ten minutes is a
+  round paired around somebody who has already gone home.
 - **Corrections re-propagate.** Editing a score hours later reruns the chain,
   including the tables. Standings are recomputed from scratch rather than
   accumulated, because incremental accumulation is exactly where a corrected

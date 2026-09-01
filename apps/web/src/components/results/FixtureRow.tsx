@@ -4,6 +4,8 @@ import { sideName, timeValue, type BoardRow } from "../../lib/board";
 interface Props {
   row: BoardRow;
   courts: Court[];
+  /** Entered on this phone and not yet on the server. */
+  unsent?: boolean;
   onOpen: () => void;
 }
 
@@ -15,7 +17,7 @@ interface Props {
  * slot labels the server wrote ("Winner SF1", "1. A") and no affordance at
  * all, rather than something tappable that refuses to do anything.
  */
-export function FixtureRow({ row, courts, onOpen }: Props) {
+export function FixtureRow({ row, courts, unsent = false, onOpen }: Props) {
   // Where and when, when they are known. This is the line the organiser reads
   // to answer "what is on court two?" without opening anything.
   const court = courts.find((c) => c.id === row.fixture.court)?.name ?? "";
@@ -33,7 +35,20 @@ export function FixtureRow({ row, courts, onOpen }: Props) {
             underneath them. */}
         {where ? <span className="match__where">{where}</span> : null}
       </span>
-      <span className="match__result">{result(row)}</span>
+      <span className="match__result">
+        {result(row)}
+        {/*
+          A held result reads as recorded, because it is — the difference is
+          only that nobody else can see it yet. So the row keeps its score and
+          takes a mark beside it rather than a spinner or a greyed-out state,
+          which would say "this did not work" about something that did.
+        */}
+        {unsent ? (
+          <span className="match__unsent" title="On this phone, not sent yet">
+            ●
+          </span>
+        ) : null}
+      </span>
     </>
   );
 

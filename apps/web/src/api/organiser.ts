@@ -570,12 +570,20 @@ export const updateDisplay = (session: Session, id: Id, patch: Partial<Display>)
  * waiting on a position in a table that has just become final. A corrected
  * score runs exactly the same chain — the tables are rebuilt from scratch
  * rather than adjusted, and a slot whose ranking changed is overwritten.
+ *
+ * `at` is when the match finished, which is not always when this request is
+ * made: a result entered on a phone that had no signal is sent whenever the
+ * signal comes back, and stamping it then would put a match played at two
+ * o'clock at the top of the projector's recent results at half past. The
+ * caller knows the moment; the default is for the ordinary online path, where
+ * they are the same.
  */
 export const saveResult = (
   session: Session,
   fixture: Id,
   homeScore: number,
   awayScore: number,
+  at: Date = new Date(),
 ) =>
   api<Fixture>(`/api/collections/fixtures/records/${fixture}`, {
     method: "PATCH",
@@ -584,7 +592,7 @@ export const saveResult = (
       status: "finished",
       home_score: homeScore,
       away_score: awayScore,
-      finished_at: stamp(new Date()),
+      finished_at: stamp(at),
     },
   });
 
@@ -690,13 +698,22 @@ export const loadHistory = (session: Session, fixture: Id) =>
  * cleared, and the fixtures those slots feed lose the side they were given. A
  * match whose own sides are still known goes back to "ready"; one that was
  * only ever playable because of a result upstream goes back to "pending".
+ *
+ * Which of the two is the caller's to decide — `statusAfterClearing` reads it
+ * off the board. It is a parameter rather than a lookup here because this call
+ * can be made from a queue draining half an hour later, and the board it was
+ * decided against is the one the organiser was looking at when they tapped.
  */
-export const clearResult = (session: Session, fixture: BoardFixture) =>
-  api<Fixture>(`/api/collections/fixtures/records/${fixture.id}`, {
+export const clearResult = (
+  session: Session,
+  fixture: Id,
+  status: "ready" | "pending",
+) =>
+  api<Fixture>(`/api/collections/fixtures/records/${fixture}`, {
     method: "PATCH",
     token: session.token,
     body: {
-      status: fixture.home_entry && fixture.away_entry ? "ready" : "pending",
+      status,
       home_score: 0,
       away_score: 0,
       winner: "",
@@ -704,6 +721,10 @@ export const clearResult = (session: Session, fixture: BoardFixture) =>
       finished_at: "",
     },
   });
+
+/** Where a fixture lands when its result is taken off. */
+export const statusAfterClearing = (fixture: BoardFixture): "ready" | "pending" =>
+  fixture.home_entry && fixture.away_entry ? "ready" : "pending";
 
 /**
  * A match nobody played, won by the side that turned up.
@@ -714,7 +735,12 @@ export const clearResult = (session: Session, fixture: BoardFixture) =>
  * `scoring.walkoverScore` (0 by default) in the table; what is stored on the
  * fixture is an outcome, not a scoreline.
  */
-export const saveWalkover = (session: Session, fixture: Id, winner: Id) =>
+export const saveWalkover = (
+  session: Session,
+  fixture: Id,
+  winner: Id,
+  at: Date = new Date(),
+) =>
   api<Fixture>(`/api/collections/fixtures/records/${fixture}`, {
     method: "PATCH",
     token: session.token,
@@ -723,7 +749,7 @@ export const saveWalkover = (session: Session, fixture: Id, winner: Id) =>
       winner,
       home_score: 0,
       away_score: 0,
-      finished_at: stamp(new Date()),
+      finished_at: stamp(at),
     },
   });
 
@@ -753,12 +779,17 @@ export const setSchedule = (
  * every live fixture appears on it, so this is the switch that puts a match on
  * the wall.
  */
-export const setLive = (session: Session, fixture: Id, live: boolean) =>
+export const setLive = (
+  session: Session,
+  fixture: Id,
+  live: boolean,
+  at: Date = new Date(),
+) =>
   api<Fixture>(`/api/collections/fixtures/records/${fixture}`, {
     method: "PATCH",
     token: session.token,
     body: live
-      ? { status: "live", started_at: stamp(new Date()) }
+      ? { status: "live", started_at: stamp(at) }
       : { status: "ready", started_at: "" },
   });
 
