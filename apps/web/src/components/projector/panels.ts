@@ -50,8 +50,26 @@ export function buildPanels(payload: DisplayPayload): Panel[] {
       panels.push({ kind: "next_up", title: "Next up", index: 0 });
     }
   };
+  /**
+   * A court nobody has been put on draws nothing.
+   *
+   * The panel is built from the fixtures assigned to each court, so a day with
+   * courts named but nothing scheduled on them renders a frame with no rows in
+   * it — twelve seconds of black wall every rotation, which is what this file
+   * drops empty panels to avoid. Courts get named on the `/new` wizard and
+   * fixtures get put on them later, if at all, so this is the ordinary state
+   * of a tournament for its first hour rather than an edge case.
+   */
   const addCourtSchedule = () => {
-    if (payload.courts.length > 0) {
+    const courts = new Set(payload.courts.map((court) => court.id));
+    const scheduled = payload.stages.some((stage) =>
+      stage.pools.some((pool) =>
+        pool.rounds.some((round) =>
+          round.fixtures.some((fixture) => courts.has(fixture.court)),
+        ),
+      ),
+    );
+    if (scheduled) {
       panels.push({ kind: "court_schedule", title: "Court schedule", index: 0 });
     }
   };

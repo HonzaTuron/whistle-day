@@ -411,7 +411,11 @@ by the door, not the main wall.
 ## Notes on the projector
 
 - **Empty panels are dropped, not shown blank.** A hall with no live match
-  should not stare at an empty "Now playing" for fifteen seconds.
+  should not stare at an empty "Now playing" for fifteen seconds. Courts count
+  for this even though they are not fixtures: a day with courts named and
+  nothing put on them yet — which is every tournament between the `/new` wizard
+  and the first assignment — drew a court schedule with no rows in it, so the
+  panel is only in the rotation once some fixture is actually on a court.
 - **Unresolved bracket slots show their label** — "Winner SF1", "1. A" — in
   italic grey. The server words these; the client never invents them.
 - **A tie is explained.** When a table needed more than points to rank, the

@@ -29,7 +29,9 @@ export function CourtSchedulePanel({ payload }: { payload: DisplayPayload }) {
     }),
   );
 
-  if (byCourt.size === 0) return null;
+  // Courts with nothing on them are the same as no courts: an empty frame on a
+  // wall reads as a screen that has broken, not as a day nobody has scheduled.
+  if (![...byCourt.values()].some((group) => group.fixtures.length > 0)) return null;
 
   return (
     <div className="courtschedule">
