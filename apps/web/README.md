@@ -42,6 +42,18 @@ Everything comes from `GET /api/display/:token` — one request, no auth. See
 - **Nudges are coalesced.** One result is a fixture, two tables and a slot —
   four writes and four nudges — so the read waits 200ms for the burst to end
   and sees a finished state rather than four half-applied ones.
+- **A connection is news in itself.** Any `PB_CONNECT` that did not follow a
+  fresh read — the browser reopening a dropped stream, or the first one a
+  screen that came up on its cache ever gets — triggers a read. Whatever
+  happened while there was no socket arrived with no nudge, and a wall marked
+  stale would otherwise wear "reconnecting" until the next slow poll. Measured
+  on a killed server brought back: two seconds, against thirty-two for the
+  poll.
+- **A failed stream is rebuilt by the next read that gets through.**
+  `EventSource` retries a connection that dropped, but not one that failed —
+  a proxy answering 500 while the backend restarts, or a captive portal
+  returning its own page, ends that stream for good. So a read that succeeds
+  reopens a socket the browser has given up on, and a 304 does it too.
 - **The poll is still there, at 60s.** A stream through a venue's wifi is not a
   thing to bet a tournament on, and its failure is the quiet one: the socket
   looks open and stops delivering. A minute is far too slow to run a hall on

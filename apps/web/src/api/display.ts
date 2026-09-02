@@ -120,6 +120,10 @@ export function useDisplayPayload(token: string): DisplayState {
 
         if (response.status === 304) {
           setState((prev) => ({ ...prev, stale: false, loading: false }));
+          // Nothing new to draw, but a read that got through is the moment to
+          // notice the stream is not there any more. `watching` is the id it
+          // was showing; the call is a no-op while the socket is up.
+          if (watching) watch(watching, true);
         } else if (response.status === 404) {
           setState({
             payload: null,
@@ -151,7 +155,7 @@ export function useDisplayPayload(token: string): DisplayState {
           writeDisplay(token, served, tag);
           // The screen learns which tournament it is showing from the payload,
           // so the stream can only be opened once there has been one.
-          watch(served.tournament.id);
+          watch(served.tournament.id, true);
         }
       } catch {
         if (cancelled) return;
@@ -190,14 +194,32 @@ export function useDisplayPayload(token: string): DisplayState {
      * `PB_CONNECT` rather than once: the browser reopens a dropped EventSource
      * by itself, and what comes back is a new connection with a new id and no
      * subscriptions on it.
+     *
+     * A closed stream is opened again. The browser retries a connection that
+     * dropped, but not one that failed — a proxy answering 500 while the
+     * backend restarts, or a captive portal returning its own page, is the end
+     * of that EventSource. So every read that gets through calls this, and a
+     * socket the browser has given up on is rebuilt by the next one.
      */
-    const watch = (tournamentId: string) => {
-      if (!tournamentId || watching === tournamentId) return;
+    const watch = (tournamentId: string, current: boolean) => {
+      if (!tournamentId) return;
+      if (watching === tournamentId && stream && stream.readyState !== EventSource.CLOSED) {
+        return;
+      }
       watching = tournamentId;
       const topic = `tournament/${tournamentId}`;
 
       stream?.close();
       stream = new EventSource("/api/realtime");
+      /**
+       * Whether what is on screen was current when this stream was opened.
+       *
+       * The first connect after a fresh read has nothing to tell the screen —
+       * it was opened by that read. Every connect after it is one the browser
+       * made because the last one dropped, and a screen that came up on the
+       * cache has not had a good read at all.
+       */
+      let fresh = current;
 
       stream.addEventListener("PB_CONNECT", (event) => {
         if (cancelled) return;
@@ -218,6 +240,14 @@ export function useDisplayPayload(token: string): DisplayState {
         }).catch(() => {
           // The poll is the floor. Nothing to do here but wait for it.
         });
+
+        // A connection is news in itself. Whatever happened while there was
+        // no socket arrived with no nudge, and a wall marked stale through an
+        // outage would otherwise wear "reconnecting" until the next slow poll
+        // — up to a minute after the signal came back, in front of a hall.
+        // The read costs an `If-None-Match` and a 304 when nothing changed.
+        if (fresh) fresh = false;
+        else readSoon();
       });
 
       stream.addEventListener(topic, () => {
@@ -262,7 +292,7 @@ export function useDisplayPayload(token: string): DisplayState {
         stale: true,
         loading: false,
       });
-      watch(cached.payload.tournament.id);
+      watch(cached.payload.tournament.id, false);
     };
 
     void hydrate();
