@@ -51,25 +51,15 @@ export interface Session {
 
 export class ApiError extends Error {
   readonly status: number;
-  /**
-   * The per-field codes as the server sent them.
-   *
-   * The message is for the organiser and is assembled below; this is for the
-   * handful of failures a screen can actually do something about rather than
-   * report — an address that is already an account being the one that matters,
-   * since the answer to it is to sign in rather than to try again.
-   */
-  readonly fields: Record<string, string>;
-  constructor(message: string, status: number, fields: Record<string, string> = {}) {
+  constructor(message: string, status: number) {
     super(message);
     this.status = status;
-    this.fields = fields;
   }
 }
 
 interface PocketBaseError {
   message?: string;
-  data?: Record<string, { code?: string; message?: string } | undefined>;
+  data?: Record<string, { message?: string } | undefined>;
 }
 
 /**
@@ -85,19 +75,11 @@ function readError(status: number, body: string): ApiError {
     return new ApiError(body || `Request failed (${status}).`, status);
   }
 
-  const entries = Object.entries(parsed.data ?? {});
-  const fields = entries
+  const fields = Object.entries(parsed.data ?? {})
     .map(([field, detail]) => (detail?.message ? `${field}: ${detail.message}` : field))
     .join(", ");
-  const codes = Object.fromEntries(
-    entries.map(([field, detail]) => [field, detail?.code ?? ""]),
-  );
 
-  return new ApiError(
-    fields || parsed.message || `Request failed (${status}).`,
-    status,
-    codes,
-  );
+  return new ApiError(fields || parsed.message || `Request failed (${status}).`, status);
 }
 
 async function api<T>(

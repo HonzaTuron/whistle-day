@@ -180,7 +180,14 @@ func RegisterRoutes(app core.App) {
 			user.RefreshTokenKey()
 
 			if err := e.App.Save(user); err != nil {
-				return e.BadRequestError(claimError(err), err)
+				// The error goes to the log and not into the response. Handing
+				// back the validation detail — `email: validation_not_unique`
+				// — turns this route into a way to ask whether an address has
+				// an account here, one guess at a time, from a form that needs
+				// no account of its own to reach. The caller is told the same
+				// sentence whichever way it failed.
+				e.App.Logger().Error("could not claim an account", "user", user.Id, "error", err)
+				return e.BadRequestError(claimError(err), nil)
 			}
 
 			// The caller signs in again with what it just set; there is no
@@ -461,10 +468,16 @@ func IsDeviceAccount(email string) bool {
 // claimError turns PocketBase's validation into something an organiser can act
 // on. The only failure that happens in practice is an address already in use,
 // and "Failed to update record." does not say so.
+// What a refused claim is allowed to say.
+//
+// Deliberately unable to tell "already taken" from "not a valid address": one
+// of those answers a question nobody asked, and answering it repeatedly is
+// account enumeration. The detail is in the log, where it is worth having and
+// costs nothing.
 func claimError(err error) string {
 	if strings.Contains(strings.ToLower(err.Error()), "unique") ||
 		strings.Contains(err.Error(), "email") {
-		return "that email is already in use, or is not a valid address"
+		return "that address cannot be used here"
 	}
 	return "could not save the account"
 }

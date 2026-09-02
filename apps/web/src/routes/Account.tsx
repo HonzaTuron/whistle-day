@@ -79,24 +79,27 @@ export function Account() {
       setPassword("");
     } catch (thrown) {
       /*
-       * Claiming an address that is already an account is not a mistake to
-       * report — it is the other half of this screen. Somebody who set a
-       * tournament up on another phone, or reinstalled, or cleared this
-       * browser, arrives here holding the right email and the right password
-       * and is told "email: Value must be unique.", which is the server
-       * describing its index rather than the app answering the question. Put
-       * the form in the mode that works, keep what was typed, and say what the
-       * next tap does — a tap rather than a silent sign-in, because leaving
-       * this device's own account behind is the organiser's decision to make.
+       * A refused claim is not a mistake to report — it is the other half of
+       * this screen. Somebody who set a tournament up on another phone, or
+       * reinstalled, or cleared this browser, arrives holding the right email
+       * and the right password and gets the claim form, because this device
+       * has an account of its own. Put the form in the mode that works, keep
+       * what was typed, and say what the next tap does. The tap is the point:
+       * signing in leaves whatever this device owns behind, which is the
+       * organiser's decision rather than something to do quietly for them.
+       *
+       * The sentence says nothing about why. Whether an address already has an
+       * account here is not this screen's to tell — a form that anybody can
+       * reach and that answers that question one guess at a time is an account
+       * enumeration, so every refusal reads the same and the server sends the
+       * same one back. The offer to sign in stands either way, which is what
+       * the person who typed their own address needs and what tells an
+       * stranger nothing.
        */
-      if (
-        mode === "claim" &&
-        thrown instanceof ApiError &&
-        thrown.fields.email === "validation_not_unique"
-      ) {
+      if (mode === "claim" && thrown instanceof ApiError && thrown.status === 400) {
         setMode("signin");
         setError(
-          "That address already has an account. Sign in with it — anything set up on this device stays live and this browser stops being the way in.",
+          "That address cannot be saved on this device. If it is already your account, sign in with it — anything set up here stays live and this browser stops being the way in.",
         );
       } else {
         setError(thrown instanceof Error ? thrown.message : "That did not work.");

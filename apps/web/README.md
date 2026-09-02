@@ -219,13 +219,25 @@ that, and only when there is a tournament to own.
 Which of the two it offers first is a guess from what is on the device, and it
 guesses wrong for the person whose browser was cleared, who reinstalled, or who
 set the tournament up on another phone: they arrive holding the right email and
-the right password, are shown the claim form because this device has an
-unclaimed account, and are told `email: Value must be unique.` — the server
-describing its index rather than the app answering the question. A claim
-refused for that reason now puts the form into sign-in with what was typed
-still in it and says what the next tap does. It is a tap and not a silent
-sign-in, because leaving whatever this device owns behind is the organiser's
-decision to make.
+the right password and are shown the claim form, because this device has an
+unclaimed account of its own. A refused claim now puts the form into sign-in
+with what was typed still in it and says what the next tap does. It is a tap
+and not a silent sign-in, because leaving whatever this device owns behind is
+the organiser's decision to make.
+
+**A refused claim does not say why, on either side of the wire.** `email: Value
+must be unique.` in a response is an answer to "does this address have an
+account here", from a form that anybody can reach without one — asked a few
+thousand times, that is a list of the addresses of everyone who runs a
+tournament with this. The route returns the same sentence and an empty `data`
+whether the address is taken or malformed, with the real error in the log; the
+screen shows one sentence for every refusal and offers to sign in regardless,
+which is what the person who typed their own address needs and tells a stranger
+nothing. The two responses are byte-identical:
+
+```
+{"data":{},"message":"That address cannot be used here.","status":400}
+```
 
 **It writes as it goes.** The tournament exists as a `draft` from the second
 screen onwards, and every team is saved as it is typed. Twenty names held in a
