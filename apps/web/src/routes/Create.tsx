@@ -1,10 +1,5 @@
 import { useEffect, useRef, useState } from "react";
 import {
-  launchTournament,
-  type LaunchResult,
-  type LaunchStep,
-} from "../api/launch";
-import {
   addCourt,
   addTeam,
   createDraft,
@@ -12,8 +7,8 @@ import {
   ensureOrganiser,
   forgetDraft,
   loadCourts,
-  loadTournament,
   loadTeams,
+  loadTournament,
   rememberedDraft,
   removeCourt,
   removeTeam,
@@ -24,6 +19,7 @@ import {
   type Session,
   type TeamRecord,
 } from "../api/organiser";
+import { launchTournament, type LaunchResult, type LaunchStep } from "../api/launch";
 import { CourtsStep } from "../components/create/CourtsStep";
 import { DoneStep } from "../components/create/DoneStep";
 import { FormatStep } from "../components/create/FormatStep";
@@ -45,20 +41,6 @@ interface Resumable {
   courts: CourtRecord[];
 }
 
-/**
- * Setting up a tournament, start to finish, on the phone in the organiser's
- * hand.
- *
- * The wizard writes as it goes rather than collecting everything and saving at
- * the end. Teams are the reason: twenty names typed into a tab that a locked
- * screen or an incoming call can discard is a betrayal that only shows up at
- * the worst moment. The tournament record exists from the second screen
- * onwards, as a draft — and a draft is invisible to `GET /api/display/{token}`,
- * so nothing half-built can reach a projector.
- *
- * That in turn is why leaving and coming back works: the draft id is on the
- * device, so the first screen can offer to pick it up.
- */
 export function Create() {
   const [step, setStep] = useState<Step>("name");
   const [tournament, setTournament] = useState<TournamentRecord | null>(null);
@@ -72,20 +54,9 @@ export function Create() {
   const [result, setResult] = useState<LaunchResult | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  /**
-   * The account is created in the background while the first name is being
-   * typed. It costs two requests and it is never the thing anyone is waiting
-   * for — by the time "Add the teams" is tapped, it has long since finished.
-   */
   const session = useRef<Promise<Session> | null>(null);
   const getSession = () => (session.current ??= ensureOrganiser());
 
-  /**
-   * Seeds count up from here rather than from the length of the list, for two
-   * reasons: removing the third team of five must not hand its number to the
-   * sixth, and two teams typed while the first request is still in flight must
-   * not both read the same "next" number off state that has not updated yet.
-   */
   const nextSeed = useRef(1);
 
   useEffect(() => {
@@ -98,8 +69,6 @@ export function Create() {
         if (!draftId || cancelled) return;
 
         const draft = await loadTournament(active, draftId);
-        // A tournament that has already started is not a draft to resume; it
-        // is somebody's live event and the wizard has no business in it.
         if (draft.status !== "draft") {
           forgetDraft();
           return;
@@ -113,8 +82,6 @@ export function Create() {
           setResumable({ tournament: draft, teams: draftTeams, courts: draftCourts });
         }
       } catch {
-        // A draft that cannot be read — a wiped database, a revoked account —
-        // is not worth an error on a screen whose job is to start a new one.
         forgetDraft();
       }
     })();
@@ -127,7 +94,6 @@ export function Create() {
   const report = (thrown: unknown) =>
     setError(thrown instanceof Error ? thrown.message : "Something went wrong.");
 
-  /** Every write goes through here: one busy flag, one error surface. */
   async function run<T>(work: (active: Session) => Promise<T>): Promise<T | null> {
     setBusy(true);
     setError(null);
@@ -141,20 +107,14 @@ export function Create() {
     }
   }
 
-  // --- steps ---------------------------------------------------------------
-
   const submitName = (name: string) =>
     void run(async (active) => {
       if (tournament) {
-        // Coming back from a later step to fix a typo — or to correct the
-        // sport, which is the same trip and has to land the same way.
         const picked = sportById(sport);
         setTournament(
           await renameDraft(active, tournament.id, name, picked.sport, picked.scoring),
         );
       } else {
-        // Starting fresh with an abandoned draft still around: it was going to
-        // be offered on this screen and was not taken, so it goes.
         if (resumable) {
           await deleteDraft(active, resumable.tournament.id).catch(() => undefined);
           setResumable(null);
@@ -169,9 +129,6 @@ export function Create() {
     setTournament(resumable.tournament);
     setTeams(resumable.teams);
     setCourts(resumable.courts);
-    // A resumed draft was already scored as something. The chip follows the
-    // record rather than the record following the chip, or picking a draft up
-    // would silently re-score it as whatever this screen happened to show.
     setSport(
       matchSport(resumable.tournament.sport, resumable.tournament.scoring) ?? DEFAULT_SPORT,
     );
@@ -189,12 +146,6 @@ export function Create() {
       setResumable(null);
     });
 
-  /**
-   * Adding a team deliberately does NOT raise the busy flag: the whole point
-   * of the step is that names can be typed as fast as they can be read out,
-   * and a disabled button between each one would put the network in the way of
-   * that.
-   */
   const addTeamToDraft = async (name: string, shortName: string) => {
     if (!tournament) return false;
     const seed = nextSeed.current++;
@@ -207,7 +158,7 @@ export function Create() {
       setTeams((current) => [...current, added]);
       return true;
     } catch (thrown) {
-      nextSeed.current = seed; // nothing was written; give the number back
+      nextSeed.current = seed;
       report(thrown);
       return false;
     }
@@ -217,7 +168,7 @@ export function Create() {
     const previous = teams;
     setTeams((current) => current.filter((team) => team.id !== id));
     void run((active) => removeTeam(active, id)).then((ok) => {
-      if (ok === null) setTeams(previous); // put it back; the server still has it
+      if (ok === null) setTeams(previous);
     });
   };
 
@@ -225,9 +176,6 @@ export function Create() {
     void run(async (active) => {
       if (!tournament) return;
 
-      // Deletions go first: court names are unique per tournament, so dropping
-      // "Court 3" before renaming anything keeps the obvious edits clear of
-      // each other.
       for (const stale of courts.slice(names.length)) {
         await removeCourt(active, stale.id);
       }
@@ -272,8 +220,6 @@ export function Create() {
         setLaunching(null);
       }
     })();
-
-  // --- render --------------------------------------------------------------
 
   return (
     <>

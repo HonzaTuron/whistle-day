@@ -15,23 +15,8 @@ import {
 
 type Mode = "claim" | "signin";
 
-/**
- * The way out of "this browser is the only thing that can edit it".
- *
- * The wizard trades a signup form for an account nobody typed, and this is the
- * other half of that bargain: put a real address on it and the tournament
- * survives the device. The trade is deliberately offered late — after there is
- * something worth keeping — rather than in front of someone who has not
- * decided to use the thing yet.
- *
- * The same screen signs in, because on a second device those are the same
- * question asked from either end: this one has a tournament and no account,
- * that one has an account and no tournament.
- */
 export function Account() {
   const navigate = useNavigate();
-  // Read, never create: opening this screen to sign in must not leave an
-  // empty device account behind.
   const [session, setSession] = useState<Session | null>(storedSession);
   const [mode, setMode] = useState<Mode>(() =>
     storedSession() ? "claim" : "signin",
@@ -42,9 +27,6 @@ export function Account() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // A stored session may be holding an expired token, and claiming needs a
-  // live one. Refreshing is safe here precisely because there IS one to
-  // refresh — ensureOrganiser only invents an account when there is not.
   const active = useRef<Promise<Session> | null>(null);
 
   useEffect(() => {
@@ -78,24 +60,6 @@ export function Account() {
       setSession(next);
       setPassword("");
     } catch (thrown) {
-      /*
-       * A refused claim is not a mistake to report — it is the other half of
-       * this screen. Somebody who set a tournament up on another phone, or
-       * reinstalled, or cleared this browser, arrives holding the right email
-       * and the right password and gets the claim form, because this device
-       * has an account of its own. Put the form in the mode that works, keep
-       * what was typed, and say what the next tap does. The tap is the point:
-       * signing in leaves whatever this device owns behind, which is the
-       * organiser's decision rather than something to do quietly for them.
-       *
-       * The sentence says nothing about why. Whether an address already has an
-       * account here is not this screen's to tell — a form that anybody can
-       * reach and that answers that question one guess at a time is an account
-       * enumeration, so every refusal reads the same and the server sends the
-       * same one back. The offer to sign in stands either way, which is what
-       * the person who typed their own address needs and what tells an
-       * stranger nothing.
-       */
       if (mode === "claim" && thrown instanceof ApiError && thrown.status === 400) {
         setMode("signin");
         setError(
@@ -110,9 +74,6 @@ export function Account() {
   };
 
   const open = (tournament: TournamentRecord) => {
-    // The screen token belongs to the device that generated it, so a device
-    // that has just signed in has no way to know it. The results screen works
-    // without one; it simply cannot offer the projector link.
     rememberTournament({ id: tournament.id, name: tournament.name, token: "" });
     void navigate({ to: "/t/$id", params: { id: tournament.id } });
   };
