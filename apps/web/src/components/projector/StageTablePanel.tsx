@@ -1,4 +1,5 @@
 import type { DisplayPayload, DisplayStage } from "@seedly/engine";
+import type { CSSProperties } from "react";
 import { entryName } from "../../lib/format";
 
 export function StageTablePanel({
@@ -17,7 +18,7 @@ export function StageTablePanel({
         Cross-pool ranking — {rows.length} entries shown
       </p>
 
-      <table className="table">
+      <table className="table" style={{ "--rows": rows.length } as CSSProperties}>
         <thead>
           <tr>
             <th className="table__rank" />

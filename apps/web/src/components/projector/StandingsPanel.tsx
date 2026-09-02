@@ -1,4 +1,5 @@
 import type { DisplayPayload, DisplayPool } from "@seedly/engine";
+import type { CSSProperties } from "react";
 import { entryName } from "../../lib/format";
 import { tiebreakNote } from "../../lib/tiebreak";
 
@@ -13,7 +14,7 @@ export function StandingsPanel({
 
   return (
     <div className="standings">
-      <table className="table">
+      <table className="table" style={{ "--rows": pool.standings.length } as CSSProperties}>
         <thead>
           <tr>
             <th className="table__rank" />

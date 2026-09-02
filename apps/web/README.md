@@ -410,6 +410,25 @@ by the door, not the main wall.
 
 ## Notes on the projector
 
+- **The wall is light; everything else in the app is dark.** A phone is held a
+  foot from a face, often at night. A projector cannot throw black — only
+  decline to send light — so a dark background arrives as whatever grey the
+  hall's lights make of the screen, taking the contrast the palette assumed
+  with it. `.screen` redefines the palette tokens and nothing else, so every
+  rule under it, and every panel added later, is light without being told. The
+  accent and the live orange are darker there than in the app: those values
+  were picked to glow on near-black and are a pale wash on white at five
+  metres. A per-display `theme.accent` is set inline and still wins.
+- **Panels fill the frame, and the type follows how much there is.** Five
+  matches at a fixed size left two thirds of the wall empty with the names no
+  bigger than they are on a laptop. Rows and table now share the panel's
+  height, and `--rows` — passed from the panel, because CSS cannot count its
+  own children — scales the type between 2.3vmin and about 4.6vmin: five
+  matches are read from the back of a hall, sixteen are a schedule somebody
+  walks up to. Both are capped, so one result is a row and not a slab.
+- **The padding is overscan.** Projectors bolted to a sports hall ceiling are
+  not the ones anybody has calibrated, and the edge of the frame is the part
+  they eat.
 - **Empty panels are dropped, not shown blank.** A hall with no live match
   should not stare at an empty "Now playing" for fifteen seconds. Courts count
   for this even though they are not fixtures: a day with courts named and

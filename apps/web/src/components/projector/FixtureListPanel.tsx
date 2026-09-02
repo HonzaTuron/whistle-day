@@ -1,4 +1,5 @@
 import type { DisplayFixture, DisplayPayload } from "@seedly/engine";
+import type { CSSProperties } from "react";
 import { courtName, scoreline, sideName, timeOfDay } from "../../lib/format";
 
 /** The shared shape behind "Next up" and "Latest results". */
@@ -14,7 +15,9 @@ export function FixtureListPanel({
   showScore?: boolean;
 }) {
   return (
-    <ul className={fixtures.length > 6 ? "fixtures fixtures--dense" : "fixtures"}>
+    // `--rows` is what sizes the type: a wall with five matches on it should
+    // read from the back of the hall, one with sixteen is a schedule.
+    <ul className="fixtures" style={{ "--rows": fixtures.length } as CSSProperties}>
       {fixtures.map((fixture) => {
         const winnerIsHome = fixture.winner !== "" && fixture.winner === fixture.home.entry;
         const winnerIsAway = fixture.winner !== "" && fixture.winner === fixture.away.entry;

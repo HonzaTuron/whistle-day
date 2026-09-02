@@ -59,11 +59,52 @@ th,
    Projector
    ========================================================================== */
 
+/*
+ * The wall carries its own palette.
+ *
+ * The rest of the app is dark because of where it is held: a phone at the side
+ * of a court, often at night, a foot from somebody's face. A projector is the
+ * opposite problem. Black is not a colour it can throw, only light it declines
+ * to send, so a dark background arrives as whatever grey the hall's lights
+ * make of the screen — and everything printed on it loses the contrast the
+ * palette was picked for. A light ground spends the lamp on the thing being
+ * read instead.
+ *
+ * Only the tokens change. Every rule below this one already draws with them,
+ * which is why this is nine lines rather than a second stylesheet, and why a
+ * panel added next month is light without anybody remembering to make it so.
+ *
+ * The accent and the live orange are darker than the app's. Those values were
+ * chosen to glow on near-black; on white the same greens and oranges are a
+ * pale wash at five metres, which is the distance this file is written for. A
+ * per-display `theme.accent` still wins — it is set inline — and an organiser
+ * who picks a neon green for a wall will find out the same way they would have
+ * on the dark one.
+ */
 .screen {
+  /* The ground is a step down from the panels rather than the same white:
+     rows the shape of the ground are rows a projector's blur joins up. */
+  --bg: #e9eef3;
+  --surface: #ffffff;
+  --surface-2: #dae2ea;
+  --line: #c3ced9;
+  --line-strong: #8a9bad;
+  --text: #0b0f14;
+  --muted: #56677a;
+  --accent: #15803d;
+  --live: #c2410c;
+
+  /* The body behind this is still the app's dark, so the wall paints its own
+     ground rather than inheriting one. */
+  background: var(--bg);
+  color: var(--text);
+
   height: 100%;
   display: grid;
   grid-template-rows: auto 1fr auto;
-  padding: 2.5vmin 3vmin;
+  /* Projectors overscan, and the ones bolted to a sports hall ceiling are not
+     the ones anybody has calibrated. A margin the edge can eat. */
+  padding: 3.5vmin 4vmin;
   gap: 2vmin;
 }
 
@@ -242,14 +283,15 @@ th,
 .standings {
   height: 100%;
   display: grid;
-  align-content: center;
+  grid-template-rows: 1fr auto;
+  align-content: stretch;
   gap: 2vmin;
 }
 
 .standings__note {
   margin: 0;
   text-align: center;
-  font-size: 1.9vmin;
+  font-size: 2.3vmin;
   color: var(--muted);
 }
 
@@ -258,7 +300,8 @@ th,
 .stage-table {
   height: 100%;
   display: grid;
-  align-content: center;
+  grid-template-rows: auto 1fr;
+  align-content: stretch;
   gap: 1vmin;
 }
 
@@ -269,14 +312,20 @@ th,
   color: var(--muted);
 }
 
+/* As with the fixture lists: the table is as tall as the panel, and four teams
+   are read across a hall while sixteen are read from the second row of seats. */
 .table {
   width: 100%;
+  height: 100%;
+  /* Same bound as a fixture row: a two-team pool is a table, not two bands. */
+  max-height: calc(var(--rows, 8) * 17vmin + 10vmin);
+  align-self: center;
   border-collapse: collapse;
-  font-size: 3.6vmin;
+  font-size: clamp(2.3vmin, calc(34vmin / var(--rows, 8)), 5vmin);
 }
 
 .table th {
-  font-size: 1.7vmin;
+  font-size: 0.42em;
   text-transform: uppercase;
   letter-spacing: 0.12em;
   color: var(--muted);
@@ -291,12 +340,12 @@ th,
 
 .table td {
   text-align: center;
-  padding: 1.9vmin 0.8vmin;
+  padding: 0.3em 0.2em;
   border-top: 0.2vmin solid var(--line);
 }
 
 .table__rank {
-  width: 7vmin;
+  width: 2.2em;
   color: var(--muted);
   font-weight: 700;
 }
@@ -311,12 +360,12 @@ th,
 
 .table__sets {
   color: var(--muted);
-  width: 12vmin;
+  width: 3.6em;
 }
 
 .table__points {
   font-weight: 800;
-  width: 10vmin;
+  width: 2.8em;
 }
 
 /* A qualifying place is the single most-asked question in the hall. */
@@ -448,30 +497,43 @@ th,
 
 /* --- fixture lists ------------------------------------------------------ */
 
+/*
+ * A list uses the wall it is on.
+ *
+ * Five matches centred at a fixed size left two thirds of a projector dark and
+ * the names no bigger than they are on ten. The rows share the frame instead,
+ * and the type follows how many there are: five matches are read from the back
+ * of a hall, sixteen are a schedule somebody walks up to. `--rows` comes from
+ * the panel, because CSS cannot count its own children.
+ */
 .fixtures {
   list-style: none;
   margin: 0;
   padding: 0;
   display: grid;
-  align-content: center;
+  align-content: stretch;
+  grid-auto-rows: minmax(0, 1fr);
   gap: 0.8vmin;
   height: 100%;
+  font-size: clamp(2.3vmin, calc(42vmin / var(--rows, 8)), 4.6vmin);
 }
 
 .fixtures__row {
   display: grid;
-  grid-template-columns: 12vmin 1fr 14vmin 1fr 14vmin;
+  grid-template-columns: 4em 1fr 4.5em 1fr 4.5em;
   align-items: center;
   gap: 1.5vmin;
   background: var(--surface);
   border-radius: var(--radius);
-  padding: 1.6vmin 2vmin;
-  font-size: 3vmin;
-}
-
-.fixtures--dense .fixtures__row {
-  padding: 1.1vmin 2vmin;
-  font-size: 2.5vmin;
+  /* In em, so the padding shrinks with the type rather than squeezing it. */
+  padding: 0.4em 0.7em;
+  font-size: inherit;
+  /* Fill the share of the frame the row was given, up to a point: sharing is
+     for a list, and one result on its own would otherwise be a white slab the
+     height of the wall with a scoreline lost in the middle of it. */
+  height: 100%;
+  max-height: 18vmin;
+  align-self: center;
 }
 
 .fixtures__lead {
@@ -2969,10 +3031,12 @@ th,
 
 .stageprogress {
   display: grid;
-  gap: 3vmin;
+  gap: 4vmin;
   align-content: center;
   height: 100%;
-  max-width: 90vmin;
+  /* A bar is the one thing on this panel; on a 16:9 wall, 90vmin left it
+     spanning half the width with the rest of the frame empty. */
+  max-width: 150vmin;
   margin: 0 auto;
   width: 100%;
 }
@@ -2990,12 +3054,12 @@ th,
 
 .stageprogress__name {
   margin: 0;
-  font-size: 3.2vmin;
+  font-size: 4.4vmin;
   font-weight: 700;
 }
 
 .stageprogress__count {
-  font-size: 2.2vmin;
+  font-size: 3.2vmin;
   color: var(--muted);
   font-weight: 600;
   font-variant-numeric: tabular-nums;
@@ -3006,7 +3070,7 @@ th,
 }
 
 .stageprogress__bar {
-  height: 2vmin;
+  height: 3.2vmin;
   border-radius: 999px;
   background: var(--surface-2);
   overflow: hidden;
@@ -3031,16 +3095,19 @@ th,
 
 .stageprogress__pools {
   display: flex;
-  gap: 1.5vmin;
+  gap: 2.5vmin;
   flex-wrap: wrap;
+  margin-top: 0.8vmin;
 }
 
+/* The per-pool line answers "how far has my group got" from the same distance
+   as the bar above it, so it is sized to be read rather than to be available. */
 .stageprogress__pool {
-  font-size: 1.7vmin;
+  font-size: 2.6vmin;
   color: var(--muted);
   display: flex;
   align-items: center;
-  gap: 0.4vmin;
+  gap: 0.6vmin;
 }
 
 .stageprogress__pool small {
@@ -3051,12 +3118,14 @@ th,
 .stageprogress__qualified {
   display: inline-grid;
   place-items: center;
-  width: 1.8vmin;
-  height: 1.8vmin;
+  width: 2.6vmin;
+  height: 2.6vmin;
   border-radius: 999px;
   background: var(--accent);
-  color: #06210f;
-  font-size: 1.1vmin;
+  /* The lightest thing the screen has, on the accent's fill: the ground is
+     white now and the fill is dark enough to need the contrast the other way. */
+  color: var(--surface);
+  font-size: 1.6vmin;
   font-weight: 800;
 }
 
