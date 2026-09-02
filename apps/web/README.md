@@ -216,6 +216,17 @@ The same screen signs in, because on a second device it is the same question
 from the other end. Opening it never creates an account — only the wizard does
 that, and only when there is a tournament to own.
 
+Which of the two it offers first is a guess from what is on the device, and it
+guesses wrong for the person whose browser was cleared, who reinstalled, or who
+set the tournament up on another phone: they arrive holding the right email and
+the right password, are shown the claim form because this device has an
+unclaimed account, and are told `email: Value must be unique.` — the server
+describing its index rather than the app answering the question. A claim
+refused for that reason now puts the form into sign-in with what was typed
+still in it and says what the next tap does. It is a tap and not a silent
+sign-in, because leaving whatever this device owns behind is the organiser's
+decision to make.
+
 **It writes as it goes.** The tournament exists as a `draft` from the second
 screen onwards, and every team is saved as it is typed. Twenty names held in a
 tab that a locked screen can discard is a betrayal that only shows up at the

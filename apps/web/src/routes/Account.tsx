@@ -1,6 +1,7 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import {
+  ApiError,
   claimAccount,
   ensureOrganiser,
   isDeviceAccount,
@@ -77,7 +78,29 @@ export function Account() {
       setSession(next);
       setPassword("");
     } catch (thrown) {
-      setError(thrown instanceof Error ? thrown.message : "That did not work.");
+      /*
+       * Claiming an address that is already an account is not a mistake to
+       * report — it is the other half of this screen. Somebody who set a
+       * tournament up on another phone, or reinstalled, or cleared this
+       * browser, arrives here holding the right email and the right password
+       * and is told "email: Value must be unique.", which is the server
+       * describing its index rather than the app answering the question. Put
+       * the form in the mode that works, keep what was typed, and say what the
+       * next tap does — a tap rather than a silent sign-in, because leaving
+       * this device's own account behind is the organiser's decision to make.
+       */
+      if (
+        mode === "claim" &&
+        thrown instanceof ApiError &&
+        thrown.fields.email === "validation_not_unique"
+      ) {
+        setMode("signin");
+        setError(
+          "That address already has an account. Sign in with it — anything set up on this device stays live and this browser stops being the way in.",
+        );
+      } else {
+        setError(thrown instanceof Error ? thrown.message : "That did not work.");
+      }
     } finally {
       setBusy(false);
     }
