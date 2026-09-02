@@ -365,15 +365,11 @@ export function MatchSheet({
             <div className="sheet__row">
               <label className="sheet__time">
                 <span>Starts</span>
-                <input
-                  type="time"
+                <TimeField
                   value={timeValue(row.fixture.scheduled_at)}
-                  onChange={(event) =>
+                  onCommit={(time) =>
                     onSchedule({
-                      scheduled_at: atTime(
-                        row.fixture.scheduled_at,
-                        event.target.value,
-                      ),
+                      scheduled_at: atTime(row.fixture.scheduled_at, time),
                     })
                   }
                 />
@@ -491,6 +487,59 @@ export function MatchSheet({
     </div>
   );
 }
+
+/**
+ * The start time, which is the one thing on this sheet that is typed.
+ *
+ * A time input is filled a field at a time and reports nothing until both are
+ * in: type the hour of 10:45 and the value is still `""`. Saving every change
+ * straight to the fixture — which is what the rest of this sheet correctly
+ * does, since a tap is a whole answer — wrote that empty string as a cleared
+ * time and handed it back to the input, which wiped the hour out from under
+ * whoever was typing it. The minutes were unreachable.
+ *
+ * So what is being typed lives here until it is a time. The fixture is still
+ * the truth: the draft is dropped the moment the record comes back saying the
+ * same thing, or the field is left. Empty is only sent on the way out, because
+ * emptied-and-left is somebody taking the time off a match, while emptied
+ * mid-edit is somebody halfway through changing it.
+ */
+function TimeField({
+  value,
+  onCommit,
+}: {
+  value: string;
+  onCommit: (time: string) => void;
+}) {
+  const [draft, setDraft] = useState<string | null>(null);
+
+  // The record has caught up with what was typed — or somebody on another
+  // phone has moved the match, which is likewise not this field's business to
+  // argue with.
+  useEffect(() => {
+    setDraft((held) => (held === value ? null : held));
+  }, [value]);
+
+  return (
+    <input
+      type="time"
+      value={draft ?? value}
+      onChange={(event) => {
+        const next = event.target.value;
+        setDraft(next);
+        // A whole time saves on the spot, like the court chips above it.
+        if (next) onCommit(next);
+      }}
+      onBlur={() => {
+        if (draft === "" && value) {
+          onCommit("");
+          setDraft(null);
+        }
+      }}
+    />
+  );
+}
+
 
 function Score({
   name,

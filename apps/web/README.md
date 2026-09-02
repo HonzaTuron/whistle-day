@@ -332,6 +332,15 @@ Three consequences worth keeping:
   as "w/o" through `lib/format.ts` — which exists because each of them used to
   format scores by hand, and the projector duly announced a 0:0 for a match
   nobody played.
+- **The start time is the one thing on the sheet that is typed, and a
+  half-typed time is not one.** A time input reports `""` until both fields are
+  filled, so saving every change — right for the court chips, where a tap is a
+  whole answer — wrote a cleared time the moment somebody typed the hour of
+  10:45, and handed that empty value straight back to the input, wiping the
+  hour they had just typed. `TimeField` holds what is being typed until it is a
+  time; the fixture is the truth either side of that, and empty is only sent on
+  the way out, because emptied-and-left means taking the time off a match while
+  emptied mid-edit means changing it.
 - **A level score can come back refused.** In a tournament scored without draws
   and in every knockout, the server will not store one. The sheet stays open
   with the score still in it and the banner carries the server's own sentence,
