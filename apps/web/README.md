@@ -49,8 +49,21 @@ Everything comes from `GET /api/display/:token` — one request, no auth. See
 - Every read sends `If-None-Match`, so an unchanged tournament costs a 304.
 - On a failed request the last good payload stays on screen and is marked
   stale. A blank projector in a sports hall is worse than a slightly old one.
-- A 404 stops the reading and closes the stream: a bad token will not fix
-  itself.
+- **A reload with no signal is not a black wall either.** Every payload is kept
+  in IndexedDB under its token — `api/cache.ts`, the same file the organiser's
+  board cache lives in — and put up immediately on the way in, marked stale
+  until the read that follows confirms it. Precaching the shell is what lets a
+  projector start from the device; this is what it has to draw once it has.
+- The stored tag goes back with the stored payload and never on its own: a tag
+  with nothing behind it would earn a 304 with no body and nothing to draw. A
+  screen that comes up on the cache also subscribes straight away, since a read
+  that answers 304 brings no payload to learn the tournament id from.
+- Nothing older than twelve hours is drawn from the cache. This is for the
+  reload at eleven o'clock, not for yesterday's finals going back up at nine
+  the next morning — a screen with no signal and no fresh board says so.
+- A 404 stops the reading, closes the stream and drops the cached payload: a
+  bad token will not fix itself, and the board behind a revoked link is not
+  that screen's to show on the next reload.
 
 Reconnecting is the browser's job — `EventSource` retries on its own — but a
 new connection is a new PocketBase client id with no subscriptions on it, so
@@ -94,7 +107,8 @@ afternoon with nothing explaining why, so a 4xx comes out of the queue and goes
 in front of the organiser instead. A 401 is the one exception, since the token
 expires on its own schedule and re-authenticating fixes it.
 
-**`api/cache.ts` — the reads.** The last board is kept in IndexedDB and drawn
+**`api/cache.ts` — the reads.** The last board is kept in IndexedDB — in the
+same database as the screens' payloads, in a store of its own — and drawn
 immediately on the way in, then replaced by whatever the server says. A reload
 mid-outage is a match list, not a spinner and then an error. It is a cache and
 nothing more: never merged out of, overwritten by every successful load, and
@@ -146,11 +160,13 @@ since nine o'clock should not reload itself to pick up a deploy.
 
 `/api` is never cached. Writes must not be intercepted — a queued result
 answered from a cache would look sent and never arrive — and
-`/api/display/:token` is left alone too, even though caching it would help a
-projector that reloads offline: it is read with `If-None-Match` and answers
-304, and a cache in the middle of a conditional request is a good way to pin
-the wall to a payload from an hour ago. Workbox only handles what it has a
-route for, so everything else falls through to the network exactly as before.
+`/api/display/:token` is left alone too: it is read with `If-None-Match` and
+answers 304, and a cache in the middle of a conditional request is a good way
+to pin the wall to a payload from an hour ago. What a projector needs on a
+reload is not a cached response but the last payload it drew, which the app
+keeps itself and puts up marked stale — see **Data** above. Workbox only
+handles what it has a route for, so everything else falls through to the
+network exactly as before.
 
 ## Running it
 

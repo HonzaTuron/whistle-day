@@ -1,20 +1,22 @@
-import type { Id } from "@seedly/engine";
+import type { DisplayPayload, Id } from "@seedly/engine";
 import type { Board } from "./organiser";
 
 /**
- * The last board this device was shown, kept so a reload is not a blank screen.
+ * What this device was last shown, kept so a reload is not a blank screen.
  *
  * Without it, an organiser who reloads — or whose phone drops the tab out of
  * memory in their pocket, which is the ordinary way a phone behaves — comes
  * back to "Loading…" and then an error, holding a device that knows everything
  * about the tournament except how to say it. The outbox keeps their unsent
- * results; this keeps the match list those results belong to.
+ * results; this keeps the match list those results belong to. A screen has the
+ * same reload and no queue to protect: precaching the shell means a projector
+ * starts from the device, and this is what it has to draw once it has.
  *
- * It is a cache and nothing more. The board is read from the server on every
- * mount and this is overwritten by what comes back; nothing is ever merged out
- * of it, and losing it costs one round trip. What makes the screen correct
- * while offline is this plus the outbox overlay, composed at render — see
- * `lib/pending.ts`.
+ * It is a cache and nothing more. What it holds is read from the server on
+ * every mount and overwritten by what comes back; nothing is ever merged out
+ * of it, and losing it costs one round trip. What makes the organiser's screen
+ * correct while offline is this plus the outbox overlay, composed at render —
+ * see `lib/pending.ts`.
  *
  * IndexedDB rather than localStorage, for the reason the outbox is the other
  * way round: five hundred fixtures with their slots expanded is most of a
@@ -24,8 +26,9 @@ import type { Board } from "./organiser";
  */
 
 const DB_NAME = "seedly";
-const STORE = "boards";
-const VERSION = 1;
+const BOARDS = "boards";
+const DISPLAYS = "displays";
+const VERSION = 2;
 
 let db: Promise<IDBDatabase | null> | null = null;
 
@@ -43,9 +46,13 @@ function open(): Promise<IDBDatabase | null> {
       return resolve(null);
     }
 
+    // Version 1 was boards alone. A device that has one keeps it and gains the
+    // second store; the version bump is the whole migration.
     request.onupgradeneeded = () => {
-      if (!request.result.objectStoreNames.contains(STORE)) {
-        request.result.createObjectStore(STORE);
+      for (const store of [BOARDS, DISPLAYS]) {
+        if (!request.result.objectStoreNames.contains(store)) {
+          request.result.createObjectStore(store);
+        }
       }
     };
     request.onsuccess = () => resolve(request.result);
@@ -57,6 +64,7 @@ function open(): Promise<IDBDatabase | null> {
 }
 
 function transact<T>(
+  store: string,
   mode: IDBTransactionMode,
   work: (store: IDBObjectStore) => IDBRequest<T>,
 ): Promise<T | null> {
@@ -65,7 +73,7 @@ function transact<T>(
       new Promise((resolve) => {
         if (!open) return resolve(null);
         try {
-          const request = work(open.transaction(STORE, mode).objectStore(STORE));
+          const request = work(open.transaction(store, mode).objectStore(store));
           request.onsuccess = () => resolve(request.result);
           request.onerror = () => resolve(null);
         } catch {
@@ -77,7 +85,7 @@ function transact<T>(
 
 /** The board as it was last read from the server, or null for a cold device. */
 export const readBoard = (tournament: Id): Promise<Board | null> =>
-  transact<Board>("readonly", (store) => store.get(tournament) as IDBRequest<Board>);
+  transact<Board>(BOARDS, "readonly", (store) => store.get(tournament) as IDBRequest<Board>);
 
 /**
  * Keep the board that has just been read.
@@ -87,10 +95,45 @@ export const readBoard = (tournament: Id): Promise<Board | null> =>
  * place, which is still better than none.
  */
 export function writeBoard(tournament: Id, board: Board): void {
-  void transact("readwrite", (store) => store.put(board, tournament));
+  void transact(BOARDS, "readwrite", (store) => store.put(board, tournament));
 }
 
 /** Drop a tournament nobody on this device is running any more. */
 export function forgetBoard(tournament: Id): void {
-  void transact("readwrite", (store) => store.delete(tournament));
+  void transact(BOARDS, "readwrite", (store) => store.delete(tournament));
+}
+
+/** A screen payload as it was last served, kept under the token that read it. */
+export interface CachedDisplay {
+  payload: DisplayPayload;
+  /**
+   * The tag the payload was served under, so a screen that comes up on the
+   * cache can still ask the cheap question — `If-None-Match`, and a 304 that
+   * says what is already on the wall is current. The tag is stored with the
+   * payload and only ever sent back with it: a tag on its own would earn a 304
+   * with no body and nothing to draw.
+   */
+  etag: string | null;
+}
+
+/** The payload this screen last saw, or null for a cold device. */
+export const readDisplay = (token: string): Promise<CachedDisplay | null> =>
+  transact<CachedDisplay>(
+    DISPLAYS,
+    "readonly",
+    (store) => store.get(token) as IDBRequest<CachedDisplay>,
+  );
+
+/** Keep the payload that has just been read. Not awaited, as above. */
+export function writeDisplay(
+  token: string,
+  payload: DisplayPayload,
+  etag: string | null,
+): void {
+  void transact(DISPLAYS, "readwrite", (store) => store.put({ payload, etag }, token));
+}
+
+/** Drop a screen link the server no longer answers for. */
+export function forgetDisplay(token: string): void {
+  void transact(DISPLAYS, "readwrite", (store) => store.delete(token));
 }

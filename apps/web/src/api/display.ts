@@ -1,5 +1,6 @@
 import type { DisplayPayload } from "@seedly/engine";
 import { useEffect, useRef, useState } from "react";
+import { forgetDisplay, readDisplay, writeDisplay } from "./cache";
 
 /**
  * How a screen keeps up.
@@ -34,10 +35,27 @@ const POLL_INTERVAL_MS = 60_000;
  */
 const COALESCE_MS = 200;
 
+/**
+ * How old a cached payload may be before a screen would rather show nothing.
+ *
+ * The cache is for the reload in the middle of the day: a projector nudged at
+ * eleven o'clock comes back to the eleven o'clock board rather than to a black
+ * wall, marked as reconnecting until the server confirms it. It is not for the
+ * morning after. A screen switched on at nine with no signal must not put
+ * yesterday's finals up as though the day had started, so anything older than
+ * a tournament day is left where it is and the screen says it cannot reach the
+ * scoring system, which is the truth.
+ */
+const CACHE_MAX_AGE_MS = 12 * 60 * 60 * 1000;
+
 export interface DisplayState {
   payload: DisplayPayload | null;
   error: string | null;
-  /** True once a request has failed since the last success. */
+  /**
+   * What is on screen has not been confirmed by the server: either a request
+   * has failed since the last success, or this is the cached payload the
+   * screen came up on and the first read has not answered yet.
+   */
   stale: boolean;
   loading: boolean;
 }
@@ -80,6 +98,10 @@ export function useDisplayPayload(token: string): DisplayState {
     let stream: EventSource | null = null;
     let watching = "";
 
+    // Set once the server has answered at all, so a slow disk cannot put the
+    // cached payload up over a fresher one that has already arrived.
+    let answered = false;
+
     // Reset when the token changes, or a new screen briefly shows the old one.
     etag.current = null;
     setState({ payload: null, error: null, stale: false, loading: true });
@@ -94,6 +116,7 @@ export function useDisplayPayload(token: string): DisplayState {
         });
 
         if (cancelled) return;
+        answered = true;
 
         if (response.status === 304) {
           setState((prev) => ({ ...prev, stale: false, loading: false }));
@@ -104,18 +127,31 @@ export function useDisplayPayload(token: string): DisplayState {
             stale: false,
             loading: false,
           });
+          // A revoked link is an answer, and the board behind it is not this
+          // screen's to show on the next reload.
+          forgetDisplay(token);
           stream?.close();
           stream = null;
           return; // a bad token will not fix itself; stop asking
         } else if (!response.ok) {
           throw new Error(`server returned ${response.status}`);
         } else {
-          etag.current = response.headers.get("etag");
-          const payload = withEmptyLists((await response.json()) as DisplayPayload);
-          setState({ payload, error: null, stale: false, loading: false });
+          const tag = response.headers.get("etag");
+          const served = (await response.json()) as DisplayPayload;
+          etag.current = tag;
+          setState({
+            payload: withEmptyLists(served),
+            error: null,
+            stale: false,
+            loading: false,
+          });
+          // Kept as it was served, tag and all: this is what the wall draws
+          // after a reload with no signal, and the tag is what turns the read
+          // that follows into a 304 rather than a payload nobody needed.
+          writeDisplay(token, served, tag);
           // The screen learns which tournament it is showing from the payload,
           // so the stream can only be opened once there has been one.
-          watch(payload.tournament.id);
+          watch(served.tournament.id);
         }
       } catch {
         if (cancelled) return;
@@ -193,6 +229,43 @@ export function useDisplayPayload(token: string): DisplayState {
       // is the state this whole hook is written to survive.
     };
 
+    /**
+     * The cache first, then the server.
+     *
+     * Not a race — the cached payload is only put up if the network has not
+     * already answered, so a screen with signal never sees the old board flash
+     * past. It goes up marked stale, which is the "reconnecting" the header
+     * has always had, and the read already in flight either replaces it or
+     * fails and leaves it there, which is the whole point.
+     *
+     * The stored tag is restored with the stored payload and never on its own:
+     * a tag with nothing behind it would earn a 304 and leave the screen with
+     * nothing to draw. It is not the first read that carries it — that one
+     * left before the disk answered — but every read after, so a wall that has
+     * been showing the cached board through an outage asks the cheap question
+     * when the signal comes back and is told it was right all along.
+     *
+     * Subscribing from the cache matters as much: that confirming read answers
+     * 304 and brings no payload to learn the tournament id from, and without
+     * this the screen would sit on the slow poll for the rest of the day.
+     */
+    const hydrate = async () => {
+      const cached = await readDisplay(token);
+      if (cancelled || answered || !cached) return;
+      const servedAt = Date.parse(cached.payload.generated_at);
+      if (!Number.isFinite(servedAt) || Date.now() - servedAt > CACHE_MAX_AGE_MS) return;
+
+      etag.current = cached.etag;
+      setState({
+        payload: withEmptyLists(cached.payload),
+        error: null,
+        stale: true,
+        loading: false,
+      });
+      watch(cached.payload.tournament.id);
+    };
+
+    void hydrate();
     void read();
     poll();
 
