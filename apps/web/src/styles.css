@@ -1,5 +1,5 @@
 /*
- * Seedly screens.
+ * Whistle.day screens.
  *
  * Everything on the projector is sized in vmin, not pixels. A hall projector
  * might be 1280x720 or 1920x1080 and is read from five metres away; type that
@@ -1107,9 +1107,15 @@ th,
   max-width: 32rem;
 }
 
+/* The wordmark is eleven characters against the six it replaced, and the hero
+   has a flat 2rem of padding at every width — so at 3.5rem flat it ran out of
+   phone somewhere around a 360px Android and broke itself across two lines. A
+   domain broken over two lines is not a domain. Scaling with the viewport up
+   to that cap keeps it on one line down to a 320px screen without shrinking it
+   on anything wider. */
 .home__logo {
   margin: 0;
-  font-size: 3.5rem;
+  font-size: clamp(2.5rem, 9vw + 1rem, 3.5rem);
   font-weight: 800;
   letter-spacing: -0.03em;
   line-height: 1;

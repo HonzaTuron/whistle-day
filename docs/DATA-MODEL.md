@@ -440,7 +440,7 @@ to probe for unpublished events.
 
 ## The one thing on a screen somebody pays for
 
-The rotation ends on a panel crediting Seedly, and that panel carries the
+The rotation ends on a panel crediting Whistle.day, and that panel carries the
 screen's sponsor slots — `displays.theme.sponsors`, a list of
 `{ name, logo, tier }` — while the tournament's owner is subscribed.
 

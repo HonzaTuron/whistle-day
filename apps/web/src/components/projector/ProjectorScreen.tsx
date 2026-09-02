@@ -58,7 +58,7 @@ export function ProjectorScreen({ token }: { token: string }) {
     return (
       <div className="screen screen--message">
         {t("projector.nothingYet", {
-          name: payload?.tournament.name ?? "Seedly",
+          name: payload?.tournament.name ?? "Whistle.day",
         })}
       </div>
     );

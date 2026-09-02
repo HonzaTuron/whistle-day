@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
 /**
- * Fills a running Seedly instance with a realistic tournament.
+ * Fills a running Whistle.day instance with a realistic tournament.
  *
  * The point is not "some data" — it is data that exercises the parts most
  * likely to be wrong: a three-way tie that only the tiebreak chain can rank, a

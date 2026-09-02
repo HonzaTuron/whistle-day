@@ -120,7 +120,7 @@ export const en = {
   "landing.tokenPlaceholder": "screen token",
   "landing.projector": "Projector",
   "landing.phone": "Phone",
-  "landing.footer": "Seedly — free and open-source tournament organiser.",
+  "landing.footer": "Whistle.day — free and open-source tournament organiser.",
 
   // -------------------------------------------------------------------------
   // account
@@ -592,7 +592,7 @@ export const en = {
   "projector.nothingYet": "{name} — nothing to show yet",
   "projector.reconnecting": "reconnecting",
   "projector.partners": "Our partners",
-  "projector.poweredBy": "Powered by Seedly",
+  "projector.poweredBy": "Powered by Whistle.day",
   "projector.credit": "Scoring and screens for this tournament",
   "projector.crossPool": {
     one: "Cross-pool ranking — {count} entry shown",

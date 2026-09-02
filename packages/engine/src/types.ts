@@ -1,5 +1,5 @@
 /**
- * Seedly domain types.
+ * Whistle.day domain types.
  *
  * These mirror the PocketBase collections in
  * backend/pb_migrations/1787270400_init_schema.js one-to-one. If you change a

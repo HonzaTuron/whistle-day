@@ -20,7 +20,7 @@ export function Landing() {
       <header className="home__hero">
         <div className="home__hero-bg" />
         <div className="home__hero-content">
-          <h1 className="home__logo">Seedly</h1>
+          <h1 className="home__logo">Whistle.day</h1>
           <p className="home__tagline">{t("landing.tagline")}</p>
 
           <div className="home__ctas">

@@ -8,7 +8,7 @@ import (
 // users.subscription_until — when an organiser's subscription runs out.
 //
 // The only thing it buys today is the sponsor slots on the projector's closing
-// panel: a free tournament credits Seedly, a paid one credits Seedly and the
+// panel: a free tournament credits Whistle.day, a paid one credits Whistle.day and the
 // people who paid for the hall.
 //
 // It hangs off the user rather than the tournament because that is what is

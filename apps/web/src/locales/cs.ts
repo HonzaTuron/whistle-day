@@ -121,7 +121,7 @@ export const cs: Record<keyof Catalog, Message> = {
   "landing.tokenPlaceholder": "kód obrazovky",
   "landing.projector": "Projektor",
   "landing.phone": "Mobil",
-  "landing.footer": "Seedly — svobodný open-source nástroj na turnaje.",
+  "landing.footer": "Whistle.day — svobodný open-source nástroj na turnaje.",
 
   // -------------------------------------------------------------------------
   // account
@@ -606,7 +606,7 @@ export const cs: Record<keyof Catalog, Message> = {
   "projector.nothingYet": "{name} — zatím není co ukázat",
   "projector.reconnecting": "obnovuje se spojení",
   "projector.partners": "Naši partneři",
-  "projector.poweredBy": "Běží na Seedly",
+  "projector.poweredBy": "Běží na Whistle.day",
   "projector.credit": "Bodování a obrazovky pro tenhle turnaj",
   "projector.crossPool": {
     one: "Pořadí napříč skupinami — zobrazen {count} tým",

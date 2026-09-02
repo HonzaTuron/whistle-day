@@ -32,8 +32,8 @@ export default defineConfig({
       injectRegister: "inline",
       includeAssets: ["icon.svg", "apple-touch-icon.png"],
       manifest: {
-        name: "Seedly",
-        short_name: "Seedly",
+        name: "Whistle.day",
+        short_name: "Whistle.day",
         description: "Run a tournament from your phone.",
         start_url: "/",
         scope: "/",

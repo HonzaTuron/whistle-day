@@ -33,7 +33,7 @@ export function BrandingPanel({ payload }: { payload: DisplayPayload }) {
       )}
 
       <div className="branding__credit">
-        <span className="branding__mark">Seedly</span>
+        <span className="branding__mark">Whistle.day</span>
         <small>{t("projector.credit")}</small>
       </div>
     </div>

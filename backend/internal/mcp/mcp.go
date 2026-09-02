@@ -27,7 +27,9 @@ func New(app core.App) *SeedlyMCP {
 	s := &SeedlyMCP{app: app}
 
 	s.mcp = server.NewMCPServer(
-		"Seedly",
+		// The name an MCP client shows in its list of servers, so it is the
+		// product's rather than this package's.
+		"Whistle.day",
 		"1.0.0",
 		server.WithToolCapabilities(true),
 		server.WithResourceCapabilities(true, true),

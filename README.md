@@ -1,4 +1,4 @@
-# Seedly
+# Whistle.day
 
 Tournament organiser with arbitrary stage ordering — groups, playoff, Swiss, in
 any sequence — and a public projector view.
@@ -10,6 +10,11 @@ what is being played, and enter results as they come in. The tables rebuild,
 the playoff seeded from them fills itself in, the next Swiss round draws
 itself, and the wall keeps up on its own. Hand a referee a second QR code and
 they run their court from their own phone.
+
+The repository, the package scope (`@seedly/engine`), the Go module and the
+local superuser are all still on the project's old name. Renaming them is a
+day's mechanical work with nothing to learn from it, so it is outstanding
+rather than done; nothing below reads on it either way.
 
 ```
 seedly/
@@ -227,7 +232,7 @@ its final positions.
   below the smallest pool's last place are disregarded, so teams out of a pool
   of four and a pool of three are compared over the same number of matches.
 - **The rotation closes on a credit.** Every screen ends on a "Powered by
-  Seedly" panel, and on the sponsor slots from `displays.theme.sponsors` as
+  Whistle.day" panel, and on the sponsor slots from `displays.theme.sponsors` as
   well while `users.subscription_until` on the tournament's owner is still in
   the future. The filtering is the server's: an unsubscribed tournament sends
   no sponsors at all, so there is nothing on a public endpoint for a screen to

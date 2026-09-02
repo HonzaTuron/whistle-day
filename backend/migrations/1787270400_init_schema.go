@@ -6,7 +6,7 @@ import (
 	"github.com/pocketbase/pocketbase/tools/types"
 )
 
-// Seedly — initial schema.
+// Whistle.day — initial schema.
 //
 // Core idea: a tournament is an ORDERED LIST OF STAGES. Each stage has its own
 // format, so "groups then playoff" and "playoff then groups" are the same
