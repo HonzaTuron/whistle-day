@@ -8,6 +8,8 @@ import type {
   Stage,
 } from "@seedly/engine";
 import { useEffect, useState } from "react";
+import { useT, type MessageKey, type Translate } from "../../lib/i18n";
+import { renderLabel } from "../../lib/labels";
 import { useReorder } from "../../lib/reorder";
 import { Grip, Group } from "./SheetParts";
 
@@ -35,15 +37,15 @@ interface Props {
  */
 
 /** Every panel a screen can rotate, in the order it runs if nobody says. */
-const PANELS: { value: DisplayPanel; label: string; hint: string }[] = [
-  { value: "now_playing", label: "Now playing", hint: "The live matches." },
-  { value: "stage_progress", label: "Stage progress", hint: "How far the day has got." },
-  { value: "court_schedule", label: "Court schedule", hint: "What is on each court." },
-  { value: "stage_table", label: "Cross-pool tables", hint: "Every group ranked together." },
-  { value: "standings", label: "Group tables", hint: "One panel per group." },
-  { value: "bracket", label: "Bracket", hint: "The knockout." },
-  { value: "next_up", label: "Next up", hint: "The matches still to play." },
-  { value: "results", label: "Latest results", hint: "What has just finished." },
+const PANELS: { value: DisplayPanel; label: MessageKey; hint: MessageKey }[] = [
+  { value: "now_playing", label: "panel.now_playing", hint: "panel.now_playing.hint" },
+  { value: "stage_progress", label: "panel.stage_progress", hint: "panel.stage_progress.hint" },
+  { value: "court_schedule", label: "panel.court_schedule", hint: "panel.court_schedule.hint" },
+  { value: "stage_table", label: "panel.stage_table", hint: "panel.stage_table.hint" },
+  { value: "standings", label: "panel.standings", hint: "panel.standings.hint" },
+  { value: "bracket", label: "panel.bracket", hint: "panel.bracket.hint" },
+  { value: "next_up", label: "panel.next_up", hint: "panel.next_up.hint" },
+  { value: "results", label: "panel.results", hint: "panel.results.hint" },
 ];
 
 const ORDER = PANELS.map((panel) => panel.value);
@@ -76,6 +78,8 @@ export function ScreenSheet({
   onChange,
   onClose,
 }: Props) {
+  const t = useT();
+
   useEffect(() => {
     const escape = (event: KeyboardEvent) => {
       if (event.key === "Escape") onClose();
@@ -121,25 +125,26 @@ export function ScreenSheet({
   const drag = useReorder(rotation, setRotation);
 
   return (
-    <div className="sheet" role="dialog" aria-modal="true" aria-label="Screen">
+    <div className="sheet" role="dialog" aria-modal="true" aria-label={t("screen.label")}>
       <button
         type="button"
         className="sheet__backdrop"
         onClick={onClose}
-        aria-label="Close"
+        aria-label={t("common.close")}
       />
 
       <div className="sheet__panel">
         <p className="sheet__meta">
-          {screen.name || "Screen"}
-          {state === "failed" ? " · not saved" : state === "saving" ? " · saving…" : ""}
+          {screen.name || t("screen.fallbackName")}
+          {state === "failed"
+            ? ` · ${t("common.notSaved")}`
+            : state === "saving"
+              ? ` · ${t("common.saving")}`
+              : ""}
         </p>
-        <p className="sheet__hint">
-          Saved as you tap, and the wall follows within a moment — it is the
-          preview.
-        </p>
+        <p className="sheet__hint">{t("screen.savedAsYouTap")}</p>
 
-        <Group label="What it shows, in order">
+        <Group label={t("screen.rotation")}>
           {/*
             One list, because "which panels" and "in what order" are one
             decision. The row is the switch and the grip is the handle, so
@@ -167,14 +172,14 @@ export function ScreenSheet({
                       setRotation(rotation.filter((value) => value !== panel))
                     }
                   />
-                  <span className="rotation__name">{NAMES.get(panel)?.label}</span>
-                  <small className="rotation__hint">{NAMES.get(panel)?.hint}</small>
+                  <span className="rotation__name">{panelName(t, panel)}</span>
+                  <small className="rotation__hint">{panelHint(t, panel)}</small>
                 </label>
 
                 <button
                   type="button"
                   className="rotation__grip"
-                  aria-label={`Move ${NAMES.get(panel)?.label}`}
+                  aria-label={t("screen.move", { name: panelName(t, panel) })}
                   {...drag.gripProps(index)}
                 >
                   <Grip />
@@ -184,17 +189,21 @@ export function ScreenSheet({
           </ul>
 
           <p className="sheet__hint">
-            {rotation.length === 1
-              ? "One panel, so the screen stays on it. The credit runs last."
-              : "Drag a handle to reorder. The credit runs last."}{" "}
-            A panel with nothing to show is skipped on its own.
+            {t(
+              rotation.length === 1 ? "screen.onePanel" : "screen.dragToReorder",
+            )}{" "}
+            {t("screen.emptySkipped")}
           </p>
 
           {dropped.length > 0 ? (
             <>
-              <h4 className="rotation__off">Not shown</h4>
-              <p className="sheet__hint">Tap one to put it back at the end.</p>
-              <div className="chips chips--wrap" role="group" aria-label="Not shown">
+              <h4 className="rotation__off">{t("screen.notShown")}</h4>
+              <p className="sheet__hint">{t("screen.tapToRestore")}</p>
+              <div
+                className="chips chips--wrap"
+                role="group"
+                aria-label={t("screen.notShown")}
+              >
                 {dropped.map((panel) => (
                   <button
                     key={panel}
@@ -203,7 +212,7 @@ export function ScreenSheet({
                     aria-pressed={false}
                     onClick={() => setRotation([...rotation, panel])}
                   >
-                    {NAMES.get(panel)?.label}
+                    {panelName(t, panel)}
                   </button>
                 ))}
               </div>
@@ -212,7 +221,7 @@ export function ScreenSheet({
         </Group>
 
         {rotation.length > 1 ? (
-          <Group label="Each panel stays">
+          <Group label={t("screen.dwell")}>
             <div className="chips" role="group">
               {DWELLS.map((seconds) => (
                 <button
@@ -223,24 +232,24 @@ export function ScreenSheet({
                   }
                   onClick={() => onChange({ rotate_seconds: seconds })}
                 >
-                  {seconds}s
+                  {t("screen.dwellSeconds", { seconds })}
                 </button>
               ))}
             </div>
           </Group>
         ) : null}
 
-        <Group label="Only show">
-          <div className="chips chips--wrap" role="group" aria-label="Stage">
+        <Group label={t("screen.onlyShow")}>
+          <div className="chips chips--wrap" role="group" aria-label={t("screen.stage")}>
             <Filter
-              label="Every stage"
+              label={t("screen.everyStage")}
               on={!scope.stage}
               onClick={() => onChange({ scope: { ...scope, stage: "", pool: "" } })}
             />
             {stages.map((stage) => (
               <Filter
                 key={stage.id}
-                label={stage.name}
+                label={renderLabel(t, stage.name, stage.name_kind)}
                 on={scope.stage === stage.id}
                 onClick={() =>
                   onChange({ scope: { ...scope, stage: stage.id, pool: "" } })
@@ -250,9 +259,9 @@ export function ScreenSheet({
           </div>
 
           {scope.stage ? (
-            <div className="chips chips--wrap" role="group" aria-label="Group">
+            <div className="chips chips--wrap" role="group" aria-label={t("screen.group")}>
               <Filter
-                label="Every group"
+                label={t("screen.everyGroup")}
                 on={!scope.pool}
                 onClick={() => onChange({ scope: { ...scope, pool: "" } })}
               />
@@ -261,7 +270,7 @@ export function ScreenSheet({
                 .map((pool) => (
                   <Filter
                     key={pool.id}
-                    label={pool.name}
+                    label={renderLabel(t, pool.name, pool.name_kind)}
                     on={scope.pool === pool.id}
                     onClick={() => onChange({ scope: { ...scope, pool: pool.id } })}
                   />
@@ -270,9 +279,9 @@ export function ScreenSheet({
           ) : null}
 
           {courts.length > 0 ? (
-            <div className="chips chips--wrap" role="group" aria-label="Court">
+            <div className="chips chips--wrap" role="group" aria-label={t("match.court")}>
               <Filter
-                label="Every court"
+                label={t("screen.everyCourt")}
                 on={!scope.court}
                 onClick={() => onChange({ scope: { ...scope, court: "" } })}
               />
@@ -287,13 +296,10 @@ export function ScreenSheet({
             </div>
           ) : null}
 
-          <p className="sheet__hint">
-            A second screen by the door showing one court is what this is for.
-            The main wall wants all of it.
-          </p>
+          <p className="sheet__hint">{t("screen.scopeNote")}</p>
         </Group>
 
-        <Group label="Colour">
+        <Group label={t("screen.colour")}>
           <div className="accent">
             <input
               type="color"
@@ -302,7 +308,7 @@ export function ScreenSheet({
               onChange={(event) =>
                 onChange({ theme: { ...theme, accent: event.target.value } })
               }
-              aria-label="Accent colour"
+              aria-label={t("screen.accent")}
             />
             <span className="accent__value">{theme.accent || "#22c55e"}</span>
             {theme.accent ? (
@@ -314,7 +320,7 @@ export function ScreenSheet({
                   onChange({ theme: rest });
                 }}
               >
-                Reset
+                {t("screen.reset")}
               </button>
             ) : null}
           </div>
@@ -322,13 +328,24 @@ export function ScreenSheet({
 
         <div className="sheet__actions">
           <button type="button" className="btn btn--quiet btn--block" onClick={onClose}>
-            Done
+            {t("common.done")}
           </button>
         </div>
       </div>
     </div>
   );
 }
+
+/** The rotation list and the "not shown" chips both name a panel this way. */
+const panelName = (t: Translate, panel: DisplayPanel) => {
+  const key = NAMES.get(panel)?.label;
+  return key ? t(key) : panel;
+};
+
+const panelHint = (t: Translate, panel: DisplayPanel) => {
+  const key = NAMES.get(panel)?.hint;
+  return key ? t(key) : "";
+};
 
 /** Six dots: the handle everything else with a draggable row uses. */
 function Filter({

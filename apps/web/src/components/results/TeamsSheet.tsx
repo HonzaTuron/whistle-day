@@ -1,5 +1,6 @@
 import type { Entry } from "@seedly/engine";
 import { useEffect, useState } from "react";
+import { useT } from "../../lib/i18n";
 import { isOut } from "../../lib/teams";
 
 interface Props {
@@ -33,6 +34,7 @@ export function TeamsSheet({
   onReinstate,
   onClose,
 }: Props) {
+  const t = useT();
   const [asking, setAsking] = useState<string | null>(null);
 
   useEffect(() => {
@@ -47,26 +49,26 @@ export function TeamsSheet({
   const left = open ? remaining.get(open.id) ?? 0 : 0;
 
   return (
-    <div className="sheet" role="dialog" aria-modal="true" aria-label="Teams">
+    <div className="sheet" role="dialog" aria-modal="true" aria-label={t("teams.label")}>
       <button
         type="button"
         className="sheet__backdrop"
         onClick={onClose}
-        aria-label="Close"
+        aria-label={t("common.close")}
       />
 
       <div className="sheet__panel">
-        <p className="sheet__meta">Who is playing</p>
+        <p className="sheet__meta">{t("teams.who")}</p>
 
         {open ? (
           <>
-            <p className="sheet__question">{open.name} is out</p>
+            <p className="sheet__question">
+              {t("teams.isOut", { name: open.name })}
+            </p>
             <p className="sheet__hint">
               {left > 0
-                ? `They have ${left} ${left === 1 ? "match" : "matches"} left. What happens to them is not the same question as what happens to the ${
-                    open.name
-                  } results already on the sheet.`
-                : "They have played everything they were down for, so this only decides whether those results still count."}
+                ? t("teams.hasLeft", { count: left, name: open.name })
+                : t("teams.nothingLeft")}
             </p>
 
             <div className="exit">
@@ -79,12 +81,8 @@ export function TeamsSheet({
                 }}
                 disabled={busy}
               >
-                <strong>They forfeit the rest</strong>
-                <small>
-                  What they played stands. Every match they have left is a
-                  walkover to whoever was due to face them. Right when a team
-                  leaves late in the day.
-                </small>
+                <strong>{t("teams.forfeitTitle")}</strong>
+                <small>{t("teams.forfeitBody")}</small>
               </button>
 
               <button
@@ -96,12 +94,8 @@ export function TeamsSheet({
                 }}
                 disabled={busy}
               >
-                <strong>Strike their results</strong>
-                <small>
-                  Every match they were ever in comes out of the table, for
-                  their opponents too. Right when a team pulls out early, so
-                  nobody is ranked on having happened to play them.
-                </small>
+                <strong>{t("teams.voidTitle")}</strong>
+                <small>{t("teams.voidBody")}</small>
               </button>
             </div>
 
@@ -111,16 +105,13 @@ export function TeamsSheet({
                 className="btn btn--quiet btn--block"
                 onClick={() => setAsking(null)}
               >
-                Never mind
+                {t("teams.neverMind")}
               </button>
             </div>
           </>
         ) : (
           <>
-            <p className="sheet__hint">
-              Taking a team out closes every match they have left and rebuilds
-              the tables. It can be undone.
-            </p>
+            <p className="sheet__hint">{t("teams.intro")}</p>
 
             <ul className="crew">
               {teams.map((team) => (
@@ -132,10 +123,12 @@ export function TeamsSheet({
                     <strong>{team.name}</strong>
                     <small>
                       {isOut(team)
-                        ? team.withdrawal === "void"
-                          ? "Out · results struck"
-                          : "Out · forfeited the rest"
-                        : `${remaining.get(team.id) ?? 0} to play`}
+                        ? t(
+                            team.withdrawal === "void"
+                              ? "teams.outStruck"
+                              : "teams.outForfeited",
+                          )
+                        : t("teams.toPlay", { count: remaining.get(team.id) ?? 0 })}
                     </small>
                   </div>
                   {isOut(team) ? (
@@ -145,7 +138,7 @@ export function TeamsSheet({
                       onClick={() => onReinstate(team)}
                       disabled={busy}
                     >
-                      Put back
+                      {t("teams.putBack")}
                     </button>
                   ) : (
                     <button
@@ -154,7 +147,7 @@ export function TeamsSheet({
                       onClick={() => setAsking(team.id)}
                       disabled={busy}
                     >
-                      Out
+                      {t("teams.out")}
                     </button>
                   )}
                 </li>
@@ -167,7 +160,7 @@ export function TeamsSheet({
                 className="btn btn--quiet btn--block"
                 onClick={onClose}
               >
-                Done
+                {t("common.done")}
               </button>
             </div>
           </>

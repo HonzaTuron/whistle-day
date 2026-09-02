@@ -15,6 +15,7 @@ import {
   timeValue,
   type BoardRow,
 } from "../../lib/board";
+import { useT, type Translate } from "../../lib/i18n";
 import { MatchHistory } from "./MatchHistory";
 
 interface Props {
@@ -66,6 +67,7 @@ export function MatchSheet({
   onLive,
   onClose,
 }: Props) {
+  const t = useT();
   const [home, setHome] = useState(row.fixture.home_score ?? 0);
   const [away, setAway] = useState(row.fixture.away_score ?? 0);
   /** The points set by set. `null` until they have been read back. */
@@ -242,28 +244,35 @@ export function MatchSheet({
   const onCourt = courts.find((court) => court.id === row.fixture.court);
 
   return (
-    <div className="sheet" role="dialog" aria-modal="true" aria-label="Match">
+    <div className="sheet" role="dialog" aria-modal="true" aria-label={t("match.label")}>
       <button
         type="button"
         className="sheet__backdrop"
         onClick={onClose}
-        aria-label="Close"
+        aria-label={t("common.close")}
       />
 
       <div className="sheet__panel">
         <p className="sheet__meta">
           {row.fixture.code}
-          {row.walkover ? " · walkover" : row.settled ? " · already recorded" : ""}
-          {row.live ? " · live" : ""}
+          {row.walkover
+            ? ` · ${t("match.walkover")}`
+            : row.settled
+              ? ` · ${t("match.recorded")}`
+              : ""}
+          {row.live ? ` · ${t("match.live")}` : ""}
         </p>
 
         {asking === "clear" ? (
           <>
-            <p className="sheet__question">Take this result off?</p>
+            <p className="sheet__question">{t("match.clearAsk")}</p>
             <p className="sheet__note">
-              {sideName(row.home)} {row.fixture.home_score ?? 0}–
-              {row.fixture.away_score ?? 0} {sideName(row.away)} is deleted, and
-              anything it put into a later round goes back to waiting.
+              {t("match.clearNote", {
+                home: sideName(t, row.home),
+                away: sideName(t, row.away),
+                homeScore: row.fixture.home_score ?? 0,
+                awayScore: row.fixture.away_score ?? 0,
+              })}
             </p>
             <div className="sheet__actions">
               <button
@@ -275,20 +284,20 @@ export function MatchSheet({
                   onClear();
                 }}
               >
-                {saving ? "Clearing…" : "Clear the result"}
+                {t(saving ? "match.clearing" : "match.clear")}
               </button>
               <button
                 type="button"
                 className="btn btn--quiet btn--block"
                 onClick={() => setAsking("none")}
               >
-                Keep it
+                {t("match.keepIt")}
               </button>
             </div>
           </>
         ) : asking === "walkover" ? (
           <>
-            <p className="sheet__question">Who takes the win?</p>
+            <p className="sheet__question">{t("match.walkoverAsk")}</p>
             <div className="sheet__actions">
               <button
                 type="button"
@@ -299,7 +308,7 @@ export function MatchSheet({
                   onWalkover(row.home.entry?.id ?? "");
                 }}
               >
-                {sideName(row.home)}
+                {sideName(t, row.home)}
               </button>
               <button
                 type="button"
@@ -310,25 +319,22 @@ export function MatchSheet({
                   onWalkover(row.away.entry?.id ?? "");
                 }}
               >
-                {sideName(row.away)}
+                {sideName(t, row.away)}
               </button>
               <button
                 type="button"
                 className="btn btn--quiet btn--block"
                 onClick={() => setAsking("none")}
               >
-                Back
+                {t("common.back")}
               </button>
             </div>
-            <p className="sheet__note">
-              No score is recorded. In a group the winner takes the points for a
-              win and nothing else.
-            </p>
+            <p className="sheet__note">{t("match.walkoverNote")}</p>
           </>
         ) : (
           <>
             {courts.length > 0 ? (
-              <div className="chips" role="group" aria-label="Court">
+              <div className="chips" role="group" aria-label={t("match.court")}>
                 {courts.map((court) => (
                   <button
                     key={court.id}
@@ -355,16 +361,15 @@ export function MatchSheet({
             {courts.length > 0 ? (
               <p className="sheet__hint">
                 {onCourt
-                  ? `On ${onCourt.name} — saved. Tap it again to take it off court.`
-                  : "Not on a court yet. Tap one and it is saved straight away."}{" "}
-                Court, time and the points below all save as they are tapped.
-                The result is the one thing that waits for Save.
+                  ? t("match.onCourtSaved", { court: onCourt.name })
+                  : t("match.noCourtYet")}{" "}
+                {t("match.savesOnTap")}
               </p>
             ) : null}
 
             <div className="sheet__row">
               <label className="sheet__time">
-                <span>Starts</span>
+                <span>{t("match.starts")}</span>
                 <TimeField
                   value={timeValue(row.fixture.scheduled_at)}
                   onCommit={(time) =>
@@ -382,7 +387,7 @@ export function MatchSheet({
                   disabled={saving}
                   onClick={() => onLive(!row.live)}
                 >
-                  {row.live ? "Take it off" : "On court now"}
+                  {t(row.live ? "match.takeOff" : "match.onCourtNow")}
                 </button>
               )}
             </div>
@@ -391,29 +396,38 @@ export function MatchSheet({
               <div className="sheet__clash" role="alert">
                 {clashes.map((clash) => (
                   <p key={clash.fixtureId + clash.team}>
-                    {clash.team} is also down for {clash.code} at {clash.time}
-                    {clash.court ? ` on ${clash.court}` : ""}.
+                    {t("match.clash", {
+                      team: clash.team,
+                      code: clash.code,
+                      time: clash.time,
+                      court: clash.court
+                        ? t("match.clashCourt", { court: clash.court })
+                        : "",
+                    })}
                   </p>
                 ))}
               </div>
             ) : null}
 
             <Score
-              name={sideName(row.home)}
+              t={t}
+              name={sideName(t, row.home)}
               value={homeScore}
               counted={fromPoints}
               onChange={(value) => setHome(clamp(value))}
             />
             <Score
-              name={sideName(row.away)}
+              t={t}
+              name={sideName(t, row.away)}
               value={awayScore}
               counted={fromPoints}
               onChange={(value) => setAway(clamp(value))}
             />
 
             <Sets
-              home={sideName(row.home)}
-              away={sideName(row.away)}
+              t={t}
+              home={sideName(t, row.home)}
+              away={sideName(t, row.away)}
               sets={points}
               inPlay={inPlay}
               state={pointsState}
@@ -427,17 +441,16 @@ export function MatchSheet({
 
             {endsASet ? (
               <p className="sheet__hint">
-                Set {points.length} is still in play, so it is not counted
-                above. Saving ends the match and records {savedScore.home}–
-                {savedScore.away}.
+                {t("match.setInPlay", {
+                  number: points.length,
+                  home: savedScore.home,
+                  away: savedScore.away,
+                })}
               </p>
             ) : null}
 
             {row.settled ? (
-              <p className="sheet__note">
-                Saving replaces the recorded result. The tables and anything
-                seeded from them are rebuilt.
-              </p>
+              <p className="sheet__note">{t("match.replaces")}</p>
             ) : null}
 
             <MatchHistory fixture={row.fixture.id} crew={crew} />
@@ -452,7 +465,7 @@ export function MatchSheet({
                   onSave(savedScore.home, savedScore.away, points);
                 }}
               >
-                {saving ? "Saving…" : "Save result"}
+                {t(saving ? "common.saving" : "match.save")}
               </button>
               <button
                 type="button"
@@ -460,7 +473,7 @@ export function MatchSheet({
                 disabled={saving}
                 onClick={() => setAsking("walkover")}
               >
-                Somebody didn't turn up
+                {t("match.noShow")}
               </button>
               {row.settled ? (
                 <button
@@ -469,7 +482,7 @@ export function MatchSheet({
                   disabled={saving}
                   onClick={() => setAsking("clear")}
                 >
-                  Clear the result
+                  {t("match.clear")}
                 </button>
               ) : null}
               <button
@@ -478,7 +491,7 @@ export function MatchSheet({
                 onClick={onClose}
                 disabled={saving}
               >
-                Cancel
+                {t("common.cancel")}
               </button>
             </div>
           </>
@@ -542,11 +555,13 @@ function TimeField({
 
 
 function Score({
+  t,
   name,
   value,
   counted,
   onChange,
 }: {
+  t: Translate;
   name: string;
   value: number;
   /** Counted from the points below, so this is a read-out rather than a field. */
@@ -562,7 +577,7 @@ function Score({
           className="stepper__button"
           onClick={() => onChange(value - 1)}
           disabled={counted || value <= 0}
-          aria-label={`One fewer for ${name}`}
+          aria-label={t("match.oneFewerFor", { name })}
         >
           −
         </button>
@@ -577,14 +592,14 @@ function Score({
           readOnly={counted}
           onFocus={(event) => event.target.select()}
           onChange={(event) => onChange(Number(event.target.value) || 0)}
-          aria-label={`Score for ${name}`}
+          aria-label={t("match.scoreFor", { name })}
         />
         <button
           type="button"
           className="stepper__button"
           onClick={() => onChange(value + 1)}
           disabled={counted}
-          aria-label={`One more for ${name}`}
+          aria-label={t("match.oneMoreFor", { name })}
         >
           +
         </button>
@@ -608,6 +623,7 @@ function Score({
  * hall can see is wrong.
  */
 function Sets({
+  t,
   home,
   away,
   sets,
@@ -618,6 +634,7 @@ function Sets({
   onAdd,
   onRemove,
 }: {
+  t: Translate;
   home: string;
   away: string;
   sets: SetScore[];
@@ -632,24 +649,19 @@ function Sets({
   return (
     <div className="sets">
       <div className="sets__head">
-        <span className="sets__title">Points in each set</span>
+        <span className="sets__title">{t("sets.title")}</span>
         {state === "failed" ? (
-          <span className="sets__state is-failed">not saved</span>
+          <span className="sets__state is-failed">{t("common.notSaved")}</span>
         ) : state === "saving" ? (
-          <span className="sets__state">saving…</span>
+          <span className="sets__state">{t("common.saving")}</span>
         ) : null}
         <button type="button" className="btn btn--quiet btn--tiny" onClick={onAdd}>
-          Add a set
+          {t("sets.add")}
         </button>
       </div>
 
       {sets.length === 0 ? (
-        <p className="sheet__hint">
-          Optional, and saved as they are entered rather than with the result.
-          Fill them in and the score above is counted from them, the tiebreak
-          has the numbers it needs, and the wall shows the match set by set
-          while it is on.
-        </p>
+        <p className="sheet__hint">{t("sets.empty")}</p>
       ) : (
         <ol className="sets__list">
           {sets.map((set, index) => (
@@ -657,11 +669,14 @@ function Sets({
             // the index is the identity: set two stays set two.
             <li key={index} className="sets__row">
               <span className="sets__number">
-                Set {index + 1}
-                {index === inPlay && <small className="sets__inplay">in play</small>}
+                {t("sets.number", { number: index + 1 })}
+                {index === inPlay && (
+                  <small className="sets__inplay">{t("sets.inPlay")}</small>
+                )}
               </span>
               <SetPoints
-                label={`${home}, set ${index + 1}`}
+                t={t}
+                label={t("sets.sideLabel", { name: home, number: index + 1 })}
                 value={set.home}
                 // Only the last set gets the taps: it is the one being played,
                 // and a + beside a set that finished an hour ago is an invitation
@@ -673,7 +688,8 @@ function Sets({
               />
               <span className="sets__colon">:</span>
               <SetPoints
-                label={`${away}, set ${index + 1}`}
+                t={t}
+                label={t("sets.sideLabel", { name: away, number: index + 1 })}
                 value={set.away}
                 stepper={index === sets.length - 1}
                 live={index === inPlay}
@@ -684,7 +700,7 @@ function Sets({
                 type="button"
                 className="sets__remove"
                 onClick={() => onRemove(index)}
-                aria-label={`Remove set ${index + 1}`}
+                aria-label={t("sets.remove", { number: index + 1 })}
               >
                 ✕
               </button>
@@ -697,6 +713,7 @@ function Sets({
 }
 
 function SetPoints({
+  t,
   label,
   value,
   stepper,
@@ -704,6 +721,7 @@ function SetPoints({
   onChange,
   onStep,
 }: {
+  t: Translate;
   label: string;
   value: number;
   /** Tap-a-point buttons, on the set being entered. */
@@ -736,7 +754,7 @@ function SetPoints({
         className="sets__tick"
         onClick={() => onStep(-1)}
         disabled={value <= 0}
-        aria-label={`One fewer, ${label}`}
+        aria-label={t("sets.oneFewer", { label })}
       >
         −
       </button>
@@ -745,7 +763,7 @@ function SetPoints({
         type="button"
         className="sets__tick"
         onClick={() => onStep(1)}
-        aria-label={`One more, ${label}`}
+        aria-label={t("sets.oneMore", { label })}
       >
         +
       </button>

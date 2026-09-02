@@ -1,5 +1,6 @@
 import { estimate, formatDuration, PRESETS, type PresetId } from "../../lib/presets";
 import type { LaunchStep } from "../../api/launch";
+import { useT, type MessageKey } from "../../lib/i18n";
 import { WizardShell } from "./WizardShell";
 
 interface Props {
@@ -12,11 +13,11 @@ interface Props {
   onStart: () => void;
 }
 
-const PROGRESS: Record<LaunchStep, string> = {
-  stages: "Setting it up…",
-  draw: "Making the draw…",
-  screen: "Opening a screen…",
-  publish: "Going live…",
+const PROGRESS: Record<LaunchStep, MessageKey> = {
+  stages: "wizard.launchStages",
+  draw: "wizard.launchDraw",
+  screen: "wizard.launchScreen",
+  publish: "wizard.launchPublish",
 };
 
 /**
@@ -37,11 +38,16 @@ export function FormatStep({
   onBack,
   onStart,
 }: Props) {
+  const t = useT();
+
   return (
     <WizardShell
       step="format"
-      title="How should it run?"
-      hint={`${teams} teams on ${courts} court${courts === 1 ? "" : "s"}.`}
+      title={t("wizard.formatTitle")}
+      hint={t("wizard.formatHint", {
+        teams: t("count.teams", { count: teams }),
+        courts: t("count.courtsOn", { count: courts }),
+      })}
       onBack={launching ? undefined : onBack}
       footer={
         <button
@@ -50,11 +56,11 @@ export function FormatStep({
           disabled={launching !== null}
           onClick={onStart}
         >
-          {launching ? PROGRESS[launching] : "Start the tournament"}
+          {t(launching ? PROGRESS[launching] : "wizard.formatStart")}
         </button>
       }
     >
-      <div className="presets" role="radiogroup" aria-label="Format">
+      <div className="presets" role="radiogroup" aria-label={t("wizard.formatLegend")}>
         {PRESETS.map((preset) => {
           const enough = teams >= preset.minTeams;
           const cost = estimate(preset, teams, courts);
@@ -78,21 +84,24 @@ export function FormatStep({
               />
 
               <span className="preset__head">
-                <span className="preset__title">{preset.title}</span>
-                <span className="preset__tag">{preset.tag}</span>
+                <span className="preset__title">{t(preset.title)}</span>
+                <span className="preset__tag">{t(preset.tag)}</span>
               </span>
 
               {enough ? (
                 <>
                   <span className="preset__cost">
-                    ≈ {cost.matches} matches · about {formatDuration(cost.minutes)}
+                    {t("wizard.formatCost", {
+                      count: cost.matches,
+                      duration: formatDuration(t, cost.minutes),
+                    })}
                   </span>
-                  <span className="preset__shape">{preset.shape(teams)}</span>
-                  <span className="preset__blurb">{preset.blurb}</span>
+                  <span className="preset__shape">{preset.shape(t, teams)}</span>
+                  <span className="preset__blurb">{t(preset.blurb)}</span>
                 </>
               ) : (
                 <span className="preset__shape">
-                  Needs at least {preset.minTeams} teams.
+                  {t("wizard.formatNeeds", { count: preset.minTeams })}
                 </span>
               )}
             </label>
@@ -100,10 +109,7 @@ export function FormatStep({
         })}
       </div>
 
-      <p className="wiz__note">
-        Seeded in the order you added the teams, so the first two you entered
-        cannot meet before the final.
-      </p>
+      <p className="wiz__note">{t("wizard.formatNote")}</p>
     </WizardShell>
   );
 }

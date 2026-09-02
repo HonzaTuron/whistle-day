@@ -1,4 +1,5 @@
 import type { ScoringConfig, Tiebreaker } from "@seedly/engine";
+import type { MessageKey } from "./i18n";
 
 /**
  * How a sport is scored, and what each tiebreak is called on a screen.
@@ -17,13 +18,13 @@ export type SportId = "volleyball" | "football" | "basketball" | "other";
 
 export interface Sport {
   id: SportId;
-  label: string;
+  label: MessageKey;
   /** What goes in `tournaments.sport`. Empty for "other" — the projector
    *  renders this field, and "Other" under a tournament name reads as a
    *  mistake rather than as an answer. */
   sport: string;
   /** One line on the chip's own terms: what picking this actually decides. */
-  hint: string;
+  hint: MessageKey;
   scoring: ScoringConfig;
 }
 
@@ -42,9 +43,9 @@ const GENERIC_TIEBREAKERS: Tiebreaker[] = [
 export const SPORTS: Sport[] = [
   {
     id: "volleyball",
-    label: "Volleyball",
+    label: "sport.volleyball",
     sport: "volleyball",
-    hint: "Sets decide it, and no match ends level.",
+    hint: "sport.volleyball.hint",
     scoring: {
       // Sets per fixture. Nothing reads this yet — see the README — but a
       // stored 1 would be wrong the day something does.
@@ -61,9 +62,9 @@ export const SPORTS: Sport[] = [
   },
   {
     id: "football",
-    label: "Football",
+    label: "sport.football",
     sport: "football",
-    hint: "Three for a win, one for a draw.",
+    hint: "sport.football.hint",
     scoring: {
       bestOf: 1,
       pointsWin: 3,
@@ -76,9 +77,9 @@ export const SPORTS: Sport[] = [
   },
   {
     id: "basketball",
-    label: "Basketball",
+    label: "sport.basketball",
     sport: "basketball",
-    hint: "Two for a win, one for a loss, and no draws.",
+    hint: "sport.basketball.hint",
     scoring: {
       bestOf: 1,
       // FIBA credits a point for turning up and losing, which is why the loss
@@ -93,9 +94,9 @@ export const SPORTS: Sport[] = [
   },
   {
     id: "other",
-    label: "Something else",
+    label: "sport.other",
     sport: "",
-    hint: "Three for a win, one for a draw. Change it later if that is wrong.",
+    hint: "sport.other.hint",
     scoring: {
       bestOf: 1,
       pointsWin: 3,
@@ -146,16 +147,59 @@ export function matchSport(sport: string, scoring: ScoringConfig | null): SportI
 export const drawsAllowed = (scoring: ScoringConfig | null): boolean =>
   scoring?.drawsAllowed !== false;
 
-/** What each criterion is called where somebody has to order them by hand. */
-export const TIEBREAK_LABELS: Record<Tiebreaker, { label: string; hint: string }> = {
-  points: { label: "Points", hint: "The table's own column." },
-  head_to_head: { label: "Head-to-head", hint: "How the tied teams did against each other." },
-  score_diff: { label: "Score difference", hint: "Scored minus conceded." },
-  score_for: { label: "Scored", hint: "Total scored, however many were let in." },
-  sub_diff: { label: "Point difference", hint: "Across the sets, where sets are kept." },
-  wins: { label: "Wins", hint: "Matches won, ignoring how they were won." },
-  seed: { label: "Seeding", hint: "The order the teams were entered in. Never a tie." },
-  draw: { label: "Drawing lots", hint: "The last resort, decided off the app." },
+/**
+ * What each criterion is called where somebody has to order them by hand, and
+ * what it is called inside a sentence.
+ *
+ * Two names rather than one because they are not the same word twice: a row in
+ * a list is "Head-to-head", and the note under a table reads "separated by
+ * head-to-head". Czech is the same, and neither language lowercases the first
+ * to get the second.
+ */
+export const TIEBREAK_LABELS: Record<
+  Tiebreaker,
+  { label: MessageKey; hint: MessageKey; inline: MessageKey }
+> = {
+  points: {
+    label: "tiebreak.points",
+    hint: "tiebreak.points.hint",
+    inline: "tiebreak.inline.points",
+  },
+  head_to_head: {
+    label: "tiebreak.head_to_head",
+    hint: "tiebreak.head_to_head.hint",
+    inline: "tiebreak.inline.head_to_head",
+  },
+  score_diff: {
+    label: "tiebreak.score_diff",
+    hint: "tiebreak.score_diff.hint",
+    inline: "tiebreak.inline.score_diff",
+  },
+  score_for: {
+    label: "tiebreak.score_for",
+    hint: "tiebreak.score_for.hint",
+    inline: "tiebreak.inline.score_for",
+  },
+  sub_diff: {
+    label: "tiebreak.sub_diff",
+    hint: "tiebreak.sub_diff.hint",
+    inline: "tiebreak.inline.sub_diff",
+  },
+  wins: {
+    label: "tiebreak.wins",
+    hint: "tiebreak.wins.hint",
+    inline: "tiebreak.inline.wins",
+  },
+  seed: {
+    label: "tiebreak.seed",
+    hint: "tiebreak.seed.hint",
+    inline: "tiebreak.inline.seed",
+  },
+  draw: {
+    label: "tiebreak.draw",
+    hint: "tiebreak.draw.hint",
+    inline: "tiebreak.inline.draw",
+  },
 };
 
 /**

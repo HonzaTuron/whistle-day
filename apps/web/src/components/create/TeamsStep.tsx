@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import type { TeamRecord } from "../../api/organiser";
+import { useT } from "../../lib/i18n";
 import { isDuplicateName, SHORT_NAME_MAX, suggestShortName } from "../../lib/teams";
 import { WizardShell } from "./WizardShell";
 
@@ -30,6 +31,7 @@ const MIN_TEAMS = 2;
  * belong on a screen about one team; none of them fit in a row of a table.
  */
 export function TeamsStep({ teams, busy, onAdd, onRemove, onBack, onDone }: Props) {
+  const t = useT();
   const [name, setName] = useState("");
   const [shortName, setShortName] = useState("");
   const [touchedShort, setTouchedShort] = useState(false);
@@ -80,8 +82,8 @@ export function TeamsStep({ teams, busy, onAdd, onRemove, onBack, onDone }: Prop
   return (
     <WizardShell
       step="teams"
-      title={`Team ${teams.length + 1}`}
-      hint="Add them one at a time. The order you add them in is the seeding."
+      title={t("wizard.teamsTitle", { number: teams.length + 1 })}
+      hint={t("wizard.teamsHint")}
       onBack={onBack}
       footer={
         <>
@@ -91,7 +93,7 @@ export function TeamsStep({ teams, busy, onAdd, onRemove, onBack, onDone }: Prop
             disabled={!ready}
             onClick={() => add()}
           >
-            Add team
+            {t("wizard.teamsAdd")}
           </button>
           <button
             type="button"
@@ -100,8 +102,8 @@ export function TeamsStep({ teams, busy, onAdd, onRemove, onBack, onDone }: Prop
             onClick={onDone}
           >
             {teams.length < MIN_TEAMS
-              ? `${MIN_TEAMS - teams.length} more to get going`
-              : `That's everyone — ${teams.length} teams`}
+              ? t("wizard.teamsMore", { count: MIN_TEAMS - teams.length })
+              : t("wizard.teamsEnough", { count: teams.length })}
           </button>
         </>
       }
@@ -120,19 +122,19 @@ export function TeamsStep({ teams, busy, onAdd, onRemove, onBack, onDone }: Prop
           className="wiz__input"
           value={name}
           onChange={(event) => setName(event.target.value)}
-          placeholder="Team name"
+          placeholder={t("wizard.teamsPlaceholder")}
           maxLength={120}
           autoComplete="off"
           enterKeyHint="done"
         />
 
         {duplicate ? (
-          <p className="wiz__warning">You already have a team called that.</p>
+          <p className="wiz__warning">{t("wizard.teamsDuplicate")}</p>
         ) : null}
 
         {shortIsInteresting ? (
           <label className="wiz__sub">
-            <span>Shown on the projector</span>
+            <span>{t("wizard.teamsShortLabel")}</span>
             <input
               className="wiz__input wiz__input--sub"
               value={suggestion}
@@ -157,7 +159,7 @@ export function TeamsStep({ teams, busy, onAdd, onRemove, onBack, onDone }: Prop
                 type="button"
                 className="roster__remove"
                 onClick={() => onRemove(team.id)}
-                aria-label={`Remove ${team.name}`}
+                aria-label={t("wizard.teamsRemove", { name: team.name })}
               >
                 ✕
               </button>

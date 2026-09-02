@@ -1,15 +1,6 @@
 import type { DisplayPool, Tiebreaker } from "@seedly/engine";
-
-const CRITERION_LABEL: Record<Tiebreaker, string> = {
-  points: "points",
-  head_to_head: "head-to-head",
-  score_diff: "set difference",
-  score_for: "sets won",
-  sub_diff: "point difference",
-  wins: "wins",
-  seed: "seeding",
-  draw: "drawing lots",
-};
+import type { Translate } from "./i18n";
+import { TIEBREAK_LABELS } from "./scoring";
 
 /**
  * When teams finish level, the hall wants to know why one is above the other.
@@ -18,7 +9,7 @@ const CRITERION_LABEL: Record<Tiebreaker, string> = {
  *
  * Returns null when points alone decided the table, which is most of the time.
  */
-export function tiebreakNote(pool: DisplayPool): string | null {
+export function tiebreakNote(t: Translate, pool: DisplayPool): string | null {
   const beyondPoints = new Set<Tiebreaker>();
 
   for (const row of pool.standings) {
@@ -28,9 +19,15 @@ export function tiebreakNote(pool: DisplayPool): string | null {
   }
   if (beyondPoints.size === 0) return null;
 
-  const named = [...beyondPoints].map((c) => CRITERION_LABEL[c] ?? c);
-  const last = named.pop();
-  return named.length > 0
-    ? `Level on points — separated by ${named.join(", ")}, then ${last}.`
-    : `Level on points — separated by ${last}.`;
+  const named = [...beyondPoints].map((c) =>
+    TIEBREAK_LABELS[c] ? t(TIEBREAK_LABELS[c].inline) : c,
+  );
+  // "a, b and then c" is built from a list message rather than joined here:
+  // the comma, the conjunction and where it goes are the language's business.
+  const last = named.pop()!;
+  const criteria =
+    named.length > 0
+      ? t("tiebreak.noteList", { list: named.join(", "), last })
+      : last;
+  return t("tiebreak.note", { criteria });
 }

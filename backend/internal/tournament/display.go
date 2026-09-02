@@ -76,10 +76,17 @@ type displayCourt struct {
 // displaySide is one half of a fixture. Entry is empty until the slot resolves,
 // and Label always carries something renderable — "Winner QF1", "1. A" — so a
 // screen never has to draw a blank box.
+//
+// LabelKind and LabelArgs are the same thing said in parts, so a screen in
+// another language can compose the sentence itself rather than show the
+// English one. A slot generated before they existed sends neither, and Label
+// is what gets drawn. See migrations/1787961600_label_kinds.go.
 type displaySide struct {
-	Entry string `json:"entry"`
-	Label string `json:"label"`
-	Score int    `json:"score"`
+	Entry     string         `json:"entry"`
+	Label     string         `json:"label"`
+	LabelKind string         `json:"label_kind,omitempty"`
+	LabelArgs map[string]any `json:"label_args,omitempty"`
+	Score     int            `json:"score"`
 }
 
 type displayFixture struct {
@@ -127,8 +134,11 @@ type displayRound struct {
 }
 
 type displayPool struct {
-	ID           string            `json:"id"`
-	Name         string            `json:"name"`
+	ID   string `json:"id"`
+	Name string `json:"name"`
+	// Set when the generator named this pool rather than a person — "Winners",
+	// "Losers". A group called "A" carries nothing: the letter is the name.
+	NameKind     string            `json:"name_kind,omitempty"`
 	Kind         string            `json:"kind"`
 	AdvanceCount int               `json:"advance_count"`
 	Standings    []displayStanding `json:"standings"`
@@ -136,9 +146,12 @@ type displayPool struct {
 }
 
 type displayStage struct {
-	ID         string            `json:"id"`
-	Position   int               `json:"position"`
-	Name       string            `json:"name"`
+	ID       string `json:"id"`
+	Position int    `json:"position"`
+	Name     string `json:"name"`
+	// Which of the wizard's stage names this is — "Groups", "Playoff" — when
+	// the wizard chose it. Empty for a stage named through the API.
+	NameKind   string            `json:"name_kind,omitempty"`
 	Format     string            `json:"format"`
 	Status     string            `json:"status"`
 	Pools      []displayPool     `json:"pools"`
@@ -298,6 +311,7 @@ func BuildDisplayPayload(app core.App, display *core.Record) (*DisplayPayload, e
 			ID:       stage.Id,
 			Position: stage.GetInt("position"),
 			Name:     stage.GetString("name"),
+			NameKind: stage.GetString("name_kind"),
 			Format:   stage.GetString("format"),
 			Status:   stage.GetString("status"),
 			Pools:    []displayPool{},
@@ -319,6 +333,7 @@ func BuildDisplayPayload(app core.App, display *core.Record) (*DisplayPayload, e
 			poolOut := displayPool{
 				ID:           pool.Id,
 				Name:         pool.GetString("name"),
+				NameKind:     pool.GetString("name_kind"),
 				Kind:         pool.GetString("kind"),
 				AdvanceCount: pool.GetInt("advance_count"),
 				Standings:    []displayStanding{},
@@ -456,8 +471,17 @@ func sponsorSlots(app core.App, display, tournament *core.Record) []displaySpons
 	return slots
 }
 
-// slotLabelIndex maps slot id -> the text to show when it has no entry yet.
-func slotLabelIndex(app core.App, tournamentID string) (map[string]string, error) {
+// slotLabelText is what a screen draws for a slot nobody has qualified for
+// yet: the English wording, and the kind and arguments to build it again in
+// another language.
+type slotLabelText struct {
+	Text string
+	Kind string
+	Args map[string]any
+}
+
+// slotLabelIndex maps slot id -> what to show when it has no entry yet.
+func slotLabelIndex(app core.App, tournamentID string) (map[string]slotLabelText, error) {
 	stages, err := app.FindRecordsByFilter(
 		"stages", "tournament = {:t}", "", 0, 0,
 		dbx.Params{"t": tournamentID},
@@ -466,7 +490,7 @@ func slotLabelIndex(app core.App, tournamentID string) (map[string]string, error
 		return nil, err
 	}
 
-	labels := map[string]string{}
+	labels := map[string]slotLabelText{}
 	for _, stage := range stages {
 		slots, err := app.FindRecordsByFilter(
 			"slots", "stage = {:stage}", "", 0, 0,
@@ -476,23 +500,41 @@ func slotLabelIndex(app core.App, tournamentID string) (map[string]string, error
 			return nil, err
 		}
 		for _, slot := range slots {
-			labels[slot.Id] = slot.GetString("label")
+			label := slotLabelText{
+				Text: slot.GetString("label"),
+				Kind: slot.GetString("label_kind"),
+			}
+			// Stored as JSON and sent on as JSON. A row written before the
+			// field existed, or one holding something that will not parse,
+			// travels as its text alone — which is exactly what it did before.
+			if raw := slot.GetString("label_args"); raw != "" && raw != "null" {
+				args := map[string]any{}
+				if err := json.Unmarshal([]byte(raw), &args); err == nil {
+					label.Args = args
+				}
+			}
+			labels[slot.Id] = label
 		}
 	}
 	return labels, nil
 }
 
-func toDisplayFixture(f *core.Record, slotLabels map[string]string) displayFixture {
+func toDisplayFixture(f *core.Record, slotLabels map[string]slotLabelText) displayFixture {
 	side := func(entryField, slotField, scoreField string) displaySide {
 		entry := f.GetString(entryField)
-		label := ""
-		if entry == "" {
-			label = slotLabels[f.GetString(slotField)]
-			if label == "" {
-				label = "TBD"
-			}
+		out := displaySide{Entry: entry, Score: f.GetInt(scoreField)}
+		if entry != "" {
+			return out
 		}
-		return displaySide{Entry: entry, Label: label, Score: f.GetInt(scoreField)}
+
+		label := slotLabels[f.GetString(slotField)]
+		if label.Text == "" {
+			// No slot, or one with nothing in it. The screen still needs a box
+			// with something in it, and "TBD" is a kind like any other.
+			label = slotLabelText{Text: "TBD", Kind: "tbd"}
+		}
+		out.Label, out.LabelKind, out.LabelArgs = label.Text, label.Kind, label.Args
+		return out
 	}
 
 	return displayFixture{

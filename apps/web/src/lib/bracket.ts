@@ -1,20 +1,30 @@
 import type { DisplayFixture, DisplayStage } from "@seedly/engine";
+import type { Translate } from "./i18n";
 
 /**
  * Name a round by how far it is from the end, not by how many fixtures it
  * holds. A third-place match sits in the same round as the final, so counting
  * fixtures labels the final round "Semi-finals".
+ *
+ * 16 and 32 are named rather than counted, because Czech has a single word for
+ * each of them — osmifinále, šestnáctifinále — and no phrase that means "round
+ * of n" in general. Anything deeper falls back to the generic sentence, which
+ * is a bracket nobody is running off a phone.
  */
-export function roundTitle(roundsRemaining: number): string {
+export function roundTitle(t: Translate, roundsRemaining: number): string {
   switch (roundsRemaining) {
     case 1:
-      return "Final";
+      return t("bracket.final");
     case 2:
-      return "Semi-finals";
+      return t("bracket.semis");
     case 3:
-      return "Quarter-finals";
+      return t("bracket.quarters");
+    case 4:
+      return t("bracket.round16");
+    case 5:
+      return t("bracket.round32");
     default:
-      return `Round of ${2 ** roundsRemaining}`;
+      return t("bracket.roundOf", { size: 2 ** roundsRemaining });
   }
 }
 
@@ -33,7 +43,7 @@ const isThirdPlace = (fixture: DisplayFixture) => fixture.code === "3P";
  * Both screens render the same rounds; only the layout differs. Keeping the
  * shape here means a title fix lands on the projector and the phone at once.
  */
-export function bracketRounds(stage: DisplayStage): BracketRound[] {
+export function bracketRounds(t: Translate, stage: DisplayStage): BracketRound[] {
   const pool = stage.pools.find((p) => p.kind !== "group");
   if (!pool) return [];
 
@@ -47,6 +57,6 @@ export function bracketRounds(stage: DisplayStage): BracketRound[] {
 
   return rounds.map((round, index) => ({
     ...round,
-    title: roundTitle(rounds.length - index),
+    title: roundTitle(t, rounds.length - index),
   }));
 }

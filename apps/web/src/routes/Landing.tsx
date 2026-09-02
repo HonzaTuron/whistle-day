@@ -1,8 +1,11 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { rememberedTournament } from "../api/organiser";
+import { LanguageSwitch } from "../components/LanguageSwitch";
+import { useT } from "../lib/i18n";
 
 export function Landing() {
+  const t = useT();
   const navigate = useNavigate();
   const [token, setToken] = useState("");
   const [running] = useState(rememberedTournament);
@@ -18,9 +21,7 @@ export function Landing() {
         <div className="home__hero-bg" />
         <div className="home__hero-content">
           <h1 className="home__logo">Seedly</h1>
-          <p className="home__tagline">
-            Run a tournament off a phone and put it on the wall.
-          </p>
+          <p className="home__tagline">{t("landing.tagline")}</p>
 
           <div className="home__ctas">
             {running ? (
@@ -29,89 +30,71 @@ export function Landing() {
                 params={{ id: running.id }}
                 className="btn btn--primary btn--block"
               >
-                Back to {running.name}
+                {t("landing.resume", { name: running.name })}
               </Link>
             ) : (
               <Link to="/new" className="btn btn--primary btn--block">
-                Set up a tournament
+                {t("landing.setUp")}
               </Link>
             )}
             <Link to="/account" className="btn btn--quiet btn--block">
-              Sign in
+              {t("landing.signIn")}
             </Link>
           </div>
         </div>
       </header>
 
       <section className="home__section">
-        <h2 className="home__section-title">How it works</h2>
+        <h2 className="home__section-title">{t("landing.howTitle")}</h2>
         <div className="home__steps">
           <div className="home__step">
             <span className="home__step-icon">1</span>
-            <h3>Set it up</h3>
-            <p>
-              Name your tournament, add the teams, pick the format. Done in
-              under a minute — no account needed.
-            </p>
+            <h3>{t("landing.step1Title")}</h3>
+            <p>{t("landing.step1Body")}</p>
           </div>
           <div className="home__step">
             <span className="home__step-icon">2</span>
-            <h3>Run the day</h3>
-            <p>
-              Put matches on courts, mark what is being played, enter results as
-              they come in. All from your phone.
-            </p>
+            <h3>{t("landing.step2Title")}</h3>
+            <p>{t("landing.step2Body")}</p>
           </div>
           <div className="home__step">
             <span className="home__step-icon">3</span>
-            <h3>Put it on the wall</h3>
-            <p>
-              A projector screen that updates itself — tables rebuild, the
-              bracket fills in, the next Swiss round draws itself.
-            </p>
+            <h3>{t("landing.step3Title")}</h3>
+            <p>{t("landing.step3Body")}</p>
           </div>
         </div>
       </section>
 
       <section className="home__section">
-        <h2 className="home__section-title">Formats</h2>
+        <h2 className="home__section-title">{t("landing.formatsTitle")}</h2>
         <div className="home__formats">
           <div className="home__format">
-            <h3>Round Robin</h3>
-            <p>Every team plays every other. Groups feed into the playoff.</p>
+            <h3>{t("landing.formatRoundRobin")}</h3>
+            <p>{t("landing.formatRoundRobinBody")}</p>
           </div>
           <div className="home__format">
-            <h3>Single Elimination</h3>
-            <p>Lose once and you are out. Classic bracket, straight through.</p>
+            <h3>{t("landing.formatSingleElim")}</h3>
+            <p>{t("landing.formatSingleElimBody")}</p>
           </div>
           <div className="home__format">
-            <h3>Double Elimination</h3>
-            <p>
-              A second chance: drop into the losers bracket and fight your way
-              back.
-            </p>
+            <h3>{t("landing.formatDoubleElim")}</h3>
+            <p>{t("landing.formatDoubleElimBody")}</p>
           </div>
           <div className="home__format">
-            <h3>Swiss</h3>
-            <p>
-              Every round pairs like with like. No elimination — every team
-              plays every round.
-            </p>
+            <h3>{t("landing.formatSwiss")}</h3>
+            <p>{t("landing.formatSwissBody")}</p>
           </div>
         </div>
       </section>
 
       <section className="home__section home__section--screen">
-        <h2 className="home__section-title">Open a screen</h2>
-        <p className="home__section-note">
-          Enter the token from the QR code by the door, or from the organiser
-          screen.
-        </p>
+        <h2 className="home__section-title">{t("landing.screenTitle")}</h2>
+        <p className="home__section-note">{t("landing.screenNote")}</p>
         <input
           className="home__token"
           value={token}
           onChange={(event) => setToken(event.target.value)}
-          placeholder="screen token"
+          placeholder={t("landing.tokenPlaceholder")}
           onKeyDown={(event) => event.key === "Enter" && open("/display/$token")}
         />
         <div className="home__token-actions">
@@ -121,7 +104,7 @@ export function Landing() {
             disabled={!token.trim()}
             onClick={() => open("/display/$token")}
           >
-            Projector
+            {t("landing.projector")}
           </button>
           <button
             type="button"
@@ -129,13 +112,14 @@ export function Landing() {
             disabled={!token.trim()}
             onClick={() => open("/m/$token")}
           >
-            Phone
+            {t("landing.phone")}
           </button>
         </div>
       </section>
 
       <footer className="home__footer">
-        <p>Seedly — free and open-source tournament organiser.</p>
+        <p>{t("landing.footer")}</p>
+        <LanguageSwitch />
       </footer>
     </div>
   );

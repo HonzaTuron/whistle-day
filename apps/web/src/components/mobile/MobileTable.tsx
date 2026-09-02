@@ -1,5 +1,6 @@
 import type { DisplayPayload, DisplayPool } from "@seedly/engine";
 import { entryName } from "../../lib/format";
+import { useT } from "../../lib/i18n";
 import { tiebreakNote } from "../../lib/tiebreak";
 
 export function MobileTable({
@@ -9,7 +10,8 @@ export function MobileTable({
   payload: DisplayPayload;
   pool: DisplayPool;
 }) {
-  const note = tiebreakNote(pool);
+  const t = useT();
+  const note = tiebreakNote(t, pool);
 
   return (
     <>
@@ -17,10 +19,10 @@ export function MobileTable({
         <thead>
           <tr>
             <th />
-            <th className="mini-table__team">Team</th>
-            <th>P</th>
-            <th>Sets</th>
-            <th>Pts</th>
+            <th className="mini-table__team">{t("common.team")}</th>
+            <th title={t("table.playedFull")}>{t("table.played")}</th>
+            <th>{t("table.sets")}</th>
+            <th title={t("table.pointsFull")}>{t("table.points")}</th>
           </tr>
         </thead>
         <tbody>

@@ -14,6 +14,7 @@ import type {
   Stage,
   StaffRole,
 } from "@seedly/engine";
+import { tr } from "../lib/i18n";
 import { sportById, type SportId } from "../lib/scoring";
 
 /**
@@ -72,14 +73,14 @@ function readError(status: number, body: string): ApiError {
   try {
     parsed = JSON.parse(body) as PocketBaseError;
   } catch {
-    return new ApiError(body || `Request failed (${status}).`, status);
+    return new ApiError(body || tr("error.request", { status }), status);
   }
 
   const fields = Object.entries(parsed.data ?? {})
     .map(([field, detail]) => (detail?.message ? `${field}: ${detail.message}` : field))
     .join(", ");
 
-  return new ApiError(fields || parsed.message || `Request failed (${status}).`, status);
+  return new ApiError(fields || parsed.message || tr("error.request", { status }), status);
 }
 
 async function api<T>(

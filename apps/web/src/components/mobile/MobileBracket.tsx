@@ -1,6 +1,7 @@
 import type { DisplayFixture, DisplayPayload, DisplayStage } from "@seedly/engine";
 import { bracketRounds } from "../../lib/bracket";
 import { isPlaceholder, sideName } from "../../lib/format";
+import { useT, type Translate } from "../../lib/i18n";
 
 /**
  * A bracket tree does not survive a 390px viewport, so the phone shows the same
@@ -14,7 +15,8 @@ export function MobileBracket({
   payload: DisplayPayload;
   stage: DisplayStage;
 }) {
-  const rounds = bracketRounds(stage);
+  const t = useT();
+  const rounds = bracketRounds(t, stage);
   if (rounds.length === 0) return null;
 
   return (
@@ -24,15 +26,15 @@ export function MobileBracket({
           <h3 className="phone-bracket__round">{round.title}</h3>
           <ul className="cards">
             {round.fixtures.map((fixture) => (
-              <Match key={fixture.id} fixture={fixture} payload={payload} />
+              <Match key={fixture.id} t={t} fixture={fixture} payload={payload} />
             ))}
           </ul>
 
           {round.thirdPlace && (
             <>
-              <h3 className="phone-bracket__round">Third place</h3>
+              <h3 className="phone-bracket__round">{t("bracket.thirdPlace")}</h3>
               <ul className="cards">
-                <Match fixture={round.thirdPlace} payload={payload} />
+                <Match t={t} fixture={round.thirdPlace} payload={payload} />
               </ul>
             </>
           )}
@@ -43,9 +45,11 @@ export function MobileBracket({
 }
 
 function Match({
+  t,
   fixture,
   payload,
 }: {
+  t: Translate;
   fixture: DisplayFixture;
   payload: DisplayPayload;
 }) {
@@ -70,7 +74,7 @@ function Match({
               .filter(Boolean)
               .join(" ")}
           >
-            <span className="card__team">{sideName(side, payload.entries)}</span>
+            <span className="card__team">{sideName(t, side, payload.entries)}</span>
             <span className="card__score">{decided || live ? side.score : ""}</span>
           </div>
         );

@@ -1,5 +1,7 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
+import { LanguageSwitch } from "../components/LanguageSwitch";
+import { useT, type MessageKey } from "../lib/i18n";
 import {
   ApiError,
   claimAccount,
@@ -15,7 +17,16 @@ import {
 
 type Mode = "claim" | "signin";
 
+/** What a tournament's own state is called on the list of them. */
+const STATUS: Record<string, MessageKey> = {
+  draft: "status.draft",
+  live: "status.live",
+  finished: "status.finished",
+  archived: "status.archived",
+};
+
 export function Account() {
+  const t = useT();
   const navigate = useNavigate();
   const [session, setSession] = useState<Session | null>(storedSession);
   const [mode, setMode] = useState<Mode>(() =>
@@ -34,7 +45,7 @@ export function Account() {
     active.current ??= ensureOrganiser();
     void active.current
       .then(setSession)
-      .catch(() => setError("Cannot reach the scoring system."));
+      .catch(() => setError(t("error.unreachable")));
   }, []);
 
   const claimed = session !== null && !isDeviceAccount(session);
@@ -62,11 +73,9 @@ export function Account() {
     } catch (thrown) {
       if (mode === "claim" && thrown instanceof ApiError && thrown.status === 400) {
         setMode("signin");
-        setError(
-          "That address cannot be saved on this device. If it is already your account, sign in with it — anything set up here stays live and this browser stops being the way in.",
-        );
+        setError(t("account.claimRefused"));
       } else {
-        setError(thrown instanceof Error ? thrown.message : "That did not work.");
+        setError(thrown instanceof Error ? thrown.message : t("error.notWork"));
       }
     } finally {
       setBusy(false);
@@ -83,7 +92,7 @@ export function Account() {
       {error ? (
         <div className="wiz__error" role="alert">
           <span>{error}</span>
-          <button type="button" onClick={() => setError(null)} aria-label="Dismiss">
+          <button type="button" onClick={() => setError(null)} aria-label={t("common.dismiss")}>
             ✕
           </button>
         </div>
@@ -91,42 +100,45 @@ export function Account() {
 
       <header>
         <h1>
-          {claimed ? "Signed in" : canClaim ? "Keep your tournament" : "Sign in"}
+          {t(
+            claimed
+              ? "account.signedIn"
+              : canClaim
+                ? "account.keepTitle"
+                : "account.signInTitle",
+          )}
         </h1>
         <p>
-          {claimed ? (
-            <>
-              As <strong>{session?.email}</strong>. Sign in with that anywhere
-              else to pick your tournaments up there.
-            </>
-          ) : canClaim ? (
-            "The way back into your tournament lives in this browser and nowhere else — whether you set it up or were handed a code at the door. An email and a password give it somewhere else to live."
-          ) : (
-            "Nothing has been set up on this device. Sign in and whatever you run from another one comes with you."
-          )}
+          {claimed
+            ? t("account.signedInAs", { email: session?.email ?? "" })
+            : t(canClaim ? "account.keepBody" : "account.signInBody")}
         </p>
       </header>
 
       {claimed ? (
         <section className="account__owned">
           {owned === null ? (
-            <p className="account__hint">Looking…</p>
+            <p className="account__hint">{t("account.looking")}</p>
           ) : owned.length === 0 ? (
-            <p className="account__hint">No tournaments on this account yet.</p>
+            <p className="account__hint">{t("account.noTournaments")}</p>
           ) : (
             <ul>
               {owned.map((tournament) => (
                 <li key={tournament.id}>
                   <button type="button" onClick={() => open(tournament)}>
                     <span>{tournament.name}</span>
-                    <small>{tournament.status}</small>
+                    <small>
+                      {STATUS[tournament.status]
+                        ? t(STATUS[tournament.status]!)
+                        : tournament.status}
+                    </small>
                   </button>
                 </li>
               ))}
             </ul>
           )}
           <Link to="/" className="btn btn--quiet btn--block">
-            Done
+            {t("common.done")}
           </Link>
         </section>
       ) : (
@@ -138,7 +150,7 @@ export function Account() {
           }}
         >
           <label>
-            <span>Email</span>
+            <span>{t("account.email")}</span>
             <input
               type="email"
               name="email"
@@ -150,7 +162,7 @@ export function Account() {
           </label>
 
           <label>
-            <span>Password</span>
+            <span>{t("account.password")}</span>
             <input
               type="password"
               name="password"
@@ -167,11 +179,13 @@ export function Account() {
             className="btn btn--primary btn--block"
             disabled={busy}
           >
-            {busy
-              ? "One moment…"
-              : mode === "claim"
-                ? "Save access"
-                : "Sign in"}
+            {t(
+              busy
+                ? "common.moment"
+                : mode === "claim"
+                  ? "account.save"
+                  : "account.signInTitle",
+            )}
           </button>
 
           {canClaim ? (
@@ -183,21 +197,19 @@ export function Account() {
                 setError(null);
               }}
             >
-              {mode === "claim"
-                ? "I already have an account"
-                : "Keep this device's tournament instead"}
+              {t(
+                mode === "claim" ? "account.haveAccount" : "account.keepInstead",
+              )}
             </button>
           ) : null}
 
           {mode === "signin" && canClaim ? (
-            <p className="account__warning">
-              Signing in as somebody else leaves anything set up on this device
-              behind. It stays live on the wall; this browser just stops being
-              the way in.
-            </p>
+            <p className="account__warning">{t("account.switchWarning")}</p>
           ) : null}
         </form>
       )}
+
+      <LanguageSwitch className="langswitch--footer" />
     </div>
   );
 }

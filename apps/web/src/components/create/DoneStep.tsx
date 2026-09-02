@@ -2,6 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { renderSVG } from "uqr";
 import type { LaunchResult } from "../../api/launch";
+import { useT } from "../../lib/i18n";
 
 interface Props {
   name: string;
@@ -22,6 +23,7 @@ interface Props {
  * the worst possible failure: it works when you test it.
  */
 export function DoneStep({ name, tournamentId, result }: Props) {
+  const t = useT();
   const [copied, setCopied] = useState<"phone" | "projector" | null>(null);
 
   const qr = renderSVG(result.phoneUrl, {
@@ -45,11 +47,11 @@ export function DoneStep({ name, tournamentId, result }: Props) {
 
   return (
     <div className="done">
-      <p className="done__eyebrow">Live now</p>
+      <p className="done__eyebrow">{t("wizard.doneEyebrow")}</p>
       <h1 className="done__title">{name}</h1>
 
       <div className="done__qr" dangerouslySetInnerHTML={{ __html: qr }} />
-      <p className="done__caption">Scan for the schedule, tables and results</p>
+      <p className="done__caption">{t("wizard.doneCaption")}</p>
 
       <button
         type="button"
@@ -57,7 +59,7 @@ export function DoneStep({ name, tournamentId, result }: Props) {
         onClick={() => void copy("phone", result.phoneUrl)}
       >
         <span>{result.phoneUrl.replace(/^https?:\/\//, "")}</span>
-        <small>{copied === "phone" ? "Copied" : "Tap to copy"}</small>
+        <small>{t(copied === "phone" ? "common.copied" : "common.copy")}</small>
       </button>
 
       <div className="done__actions">
@@ -66,25 +68,28 @@ export function DoneStep({ name, tournamentId, result }: Props) {
           params={{ id: tournamentId }}
           className="btn btn--primary btn--block"
         >
-          Start entering results
+          {t("wizard.doneEnterResults")}
         </Link>
         <a className="btn btn--block" href={result.projectorUrl}>
-          Open the projector screen
+          {t("wizard.doneOpenProjector")}
         </a>
         <button
           type="button"
           className="btn btn--quiet btn--block"
           onClick={() => void copy("projector", result.projectorUrl)}
         >
-          {copied === "projector" ? "Projector link copied" : "Copy the projector link"}
+          {t(
+            copied === "projector"
+              ? "wizard.doneProjectorCopied"
+              : "wizard.doneCopyProjector",
+          )}
         </button>
       </div>
 
       <p className="done__warning">
-        This tournament is managed from this device — this browser is the only
-        one that can change it.{" "}
-        <Link to="/account">Put an email on it</Link> and it will survive a lost
-        phone.
+        {t("wizard.doneWarning")}{" "}
+        <Link to="/account">{t("wizard.doneWarningLink")}</Link>{" "}
+        {t("wizard.doneWarningTail")}
       </p>
     </div>
   );

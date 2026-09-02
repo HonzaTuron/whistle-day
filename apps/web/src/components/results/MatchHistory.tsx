@@ -2,6 +2,7 @@ import type { FixtureEvent } from "@seedly/engine";
 import { useEffect, useState } from "react";
 import { ensureOrganiser, loadHistory } from "../../api/organiser";
 import { timeOfDay } from "../../lib/format";
+import { useI18n, type Translate } from "../../lib/i18n";
 
 /**
  * What has already been done to this match.
@@ -24,6 +25,7 @@ export function MatchHistory({
   fixture: string;
   crew: Map<string, string>;
 }) {
+  const { t, locale } = useI18n();
   const [events, setEvents] = useState<FixtureEvent[] | null>(null);
 
   useEffect(() => {
@@ -49,9 +51,9 @@ export function MatchHistory({
     <ol className="history">
       {events.map((event) => (
         <li key={event.id}>
-          <span className="history__when">{timeOfDay(event.created)}</span>
+          <span className="history__when">{timeOfDay(locale, event.created)}</span>
           <span className="history__what">
-            {describe(event)}
+            {describe(t, event)}
             {crew.size > 1 && event.actor && crew.has(event.actor) ? (
               <span className="history__who"> · {crew.get(event.actor)}</span>
             ) : null}
@@ -65,26 +67,28 @@ export function MatchHistory({
 const score = (home: number | null | undefined, away: number | null | undefined) =>
   `${home ?? 0}–${away ?? 0}`;
 
-function describe(event: FixtureEvent): string {
+function describe(t: Translate, event: FixtureEvent): string {
   const now =
-    event.status === "walkover" ? "walkover" : score(event.home_score, event.away_score);
+    event.status === "walkover"
+      ? t("match.walkover")
+      : score(event.home_score, event.away_score);
 
   switch (event.kind) {
     case "recorded":
-      return `entered ${now}`;
+      return t("history.entered", { score: now });
     case "corrected": {
       const was =
         event.previous?.status === "walkover"
-          ? "walkover"
+          ? t("match.walkover")
           : score(event.previous?.home_score, event.previous?.away_score);
-      return `changed ${was} to ${now}`;
+      return t("history.changed", { was, now });
     }
     case "cleared": {
       const was =
         event.previous?.status === "walkover"
-          ? "a walkover"
+          ? t("history.aWalkover")
           : score(event.previous?.home_score, event.previous?.away_score);
-      return `cleared ${was}`;
+      return t("history.cleared", { was });
     }
   }
 }

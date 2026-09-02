@@ -14,25 +14,34 @@ import (
 // ---------------------------------------------------------------------------
 
 type PoolDraft struct {
-	Key          string `json:"key"`
-	Name         string `json:"name"`
+	Key  string `json:"key"`
+	Name string `json:"name"`
+	// Which name this is, when the generator chose it rather than a person.
+	// Empty for a group called "A": a letter is already every language's word
+	// for it. See migrations/1787961600_label_kinds.go.
+	NameKind     string `json:"name_kind,omitempty"`
 	Position     int    `json:"position"`
 	Kind         string `json:"kind"`
 	AdvanceCount int    `json:"advance_count"`
 }
 
 type SlotDraft struct {
-	Key              string `json:"key"`
-	PoolKey          string `json:"pool_key"`
-	Round            int    `json:"round"`
-	Position         int    `json:"position"`
-	Label            string `json:"label"`
-	Entry            string `json:"entry"`
-	SourceType       string `json:"source_type"`
-	SourceFixtureKey string `json:"source_fixture_key"`
-	SourcePool       string `json:"source_pool"`
-	SourceStage      string `json:"source_stage"`
-	SourcePosition   int    `json:"source_position"`
+	Key      string `json:"key"`
+	PoolKey  string `json:"pool_key"`
+	Round    int    `json:"round"`
+	Position int    `json:"position"`
+	// The English wording, which is still what a client that does not know the
+	// kind draws, and the kind and arguments that let one that does say it in
+	// its own language. Set all three together through `.with()`.
+	Label            string         `json:"label"`
+	LabelKind        string         `json:"label_kind,omitempty"`
+	LabelArgs        map[string]any `json:"label_args,omitempty"`
+	Entry            string         `json:"entry"`
+	SourceType       string         `json:"source_type"`
+	SourceFixtureKey string         `json:"source_fixture_key"`
+	SourcePool       string         `json:"source_pool"`
+	SourceStage      string         `json:"source_stage"`
+	SourcePosition   int            `json:"source_position"`
 }
 
 type FixtureDraft struct {
@@ -44,6 +53,97 @@ type FixtureDraft struct {
 	HomeSlotKey string `json:"home_slot_key"`
 	AwaySlotKey string `json:"away_slot_key"`
 	Status      string `json:"status"`
+}
+
+// ---------------------------------------------------------------------------
+// slot labels
+// ---------------------------------------------------------------------------
+
+// slotLabel is one unresolved position, said three ways: the English text, the
+// kind of sentence it is, and the parts that go in it.
+//
+// Nothing composes these strings by hand any more. A label written as
+// `"Winner " + code` is a sentence only English speakers can read, and a
+// projector cannot take it apart again — which is the whole reason the kind
+// travels beside it.
+type slotLabel struct {
+	Text string
+	Kind string
+	Args map[string]any
+}
+
+// with fills in all three label fields at once, so a draft cannot be written
+// with a kind that disagrees with its text.
+func (d SlotDraft) with(l slotLabel) SlotDraft {
+	d.Label, d.LabelKind, d.LabelArgs = l.Text, l.Kind, l.Args
+	return d
+}
+
+// byeLabel is a slot nobody has to beat to reach.
+func byeLabel() slotLabel {
+	return slotLabel{Text: "Bye", Kind: "bye"}
+}
+
+// winnerOf and loserOf name a slot by the fixture that fills it: "Winner QF1".
+func winnerOf(code string) slotLabel {
+	return slotLabel{
+		Text: "Winner " + code, Kind: "winner_of",
+		Args: map[string]any{"code": code},
+	}
+}
+
+func loserOf(code string) slotLabel {
+	return slotLabel{
+		Text: "Loser " + code, Kind: "loser_of",
+		Args: map[string]any{"code": code},
+	}
+}
+
+// poolSeedLabel is a place in a group table: "A1", "B3". The text is the same
+// in every language, and the kind is here so that a screen can tell it apart
+// from a name somebody typed.
+func poolSeedLabel(pool string, position int) slotLabel {
+	return slotLabel{
+		Text: fmt.Sprintf("%s%d", pool, position),
+		Kind: "pool_seed",
+		Args: map[string]any{"pool": pool, "position": position},
+	}
+}
+
+// poolRankLabel is who qualifies from where: "1. A".
+func poolRankLabel(rank int, pool string) slotLabel {
+	return slotLabel{
+		Text: fmt.Sprintf("%d. %s", rank, pool),
+		Kind: "pool_rank",
+		Args: map[string]any{"rank": rank, "pool": pool},
+	}
+}
+
+// bestOfRankLabel is the cross-pool qualifier: "1st best 3rd" — the best of
+// the teams that finished third in their group. The ordinals are English and
+// the arguments are the numbers, because Czech writes both as "1." and would
+// otherwise be handed "1st" to translate.
+func bestOfRankLabel(index, place int) slotLabel {
+	return slotLabel{
+		Text: fmt.Sprintf("%s best %s", ordinal(index), ordinal(place)),
+		Kind: "best_of_rank",
+		Args: map[string]any{"index": index, "place": place},
+	}
+}
+
+// directLabel is a slot that already holds a team: the label is their name,
+// which is not ours to translate.
+func directLabel(name string) slotLabel {
+	return slotLabel{Text: name}
+}
+
+// swissSeedLabel is a starting position in a Swiss field: "S1", "S12".
+func swissSeedLabel(position int) slotLabel {
+	return slotLabel{
+		Text: fmt.Sprintf("S%d", position),
+		Kind: "swiss_seed",
+		Args: map[string]any{"position": position},
+	}
 }
 
 // StagePlan is everything one stage needs, ready to be written in a single
@@ -204,7 +304,7 @@ func fixtureCode(fixturesInRound, index int) string {
 // pointing at a table in an earlier stage.
 type bracketSeed struct {
 	Entry       string
-	Label       string
+	Label       slotLabel
 	SourceType  string
 	SourcePool  string
 	SourceStage string
@@ -223,7 +323,8 @@ func PlanSingleElimination(seeds []bracketSeed, cfg StageConfig) *StagePlan {
 
 	plan := &StagePlan{
 		Pools: []PoolDraft{{
-			Key: poolKey, Name: "Main", Position: 0, Kind: "winners", AdvanceCount: 1,
+			Key: poolKey, Name: "Main", NameKind: "main",
+			Position: 0, Kind: "winners", AdvanceCount: 1,
 		}},
 	}
 
@@ -235,15 +336,14 @@ func PlanSingleElimination(seeds []bracketSeed, cfg StageConfig) *StagePlan {
 			Round:          0,
 			Position:       position,
 			SourceType:     "bye",
-			Label:          "Bye",
 			SourcePosition: seed,
-		}
+		}.with(byeLabel())
 
 		if seed-1 < len(seeds) {
 			s := seeds[seed-1]
 			draft.Entry = s.Entry
 			draft.SourceType = s.SourceType
-			draft.Label = s.Label
+			draft = draft.with(s.Label)
 			if s.SourcePool != "" || s.SourceStage != "" {
 				draft.SourcePool = s.SourcePool
 				draft.SourceStage = s.SourceStage
@@ -281,10 +381,9 @@ func PlanSingleElimination(seeds []bracketSeed, cfg StageConfig) *StagePlan {
 				PoolKey:          poolKey,
 				Round:            round + 1,
 				Position:         i,
-				Label:            "Winner " + code,
 				SourceType:       "fixture_winner",
 				SourceFixtureKey: fixtureKey,
-			})
+			}.with(winnerOf(code)))
 		}
 
 		round++
@@ -307,10 +406,9 @@ func PlanSingleElimination(seeds []bracketSeed, cfg StageConfig) *StagePlan {
 				// round, so the bronze pair starts at 2. Getting this wrong is
 				// invisible in the plan and only fails against the unique index.
 				Position:         2 + i,
-				Label:            "Loser " + fixtureCode(2, i),
 				SourceType:       "fixture_loser",
 				SourceFixtureKey: fmt.Sprintf("fixture:%d:%d", semiRound, i),
-			})
+			}.with(loserOf(fixtureCode(2, i))))
 			loserKeys = append(loserKeys, key)
 		}
 
@@ -354,9 +452,8 @@ func PlanRoundRobin(entryIDs []string, cfg StageConfig) *StagePlan {
 			slotKeyByEntry[entryID] = key
 			plan.Slots = append(plan.Slots, SlotDraft{
 				Key: key, PoolKey: poolKey, Round: 0, Position: position,
-				Label: fmt.Sprintf("%s%d", name, position+1),
 				Entry: entryID, SourceType: "direct", SourcePosition: position + 1,
-			})
+			}.with(poolSeedLabel(name, position+1)))
 		}
 
 		schedule := circleRounds(poolEntries)
@@ -467,7 +564,7 @@ func qualifierSeeds(app core.App, source SeedSource) ([]bracketSeed, error) {
 				SourceType: "pool_rank",
 				SourcePool: pool.Id,
 				SourceRank: rank,
-				Label:      fmt.Sprintf("%d. %s", rank, pool.GetString("name")),
+				Label:      poolRankLabel(rank, pool.GetString("name")),
 			})
 		}
 	}
@@ -523,7 +620,7 @@ func bestOfNextSeeds(
 			SourceType:  "stage_rank",
 			SourceStage: source.Stage,
 			SourceRank:  base + i,
-			Label:       fmt.Sprintf("%s best %s", ordinal(i), ordinal(perPool+1)),
+			Label:       bestOfRankLabel(i, perPool+1),
 		})
 	}
 	return seeds, nil
@@ -591,7 +688,7 @@ func PlanStage(app core.App, stage *core.Record) (*StagePlan, error) {
 			seeds[i] = bracketSeed{
 				Entry:      id,
 				SourceType: "direct",
-				Label:      entries[i].GetString("name"),
+				Label:      directLabel(entries[i].GetString("name")),
 			}
 		}
 		if format == "double_elim" {
@@ -642,6 +739,7 @@ func CommitPlan(app core.App, stage *core.Record, plan *StagePlan) error {
 			r := core.NewRecord(poolsCollection)
 			r.Set("stage", stage.Id)
 			r.Set("name", draft.Name)
+			r.Set("name_kind", draft.NameKind)
 			r.Set("position", draft.Position)
 			r.Set("kind", draft.Kind)
 			r.Set("advance_count", draft.AdvanceCount)
@@ -663,6 +761,8 @@ func CommitPlan(app core.App, stage *core.Record, plan *StagePlan) error {
 			r.Set("round", draft.Round)
 			r.Set("position", draft.Position)
 			r.Set("label", draft.Label)
+			r.Set("label_kind", draft.LabelKind)
+			r.Set("label_args", draft.LabelArgs)
 			r.Set("entry", draft.Entry)
 			r.Set("source_type", draft.SourceType)
 			r.Set("source_pool", draft.SourcePool)
@@ -803,9 +903,9 @@ func PlanDoubleElimination(seeds []bracketSeed, cfg StageConfig) *StagePlan {
 	const final = "pool:final"
 
 	plan := &StagePlan{Pools: []PoolDraft{
-		{Key: winners, Name: "Winners", Position: 0, Kind: "winners", AdvanceCount: 1},
-		{Key: losers, Name: "Losers", Position: 1, Kind: "losers", AdvanceCount: 1},
-		{Key: final, Name: "Final", Position: 2, Kind: "final", AdvanceCount: 1},
+		{Key: winners, Name: "Winners", NameKind: "winners", Position: 0, Kind: "winners", AdvanceCount: 1},
+		{Key: losers, Name: "Losers", NameKind: "losers", Position: 1, Kind: "losers", AdvanceCount: 1},
+		{Key: final, Name: "Final", NameKind: "final", Position: 2, Kind: "final", AdvanceCount: 1},
 	}}
 
 	wbSlot := func(round, position int) string {
@@ -823,14 +923,13 @@ func PlanDoubleElimination(seeds []bracketSeed, cfg StageConfig) *StagePlan {
 			Round:          0,
 			Position:       position,
 			SourceType:     "bye",
-			Label:          "Bye",
 			SourcePosition: seed,
-		}
+		}.with(byeLabel())
 		if seed-1 < len(seeds) {
 			s := seeds[seed-1]
 			draft.Entry = s.Entry
 			draft.SourceType = s.SourceType
-			draft.Label = s.Label
+			draft = draft.with(s.Label)
 			if s.SourcePool != "" || s.SourceStage != "" {
 				draft.SourcePool = s.SourcePool
 				draft.SourceStage = s.SourceStage
@@ -872,10 +971,9 @@ func PlanDoubleElimination(seeds []bracketSeed, cfg StageConfig) *StagePlan {
 				PoolKey:          winners,
 				Round:            round + 1,
 				Position:         i,
-				Label:            "Winner " + code,
 				SourceType:       "fixture_winner",
 				SourceFixtureKey: key,
-			})
+			}.with(winnerOf(code)))
 		}
 	}
 
@@ -915,10 +1013,9 @@ func PlanDoubleElimination(seeds []bracketSeed, cfg StageConfig) *StagePlan {
 						PoolKey:          losers,
 						Round:            0,
 						Position:         i*2 + side,
-						Label:            "Loser W1." + fmt.Sprint(i*2+side+1),
 						SourceType:       "fixture_loser",
 						SourceFixtureKey: source,
-					})
+					}.with(loserOf("W1."+fmt.Sprint(i*2+side+1))))
 				}
 			case major:
 				// A survivor, and somebody just dropped by the winners bracket.
@@ -935,34 +1032,31 @@ func PlanDoubleElimination(seeds []bracketSeed, cfg StageConfig) *StagePlan {
 						PoolKey:          losers,
 						Round:            round,
 						Position:         i * 2,
-						Label:            "Winner " + lbCode(round-1, i, len(lbFixtures[round-1]), lbRounds),
 						SourceType:       "fixture_winner",
 						SourceFixtureKey: lbFixtures[round-1][i],
-					},
+					}.with(winnerOf(lbCode(round-1, i, len(lbFixtures[round-1]), lbRounds))),
 					SlotDraft{
 						Key:              lbSlot(round, i*2+1),
 						PoolKey:          losers,
 						Round:            round,
 						Position:         i*2 + 1,
-						Label:            "Loser " + droppedCode,
 						SourceType:       "fixture_loser",
 						SourceFixtureKey: dropped,
-					},
+					}.with(loserOf(droppedCode)),
 				)
 			default:
 				// Two survivors of the round before.
 				for side := 0; side < 2; side++ {
 					previous := i*2 + side
 					plan.Slots = append(plan.Slots, SlotDraft{
-						Key:      lbSlot(round, previous),
-						PoolKey:  losers,
-						Round:    round,
-						Position: previous,
-						Label: "Winner " + lbCode(
-							round-1, previous, len(lbFixtures[round-1]), lbRounds),
+						Key:              lbSlot(round, previous),
+						PoolKey:          losers,
+						Round:            round,
+						Position:         previous,
 						SourceType:       "fixture_winner",
 						SourceFixtureKey: lbFixtures[round-1][previous],
-					})
+					}.with(winnerOf(lbCode(
+						round-1, previous, len(lbFixtures[round-1]), lbRounds))))
 				}
 			}
 
@@ -989,14 +1083,12 @@ func PlanDoubleElimination(seeds []bracketSeed, cfg StageConfig) *StagePlan {
 		plan.Slots = append(plan.Slots,
 			SlotDraft{
 				Key: "slot:gf:0", PoolKey: final, Round: 0, Position: 0,
-				Label: "Winner WF", SourceType: "fixture_winner",
-				SourceFixtureKey: winnersFinal,
-			},
+				SourceType: "fixture_winner", SourceFixtureKey: winnersFinal,
+			}.with(winnerOf("WF")),
 			SlotDraft{
 				Key: "slot:gf:1", PoolKey: final, Round: 0, Position: 1,
-				Label: "Winner LF", SourceType: "fixture_winner",
-				SourceFixtureKey: losersFinal,
-			},
+				SourceType: "fixture_winner", SourceFixtureKey: losersFinal,
+			}.with(winnerOf("LF")),
 		)
 		plan.Fixtures = append(plan.Fixtures, FixtureDraft{
 			Key: "fixture:gf", PoolKey: final, Round: 0, Position: 0,

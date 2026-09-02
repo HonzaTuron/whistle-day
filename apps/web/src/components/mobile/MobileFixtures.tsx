@@ -1,5 +1,6 @@
 import type { DisplayFixture, DisplayPayload } from "@seedly/engine";
 import { courtName, sideName, sideScore, timeOfDay } from "../../lib/format";
+import { useI18n } from "../../lib/i18n";
 
 export function MobileFixtures({
   payload,
@@ -14,12 +15,14 @@ export function MobileFixtures({
   showTime?: boolean;
   showScore?: boolean;
 }) {
+  const { t, locale } = useI18n();
+
   return (
     <ul className="cards">
       {fixtures.map((fixture) => {
         const court = fixture.court ? courtName(fixture.court, payload) : "";
         const meta = [
-          showTime ? timeOfDay(fixture.scheduled_at) : "",
+          showTime ? timeOfDay(locale, fixture.scheduled_at) : "",
           court,
           fixture.code,
         ]
@@ -36,10 +39,10 @@ export function MobileFixtures({
               return (
                 <div key={which} className={won ? "card__side is-winner" : "card__side"}>
                   <span className="card__team">
-                    {sideName(side, payload.entries)}
+                    {sideName(t, side, payload.entries)}
                   </span>
                   <span className="card__score">
-                    {live || showScore ? sideScore(fixture, which) : ""}
+                    {live || showScore ? sideScore(t, fixture, which) : ""}
                   </span>
                 </div>
               );

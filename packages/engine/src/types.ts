@@ -197,12 +197,54 @@ export interface StageConfig {
   seedFrom?: SeedSource;
 }
 
+/**
+ * A name or label this app wrote rather than a person, said as a fact so that
+ * whoever draws it can word it in their own language.
+ *
+ * The vocabulary is closed and short on purpose: every value here has exactly
+ * one entry in the client's message catalogue, and adding one means adding a
+ * translation for it. What a person typed — a tournament, a team, a court —
+ * has no kind and is never translated.
+ *
+ * See backend/migrations/1787961600_label_kinds.go.
+ */
+export type LabelKind =
+  // slot labels: who fills this bracket position, before anyone has
+  | "bye"
+  | "tbd"
+  | "winner_of"
+  | "loser_of"
+  | "pool_seed"
+  | "pool_rank"
+  | "best_of_rank"
+  | "swiss_seed"
+  // pool names the generator chose
+  | "main"
+  | "winners"
+  | "losers"
+  | "final"
+  | "swiss"
+  // stage names the wizard chose
+  | "groups"
+  | "group"
+  | "playoff"
+  | "double_elim";
+
+/** What goes in the gaps of a label: `{ code: "QF1" }`, `{ rank: 1, pool: "A" }`. */
+export type LabelArgs = Record<string, string | number>;
+
 export interface Stage {
   id: Id;
   tournament: Id;
   /** 0-based. This — and only this — decides groups-first vs playoff-first. */
   position: number;
   name: string;
+  /**
+   * Which of the wizard's stage names this is — "groups", "playoff" — so a
+   * screen can say it in its own language. Empty for a stage named through
+   * the API, whose name is then whatever was sent.
+   */
+  name_kind?: LabelKind;
   format: StageFormat;
   status: StageStatus;
   config: StageConfig;
@@ -218,6 +260,8 @@ export interface Pool {
   id: Id;
   stage: Id;
   name: string;
+  /** Set when the generator named it ("winners"), not when a letter did. */
+  name_kind?: LabelKind;
   position: number;
   kind: PoolKind;
   advance_count: number | null;
@@ -247,6 +291,13 @@ export interface Slot {
   position: number;
   /** Rendered while unresolved: "Winner QF1", "1. A", "Bye". */
   label: string;
+  /**
+   * The same label as facts rather than a sentence, so a screen in another
+   * language composes its own. Absent on a slot generated before this
+   * existed, in which case `label` is what gets drawn.
+   */
+  label_kind?: LabelKind;
+  label_args?: LabelArgs;
   entry: Id | null;
   source_type: SlotSourceType;
   source_fixture: Id | null;
@@ -444,6 +495,7 @@ export type DraftKey = string;
 export interface PoolDraft {
   key: DraftKey;
   name: string;
+  name_kind?: LabelKind;
   position: number;
   kind: PoolKind;
   advance_count: number;
@@ -455,6 +507,8 @@ export interface SlotDraft {
   round: number;
   position: number;
   label: string;
+  label_kind?: LabelKind;
+  label_args?: LabelArgs;
   entry: Id;
   source_type: SlotSourceType;
   source_fixture_key: DraftKey;
@@ -546,6 +600,8 @@ export interface DisplayCourt {
 export interface DisplaySide {
   entry: Id | "";
   label: string;
+  label_kind?: LabelKind;
+  label_args?: LabelArgs;
   score: number;
 }
 
@@ -598,6 +654,7 @@ export interface DisplayRound {
 export interface DisplayPool {
   id: Id;
   name: string;
+  name_kind?: LabelKind;
   kind: PoolKind;
   advance_count: number;
   standings: DisplayStanding[];
@@ -608,6 +665,7 @@ export interface DisplayStage {
   id: Id;
   position: number;
   name: string;
+  name_kind?: LabelKind;
   format: StageFormat;
   status: StageStatus;
   pools: DisplayPool[];

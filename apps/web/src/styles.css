@@ -899,6 +899,15 @@ th,
   font-size: 0.9rem;
 }
 
+/* Below the last section rather than pinned: the tabs are the phone's
+   navigation and the only thing worth keeping under a thumb. Somebody
+   changing the language has stopped scrolling to do it. */
+.phone__footer {
+  padding: 0 0.75rem 2rem;
+  display: flex;
+  justify-content: center;
+}
+
 .cards {
   list-style: none;
   margin: 0;
@@ -3418,4 +3427,51 @@ th,
 
 .exit__choice:disabled {
   opacity: 0.5;
+}
+
+/* ==========================================================================
+   The language switch
+   --------------------------------------------------------------------------
+   Two words, drawn as one control rather than two buttons: a pair of separate
+   buttons reads as two actions, and only one of these is ever an action — the
+   other is the state you are already in. So the segment that is on is filled
+   and the other is not, which is the same shape as the tab bar on the phone
+   and takes no explaining.
+
+   Both segments keep the size they have when selected, so picking one does not
+   move the other under the finger that is on its way to it.
+   ========================================================================== */
+
+.langswitch {
+  display: inline-flex;
+  padding: 0.15rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+}
+
+.langswitch__option {
+  min-height: 2rem;
+  padding: 0 0.85rem;
+  border: 0;
+  border-radius: 999px;
+  background: none;
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.langswitch__option.is-on {
+  background: var(--surface-2);
+  color: var(--text);
+}
+
+/* The account screen is a grid, and a grid item stretches unless told not to —
+   which would draw this as a full-width bar and make it read as the last field
+   of the form rather than as what is left underneath it. */
+.langswitch--footer {
+  justify-self: center;
+  margin-top: 0.5rem;
 }

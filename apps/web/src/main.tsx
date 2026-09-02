@@ -2,6 +2,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { RouterProvider } from "@tanstack/react-router";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
+import { I18nProvider, detectLocale } from "./lib/i18n";
 import { router } from "./router";
 import "./styles.css";
 
@@ -30,10 +31,23 @@ const queryClient = new QueryClient({
 const container = document.getElementById("root");
 if (!container) throw new Error("#root is missing from index.html");
 
+/*
+ * The language is settled before the first render rather than during it.
+ *
+ * `index.html` ships with `lang="en"` because a static file cannot know, and a
+ * document whose lang attribute disagrees with what is on it is read out in
+ * the wrong accent by a screen reader and hyphenated by the wrong rules. So it
+ * is corrected here, once, with the same answer the provider will start from.
+ */
+const locale = detectLocale();
+document.documentElement.lang = locale;
+
 createRoot(container).render(
   <StrictMode>
-    <QueryClientProvider client={queryClient}>
-      <RouterProvider router={router} />
-    </QueryClientProvider>
+    <I18nProvider initial={locale}>
+      <QueryClientProvider client={queryClient}>
+        <RouterProvider router={router} />
+      </QueryClientProvider>
+    </I18nProvider>
   </StrictMode>,
 );

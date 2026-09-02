@@ -1,5 +1,7 @@
-import type { Court, Entry, Id, Pool, Stage } from "@seedly/engine";
+import type { Court, Entry, Id, LabelArgs, LabelKind, Pool, Stage } from "@seedly/engine";
 import type { Board, BoardFixture, SetScore } from "../api/organiser";
+import type { Translate } from "./i18n";
+import { renderLabel } from "./labels";
 import { isCancelledStatus, isSettledStatus } from "./status";
 
 /**
@@ -17,6 +19,9 @@ export interface FixtureSide {
   entry: Entry | null;
   /** "Winner SF1", "1. A" — the server's wording for an unresolved slot. */
   label: string;
+  /** The same, as facts, so the screen can word it itself. See lib/labels.ts. */
+  labelKind?: LabelKind;
+  labelArgs?: LabelArgs;
 }
 
 export interface BoardRow {
@@ -64,16 +69,23 @@ export interface BoardSection {
 
 function side(
   entryId: Id | null,
-  slotLabel: string | undefined,
+  slot: { label: string; label_kind?: LabelKind; label_args?: LabelArgs } | undefined,
   entries: Map<Id, Entry>,
 ): FixtureSide {
   const entry = entryId ? entries.get(entryId) ?? null : null;
-  return { entry, label: slotLabel ?? "TBD" };
+  return {
+    entry,
+    // "TBD" is the last resort and carries a kind of its own, so a screen with
+    // nothing else to draw still draws it in the right language.
+    label: slot?.label ?? "TBD",
+    labelKind: slot?.label_kind ?? (slot ? undefined : "tbd"),
+    ...(slot?.label_args ? { labelArgs: slot.label_args } : {}),
+  };
 }
 
 export function toRow(fixture: BoardFixture, entries: Map<Id, Entry>): BoardRow {
-  const home = side(fixture.home_entry, fixture.expand?.home_slot?.label, entries);
-  const away = side(fixture.away_entry, fixture.expand?.away_slot?.label, entries);
+  const home = side(fixture.home_entry, fixture.expand?.home_slot, entries);
+  const away = side(fixture.away_entry, fixture.expand?.away_slot, entries);
   return {
     fixture,
     home,
@@ -93,7 +105,7 @@ export function toRow(fixture: BoardFixture, entries: Map<Id, Entry>): BoardRow 
  * and meaningless across them — a stage's position is what orders the day, and
  * that lives on the stage record.
  */
-export function sections(board: Board, rows: BoardRow[]): BoardSection[] {
+export function sections(t: Translate, board: Board, rows: BoardRow[]): BoardSection[] {
   const stages = new Map<Id, Stage>(board.stages.map((stage) => [stage.id, stage]));
   const pools = new Map<Id, Pool>(board.pools.map((pool) => [pool.id, pool]));
   const grouped = new Map<string, BoardSection>();
@@ -115,10 +127,14 @@ export function sections(board: Board, rows: BoardRow[]): BoardSection[] {
     if (!section) {
       section = {
         key,
-        stage: stage?.name ?? "",
+        stage: stage
+          ? renderLabel(t, stage.name, stage.name_kind)
+          : "",
         pool:
           pool && pool.kind === "group" && (poolsInStage.get(pool.stage) ?? 0) > 1
-            ? `Group ${pool.name}`
+            ? t("board.groupNamed", {
+                name: renderLabel(t, pool.name, pool.name_kind),
+              })
             : "",
         rows: [],
       };
@@ -137,7 +153,8 @@ export function sections(board: Board, rows: BoardRow[]): BoardSection[] {
   });
 }
 
-export const sideName = (side: FixtureSide) => side.entry?.name ?? side.label;
+export const sideName = (t: Translate, side: FixtureSide) =>
+  side.entry?.name ?? renderLabel(t, side.label, side.labelKind, side.labelArgs);
 
 /**
  * The scheduled time as an <input type="time"> value, and back again.

@@ -12,7 +12,9 @@ the front means inserting a row, not touching the schema.
 ### 2. A position exists before the participant who fills it
 
 A **slot** is a place that gets filled later: "Winner of QF1", "1st of Pool A".
-Until its source resolves, `slot.entry` is null and `slot.label` is displayed.
+Until its source resolves, `slot.entry` is null and the slot is drawn from what
+it says about itself — `label_kind` and `label_args`, with `label` as the
+English the server composed. See *Names this app wrote* below.
 
 This is the entire reason the table exists. Without it you cannot draw a
 bracket before you know the names — and that is exactly what the projector has
@@ -65,6 +67,8 @@ A playoff slot has no `entry`, but it does have a source:
   "source_pool": "<id of pool A>",
   "source_position": 1,
   "label": "1. A",
+  "label_kind": "pool_rank",
+  "label_args": { "rank": 1, "pool": "A" },
   "entry": null
 }
 ```
@@ -341,6 +345,39 @@ renamed at the storage layer:
 
 Use "Group A" and "Match" freely in the UI — the renaming is a storage concern.
 
+## Names this app wrote
+
+Some of the text on a screen was typed by a person — a tournament, a team, a
+court — and some of it the app wrote on their behalf: "Winner QF1", "1. A",
+"Bye", a pool called "Winners", a stage called "Groups". The difference matters
+because only the second kind is ours to translate, and the second kind is
+composed hours before it is read.
+
+A bracket is drawn before it is played. Its empty half comes out of the
+generator in Go and sits in the database until a projector puts it on a wall,
+and a projector cannot translate a sentence — only look one up. So the row
+carries the facts alongside the prose:
+
+| Column | Holds |
+|---|---|
+| `slots.label` | The English the generator composed: `"Winner QF1"`. |
+| `slots.label_kind` | Which sentence it is: `winner_of`. |
+| `slots.label_args` | What goes in its gaps: `{"code": "QF1"}`. |
+| `pools.name_kind` | Set when the generator named it (`winners`), not when a letter did. |
+| `stages.name_kind` | Set when the wizard named it (`groups`, `playoff`). |
+
+`label` stays, and stays first in the payload. It is what a tournament
+generated before these columns existed still has, what a screen meeting an
+unfamiliar kind falls back to, and what an export or a support query can read
+without a lookup table. The client renders from the kind when it recognises it
+and from the prose when it does not, so neither end has to be deployed first.
+
+The vocabulary is closed and short — the full list is `LabelKind` in
+`packages/engine/src/types.ts` — because every value has exactly one entry in
+the client's message catalogue, and adding a kind means adding a translation
+for it. A pool called "A" carries no kind: a letter is the same in every
+language.
+
 ## Two storage constraints worth remembering
 
 **Uniqueness has to include the pool.** `fixtures` and `slots` are keyed on
@@ -378,8 +415,9 @@ Three details that matter for a screen:
 - **Entries are sent once** as a lookup map keyed by id and referenced from
   every fixture, so a team's name and logo are not repeated dozens of times.
 - **Unresolved sides carry a label.** A fixture side with no entry yet sends
-  `{ "entry": "", "label": "Winner SF1" }`, so the projector always has
-  something to draw.
+  `{ "entry": "", "label": "Winner SF1", "label_kind": "winner_of",
+  "label_args": { "code": "SF1" } }`, so the projector always has something to
+  draw and can draw it in its own language.
 - **Reading is cheap.** The response is tagged; send it back in
   `If-None-Match` and an unchanged tournament answers 304. The tag excludes
   the generation timestamp, so it only changes when the tournament does.

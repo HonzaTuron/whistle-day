@@ -2,6 +2,7 @@ import type { StaffRole } from "@seedly/engine";
 import { useEffect, useState } from "react";
 import { renderSVG } from "uqr";
 import type { StaffRecord } from "../../api/organiser";
+import { useT, type MessageKey } from "../../lib/i18n";
 
 interface Props {
   crew: StaffRecord[];
@@ -32,10 +33,10 @@ interface Props {
  * the worst way to fail: it works when you test it.
  */
 
-const ROLES: { value: StaffRole; label: string; hint: string }[] = [
-  { value: "referee", label: "Referee", hint: "Runs matches and enters results." },
-  { value: "scorer", label: "Scorer", hint: "Keeps score, set by set." },
-  { value: "organizer", label: "Co-organiser", hint: "Runs the day alongside you." },
+const ROLES: { value: StaffRole; label: MessageKey; hint: MessageKey }[] = [
+  { value: "referee", label: "crew.referee", hint: "crew.refereeHint" },
+  { value: "scorer", label: "crew.scorer", hint: "crew.scorerHint" },
+  { value: "organizer", label: "crew.organizer", hint: "crew.organizerHint" },
 ];
 
 const ROLE_NAMES = new Map(ROLES.map((role) => [role.value, role.label]));
@@ -49,6 +50,7 @@ export function CrewSheet({
   onRemove,
   onClose,
 }: Props) {
+  const t = useT();
   const [copied, setCopied] = useState(false);
   const [confirming, setConfirming] = useState<string | null>(null);
 
@@ -82,28 +84,29 @@ export function CrewSheet({
     : null;
 
   return (
-    <div className="sheet" role="dialog" aria-modal="true" aria-label="Crew">
+    <div className="sheet" role="dialog" aria-modal="true" aria-label={t("crew.label")}>
       <button
         type="button"
         className="sheet__backdrop"
         onClick={onClose}
-        aria-label="Close"
+        aria-label={t("common.close")}
       />
 
       <div className="sheet__panel">
-        <p className="sheet__meta">Who is running this with you</p>
-        <p className="sheet__hint">
-          Everyone here can enter results from their own phone. The role is who
-          they are, not what they are allowed to touch.
-        </p>
+        <p className="sheet__meta">{t("crew.title")}</p>
+        <p className="sheet__hint">{t("crew.intro")}</p>
 
         {crew.length > 0 ? (
           <ul className="crew">
             {crew.map((member) => (
               <li key={member.id} className="crew__row">
                 <div className="crew__who">
-                  <strong>{member.name || "Someone"}</strong>
-                  <small>{ROLE_NAMES.get(member.role) ?? member.role}</small>
+                  <strong>{member.name || t("board.someone")}</strong>
+                  <small>
+                    {ROLE_NAMES.has(member.role)
+                      ? t(ROLE_NAMES.get(member.role)!)
+                      : member.role}
+                  </small>
                 </div>
                 {confirming === member.id ? (
                   <div className="crew__confirm">
@@ -115,14 +118,14 @@ export function CrewSheet({
                         onRemove(member);
                       }}
                     >
-                      Remove
+                      {t("common.remove")}
                     </button>
                     <button
                       type="button"
                       className="btn btn--quiet btn--small"
                       onClick={() => setConfirming(null)}
                     >
-                      Keep
+                      {t("common.keep")}
                     </button>
                   </div>
                 ) : (
@@ -130,7 +133,9 @@ export function CrewSheet({
                     type="button"
                     className="crew__remove"
                     onClick={() => setConfirming(member.id)}
-                    aria-label={`Remove ${member.name || "this person"}`}
+                    aria-label={t("crew.removeMember", {
+                      name: member.name || t("crew.thisPerson"),
+                    })}
                   >
                     ✕
                   </button>
@@ -139,13 +144,11 @@ export function CrewSheet({
             ))}
           </ul>
         ) : (
-          <p className="crew__empty">
-            Nobody yet — you are running this on your own.
-          </p>
+          <p className="crew__empty">{t("crew.empty")}</p>
         )}
 
         <div className="crew__invite">
-          <p className="sheet__question">Add someone</p>
+          <p className="sheet__question">{t("crew.add")}</p>
           <div className="crew__roles">
             {ROLES.map((role) => (
               <button
@@ -156,7 +159,7 @@ export function CrewSheet({
                 onClick={() => onRole(role.value)}
                 disabled={busy}
               >
-                {role.label}
+                {t(role.label)}
               </button>
             ))}
           </div>
@@ -164,8 +167,11 @@ export function CrewSheet({
           {link && qr ? (
             <>
               <p className="sheet__hint">
-                {ROLES.find((role) => role.value === link.role)?.hint} Have them
-                scan this — there is nothing to sign up for.
+                {(() => {
+                  const hint = ROLES.find((role) => role.value === link.role)?.hint;
+                  return hint ? `${t(hint)} ` : "";
+                })()}
+                {t("crew.scanThis")}
               </p>
               <div className="crew__qr" dangerouslySetInnerHTML={{ __html: qr }} />
               <button
@@ -174,7 +180,7 @@ export function CrewSheet({
                 onClick={() => void copy(link.url)}
               >
                 <span>{link.url.replace(/^https?:\/\//, "")}</span>
-                <small>{copied ? "Copied" : "Tap to copy"}</small>
+                <small>{t(copied ? "common.copied" : "common.copy")}</small>
               </button>
               <button
                 type="button"
@@ -182,23 +188,18 @@ export function CrewSheet({
                 onClick={onReset}
                 disabled={busy}
               >
-                {busy ? "Working…" : "Replace this code"}
+                {t(busy ? "crew.working" : "crew.replace")}
               </button>
-              <p className="sheet__hint">
-                Replacing it stops the old one working. Anyone already on the
-                list stays — they came through the door, they are not it.
-              </p>
+              <p className="sheet__hint">{t("crew.replaceNote")}</p>
             </>
           ) : (
-            <p className="sheet__hint">
-              Pick what they will be doing and a code appears.
-            </p>
+            <p className="sheet__hint">{t("crew.pickRole")}</p>
           )}
         </div>
 
         <div className="sheet__actions">
           <button type="button" className="btn btn--quiet btn--block" onClick={onClose}>
-            Done
+            {t("common.done")}
           </button>
         </div>
       </div>

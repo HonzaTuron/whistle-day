@@ -1,4 +1,5 @@
 import type { Id } from "@seedly/engine";
+import { tr } from "../lib/i18n";
 import {
   ApiError,
   clearResult,
@@ -338,7 +339,7 @@ export async function flush(): Promise<void> {
       changed();
     } catch (thrown) {
       const message =
-        thrown instanceof Error ? thrown.message : "That could not be saved.";
+        thrown instanceof Error ? thrown.message : tr("error.notQueued");
 
       if (permanent(thrown)) {
         // Refused, not undelivered. Out of the queue and on to the screen.

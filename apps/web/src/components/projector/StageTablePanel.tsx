@@ -1,6 +1,7 @@
 import type { DisplayPayload, DisplayStage } from "@seedly/engine";
 import type { CSSProperties } from "react";
 import { entryName } from "../../lib/format";
+import { useT } from "../../lib/i18n";
 
 export function StageTablePanel({
   payload,
@@ -9,26 +10,29 @@ export function StageTablePanel({
   payload: DisplayPayload;
   stage: DisplayStage;
 }) {
+  const t = useT();
   const rows = stage.stage_table;
   if (!rows || rows.length === 0) return null;
 
   return (
     <div className="stage-table">
       <p className="stage-table__subtitle">
-        Cross-pool ranking — {rows.length} entries shown
+        {t("projector.crossPool", { count: rows.length })}
       </p>
 
       <table className="table" style={{ "--rows": rows.length } as CSSProperties}>
         <thead>
           <tr>
             <th className="table__rank" />
-            <th className="table__team">Team</th>
-            <th>P</th>
-            <th>W</th>
-            <th>D</th>
-            <th>L</th>
-            <th className="table__sets">Sets</th>
-            <th className="table__points">Pts</th>
+            <th className="table__team">{t("common.team")}</th>
+            <th title={t("table.playedFull")}>{t("table.played")}</th>
+            <th title={t("table.wonFull")}>{t("table.won")}</th>
+            <th title={t("table.drawnFull")}>{t("table.drawn")}</th>
+            <th title={t("table.lostFull")}>{t("table.lost")}</th>
+            <th className="table__sets">{t("table.sets")}</th>
+            <th className="table__points" title={t("table.pointsFull")}>
+              {t("table.points")}
+            </th>
           </tr>
         </thead>
         <tbody>

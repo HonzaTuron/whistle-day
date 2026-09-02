@@ -10,6 +10,7 @@ import {
   sportById,
   type SportId,
 } from "../../lib/scoring";
+import { useT, type Translate } from "../../lib/i18n";
 import { Grip, Group } from "./SheetParts";
 
 interface Props {
@@ -42,6 +43,8 @@ interface Props {
  * should happen because somebody meant it.
  */
 export function ScoringSheet({ sport, scoring, state, onChange, onClose }: Props) {
+  const t = useT();
+
   useEffect(() => {
     const escape = (event: KeyboardEvent) => {
       if (event.key === "Escape") onClose();
@@ -76,26 +79,27 @@ export function ScoringSheet({ sport, scoring, state, onChange, onClose }: Props
   const drag = useReorder(order, setOrder);
 
   return (
-    <div className="sheet" role="dialog" aria-modal="true" aria-label="Scoring">
+    <div className="sheet" role="dialog" aria-modal="true" aria-label={t("scoring.label")}>
       <button
         type="button"
         className="sheet__backdrop"
         onClick={onClose}
-        aria-label="Close"
+        aria-label={t("common.close")}
       />
 
       <div className="sheet__panel">
         <p className="sheet__meta">
-          Scoring
-          {state === "failed" ? " · not saved" : state === "saving" ? " · saving…" : ""}
+          {t("scoring.label")}
+          {state === "failed"
+            ? ` · ${t("common.notSaved")}`
+            : state === "saving"
+              ? ` · ${t("common.saving")}`
+              : ""}
         </p>
-        <p className="sheet__hint">
-          Saved as you tap. Tables are rebuilt when the next result in a group
-          lands, so one already on the wall keeps its points until then.
-        </p>
+        <p className="sheet__hint">{t("scoring.note")}</p>
 
-        <Group label="Sport">
-          <div className="chips chips--wrap" role="group" aria-label="Sport">
+        <Group label={t("scoring.sport")}>
+          <div className="chips chips--wrap" role="group" aria-label={t("scoring.sport")}>
             {SPORTS.map((option) => (
               <button
                 key={option.id}
@@ -104,21 +108,22 @@ export function ScoringSheet({ sport, scoring, state, onChange, onClose }: Props
                 aria-pressed={picked === option.id}
                 onClick={() => patch(option.scoring, option.sport)}
               >
-                {option.label}
+                {t(option.label)}
               </button>
             ))}
           </div>
           <p className="sheet__hint">
             {picked
-              ? sportById(picked as SportId).hint
-              : "Set by hand. Tapping a sport puts its own numbers back."}
+              ? t(sportById(picked as SportId).hint)
+              : t("scoring.byHand")}
           </p>
         </Group>
 
-        <Group label="Points">
+        <Group label={t("scoring.points")}>
           <div className="points">
             <Points
-              label="Win"
+              t={t}
+              label={t("scoring.win")}
               value={config.pointsWin}
               onChange={(pointsWin) => patch({ pointsWin })}
             />
@@ -126,28 +131,30 @@ export function ScoringSheet({ sport, scoring, state, onChange, onClose }: Props
                 only ever be set wrong, so it goes rather than greys out. */}
             {draws ? (
               <Points
-                label="Draw"
+                t={t}
+                label={t("scoring.draw")}
                 value={config.pointsDraw}
                 onChange={(pointsDraw) => patch({ pointsDraw })}
               />
             ) : null}
             <Points
-              label="Loss"
+              t={t}
+              label={t("scoring.loss")}
               value={config.pointsLoss}
               onChange={(pointsLoss) => patch({ pointsLoss })}
             />
           </div>
         </Group>
 
-        <Group label="Can a match end level?">
-          <div className="chips" role="group" aria-label="Draws">
+        <Group label={t("scoring.drawsTitle")}>
+          <div className="chips" role="group" aria-label={t("scoring.draws")}>
             <button
               type="button"
               className={"chip" + (draws ? " is-on" : "")}
               aria-pressed={draws}
               onClick={() => patch({ drawsAllowed: true })}
             >
-              Draws allowed
+              {t("scoring.drawsAllowed")}
             </button>
             <button
               type="button"
@@ -155,33 +162,28 @@ export function ScoringSheet({ sport, scoring, state, onChange, onClose }: Props
               aria-pressed={!draws}
               onClick={() => patch({ drawsAllowed: false, pointsDraw: 0 })}
             >
-              Somebody wins
+              {t("scoring.somebodyWins")}
             </button>
           </div>
           <p className="sheet__hint">
-            {draws
-              ? "A level score is a result, and both sides take the draw points."
-              : "A level score is refused when the result is saved."}{" "}
-            A knockout match never ends level either way — somebody has to go
-            through.
+            {t(draws ? "scoring.drawsYes" : "scoring.drawsNo")}{" "}
+            {t("scoring.drawsTail")}
           </p>
         </Group>
 
-        <Group label="A walkover counts as">
+        <Group label={t("scoring.walkoverTitle")}>
           <div className="points">
             <Points
-              label="Score"
+              t={t}
+              label={t("scoring.score")}
               value={config.walkoverScore ?? 0}
               onChange={(walkoverScore) => patch({ walkoverScore })}
             />
           </div>
-          <p className="sheet__hint">
-            Credited to whoever turned up. Zero keeps an absence from flattering
-            anyone's score difference; a rulebook that says 3-0 wants 3.
-          </p>
+          <p className="sheet__hint">{t("scoring.walkoverNote")}</p>
         </Group>
 
-        <Group label="When teams are level, rank on">
+        <Group label={t("scoring.tiebreakTitle")}>
           {/*
             The same list and the same handle as the screen sheet's rotation,
             through the same hook — see lib/reorder.ts.
@@ -189,8 +191,10 @@ export function ScoringSheet({ sport, scoring, state, onChange, onClose }: Props
           <ol className="rotation">
             <li className="rotation__row is-fixed">
               <span className="rotation__pick">
-                <span className="rotation__name">{TIEBREAK_LABELS.points.label}</span>
-                <small className="rotation__hint">Always first.</small>
+                <span className="rotation__name">
+                  {t(TIEBREAK_LABELS.points.label)}
+                </span>
+                <small className="rotation__hint">{t("scoring.alwaysFirst")}</small>
               </span>
             </li>
             {drag.shown.map((criterion, index) => (
@@ -211,17 +215,19 @@ export function ScoringSheet({ sport, scoring, state, onChange, onClose }: Props
                     }
                   />
                   <span className="rotation__name">
-                    {TIEBREAK_LABELS[criterion].label}
+                    {t(TIEBREAK_LABELS[criterion].label)}
                   </span>
                   <small className="rotation__hint">
-                    {TIEBREAK_LABELS[criterion].hint}
+                    {t(TIEBREAK_LABELS[criterion].hint)}
                   </small>
                 </label>
 
                 <button
                   type="button"
                   className="rotation__grip"
-                  aria-label={`Move ${TIEBREAK_LABELS[criterion].label}`}
+                  aria-label={t("screen.move", {
+                    name: t(TIEBREAK_LABELS[criterion].label),
+                  })}
                   {...drag.gripProps(index)}
                 >
                   <Grip />
@@ -230,16 +236,17 @@ export function ScoringSheet({ sport, scoring, state, onChange, onClose }: Props
             ))}
           </ol>
 
-          <p className="sheet__hint">
-            Drag a handle to reorder. Head-to-head is worked out among the tied
-            teams only, from what they played against each other.
-          </p>
+          <p className="sheet__hint">{t("scoring.tiebreakNote")}</p>
 
           {unused.length > 0 ? (
             <>
-              <h4 className="rotation__off">Not used</h4>
-              <p className="sheet__hint">Tap one to put it back at the end.</p>
-              <div className="chips chips--wrap" role="group" aria-label="Not used">
+              <h4 className="rotation__off">{t("scoring.notUsed")}</h4>
+              <p className="sheet__hint">{t("screen.tapToRestore")}</p>
+              <div
+                className="chips chips--wrap"
+                role="group"
+                aria-label={t("scoring.notUsed")}
+              >
                 {unused.map((criterion) => (
                   <button
                     key={criterion}
@@ -248,7 +255,7 @@ export function ScoringSheet({ sport, scoring, state, onChange, onClose }: Props
                     aria-pressed={false}
                     onClick={() => setOrder([...order, criterion])}
                   >
-                    {TIEBREAK_LABELS[criterion].label}
+                    {t(TIEBREAK_LABELS[criterion].label)}
                   </button>
                 ))}
               </div>
@@ -257,7 +264,7 @@ export function ScoringSheet({ sport, scoring, state, onChange, onClose }: Props
         </Group>
 
         <button type="button" className="btn btn--quiet btn--block" onClick={onClose}>
-          Done
+          {t("common.done")}
         </button>
       </div>
     </div>
@@ -272,10 +279,12 @@ export function ScoringSheet({ sport, scoring, state, onChange, onClose }: Props
  * and "make it 4" twice is one tap lost.
  */
 function Points({
+  t,
   label,
   value,
   onChange,
 }: {
+  t: Translate;
   label: string;
   value: number;
   onChange: (value: number) => void;
@@ -288,7 +297,7 @@ function Points({
         <button
           type="button"
           className="points__step"
-          aria-label={`${label}: one fewer`}
+          aria-label={t("scoring.oneFewer", { label })}
           onClick={() => step(-1)}
         >
           −
@@ -297,7 +306,7 @@ function Points({
         <button
           type="button"
           className="points__step"
-          aria-label={`${label}: one more`}
+          aria-label={t("scoring.oneMore", { label })}
           onClick={() => step(1)}
         >
           +

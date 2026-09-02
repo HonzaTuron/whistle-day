@@ -1,4 +1,6 @@
 import type { Fixture, Pool, Stage } from "@seedly/engine";
+import { useT } from "../../lib/i18n";
+import { renderLabel } from "../../lib/labels";
 import { counts, isSettledStatus } from "../../lib/status";
 
 interface Props {
@@ -8,6 +10,7 @@ interface Props {
 }
 
 export function StageProgress({ stages, pools, fixtures }: Props) {
+  const t = useT();
   const poolsByStage = new Map<string, Pool[]>();
   for (const pool of pools) {
     const list = poolsByStage.get(pool.stage);
@@ -36,10 +39,14 @@ export function StageProgress({ stages, pools, fixtures }: Props) {
         return (
           <div key={stage.id} className="prog__stage">
             <div className="prog__head">
-              <span className="prog__name">{stage.name}</span>
+              <span className="prog__name">
+                {renderLabel(t, stage.name, stage.name_kind)}
+              </span>
               <span className="prog__count">
                 {done}/{stageFixtures.length}
-                {live > 0 && <span className="prog__live"> · {live} live</span>}
+                {live > 0 && (
+                  <span className="prog__live"> · {t("board.live", { count: live })}</span>
+                )}
               </span>
             </div>
 
@@ -54,7 +61,8 @@ export function StageProgress({ stages, pools, fixtures }: Props) {
                   const poolDone = poolFixtures.filter((f) => isSettledStatus(f.status)).length;
                   return (
                     <span key={pool.id} className="prog__pool">
-                      {pool.name} {poolDone}/{poolFixtures.length}
+                      {renderLabel(t, pool.name, pool.name_kind)} {poolDone}/
+                      {poolFixtures.length}
                     </span>
                   );
                 })}

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useT } from "../../lib/i18n";
 import { SPORTS, sportById, type SportId } from "../../lib/scoring";
 import { WizardShell } from "./WizardShell";
 
@@ -36,6 +37,7 @@ interface Props {
  * phone call can kill.
  */
 export function NameStep({ initial, sport, busy, resume, onSport, onNext }: Props) {
+  const t = useT();
   const [name, setName] = useState(initial);
   const trimmed = name.trim();
   const ready = trimmed.length > 0 && !busy;
@@ -58,8 +60,8 @@ export function NameStep({ initial, sport, busy, resume, onSport, onNext }: Prop
   return (
     <WizardShell
       step="name"
-      title="What's it called?"
-      hint="You can change this later — nothing here is final until you start."
+      title={t("wizard.nameTitle")}
+      hint={t("wizard.nameHint")}
       footer={
         <button
           type="button"
@@ -67,25 +69,27 @@ export function NameStep({ initial, sport, busy, resume, onSport, onNext }: Prop
           disabled={!ready}
           onClick={() => submit()}
         >
-          {busy ? "Just a second…" : "Add the teams"}
+          {t(busy ? "wizard.nameBusy" : "wizard.nameNext")}
         </button>
       }
     >
       {resume ? (
         <div className="wiz__resume">
           <p>
-            <strong>{resume.name}</strong> is half set up on this device
-            {resume.teams > 0
-              ? ` — ${resume.teams} team${resume.teams === 1 ? "" : "s"} in`
-              : ""}
-            .
+            {t("wizard.resume", {
+              name: resume.name,
+              teams:
+                resume.teams > 0
+                  ? t("wizard.resumeTeams", { count: resume.teams })
+                  : "",
+            })}
           </p>
           <div className="wiz__resume-actions">
             <button type="button" className="btn btn--primary" onClick={resume.onContinue}>
-              Pick that up
+              {t("wizard.resumeContinue")}
             </button>
             <button type="button" className="btn btn--quiet" onClick={resume.onDiscard}>
-              Start something new
+              {t("wizard.resumeDiscard")}
             </button>
           </div>
         </div>
@@ -104,7 +108,7 @@ export function NameStep({ initial, sport, busy, resume, onSport, onNext }: Prop
           className="wiz__input"
           value={name}
           onChange={(event) => setName(event.target.value)}
-          placeholder="Autumn Cup"
+          placeholder={t("wizard.namePlaceholder")}
           maxLength={120}
           autoFocus
           autoComplete="off"
@@ -113,7 +117,7 @@ export function NameStep({ initial, sport, busy, resume, onSport, onNext }: Prop
       </form>
 
       <fieldset className="wiz__sports">
-        <legend>What's being played?</legend>
+        <legend>{t("wizard.sportLegend")}</legend>
         <div className="wiz__chips">
           {SPORTS.map((option) => (
             <button
@@ -125,11 +129,11 @@ export function NameStep({ initial, sport, busy, resume, onSport, onNext }: Prop
               aria-pressed={option.id === sport}
               onClick={() => onSport(option.id)}
             >
-              {option.label}
+              {t(option.label)}
             </button>
           ))}
         </div>
-        <p className="wiz__chip-hint">{sportById(sport).hint}</p>
+        <p className="wiz__chip-hint">{t(sportById(sport).hint)}</p>
       </fieldset>
     </WizardShell>
   );

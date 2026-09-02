@@ -1,5 +1,6 @@
 import type { DisplayPayload, DisplaySponsor } from "@seedly/engine";
 import { useState } from "react";
+import { useT } from "../../lib/i18n";
 
 /**
  * The closing card of the rotation.
@@ -13,6 +14,7 @@ import { useState } from "react";
  * the one page that does not depend on there being a result yet.
  */
 export function BrandingPanel({ payload }: { payload: DisplayPayload }) {
+  const t = useT();
   const { sponsors } = payload;
 
   return (
@@ -32,7 +34,7 @@ export function BrandingPanel({ payload }: { payload: DisplayPayload }) {
 
       <div className="branding__credit">
         <span className="branding__mark">Seedly</span>
-        <small>Scoring and screens for this tournament</small>
+        <small>{t("projector.credit")}</small>
       </div>
     </div>
   );

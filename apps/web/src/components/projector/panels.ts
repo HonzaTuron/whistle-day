@@ -1,10 +1,18 @@
 import type { DisplayPanel, DisplayPayload } from "@seedly/engine";
 import { bracketStages, tablePools } from "../../lib/format";
+import type { Translate } from "../../lib/i18n";
+import { renderLabel } from "../../lib/labels";
 
 export type PanelKind = "now_playing" | "standings" | "bracket" | "next_up" | "results" | "court_schedule" | "stage_progress" | "stage_table" | "branding";
 
 export interface Panel {
   kind: PanelKind;
+  /**
+   * Already worded. A panel title is drawn twice — in the header and in the
+   * dot's tooltip — and half of them are a group or stage name that has to go
+   * through the label renderer first, so it is settled here rather than at
+   * both of the places that draw it.
+   */
   title: string;
   /** Which table or bracket this panel shows, when there is more than one. */
   index: number;
@@ -18,7 +26,7 @@ export interface Panel {
  * should not stare at an empty "Now playing" for fifteen seconds. Pools get one
  * panel each, because two tables at projector size do not fit side by side.
  */
-export function buildPanels(payload: DisplayPayload): Panel[] {
+export function buildPanels(t: Translate, payload: DisplayPayload): Panel[] {
   const mode = payload.display.mode;
   const panels: Panel[] = [];
 
@@ -27,27 +35,33 @@ export function buildPanels(payload: DisplayPayload): Panel[] {
 
   const addNowPlaying = () => {
     if (payload.now_playing.length > 0) {
-      panels.push({ kind: "now_playing", title: "Now playing", index: 0 });
+      panels.push({ kind: "now_playing", title: t("panel.now_playing"), index: 0 });
     }
   };
   const addStandings = () => {
     pools.forEach(({ stage, pool }, index) => {
       panels.push({
         kind: "standings",
-        title: `Group ${pool.name}`,
-        subtitle: stage.name,
+        title: t("board.groupNamed", {
+          name: renderLabel(t, pool.name, pool.name_kind),
+        }),
+        subtitle: renderLabel(t, stage.name, stage.name_kind),
         index,
       });
     });
   };
   const addBracket = () => {
     brackets.forEach((stage, index) => {
-      panels.push({ kind: "bracket", title: stage.name, index });
+      panels.push({
+        kind: "bracket",
+        title: renderLabel(t, stage.name, stage.name_kind),
+        index,
+      });
     });
   };
   const addNextUp = () => {
     if (payload.next_up.length > 0) {
-      panels.push({ kind: "next_up", title: "Next up", index: 0 });
+      panels.push({ kind: "next_up", title: t("panel.next_up"), index: 0 });
     }
   };
   /**
@@ -70,13 +84,13 @@ export function buildPanels(payload: DisplayPayload): Panel[] {
       ),
     );
     if (scheduled) {
-      panels.push({ kind: "court_schedule", title: "Court schedule", index: 0 });
+      panels.push({ kind: "court_schedule", title: t("panel.court_schedule"), index: 0 });
     }
   };
 
   const addStageProgress = () => {
     if (payload.stages.length > 0) {
-      panels.push({ kind: "stage_progress", title: "Stage progress", index: 0 });
+      panels.push({ kind: "stage_progress", title: t("panel.stage_progress"), index: 0 });
     }
   };
 
@@ -85,7 +99,9 @@ export function buildPanels(payload: DisplayPayload): Panel[] {
       if (stage.stage_table && stage.stage_table.length > 0) {
         panels.push({
           kind: "stage_table",
-          title: `${stage.name} — cross-pool`,
+          title: `${renderLabel(t, stage.name, stage.name_kind)} — ${t(
+            "panel.stage_table",
+          )}`,
           index,
         });
       }
@@ -94,7 +110,7 @@ export function buildPanels(payload: DisplayPayload): Panel[] {
 
   const addResults = () => {
     if (payload.recent.length > 0) {
-      panels.push({ kind: "results", title: "Latest results", index: 0 });
+      panels.push({ kind: "results", title: t("panel.results"), index: 0 });
     }
   };
 
@@ -183,7 +199,9 @@ export function buildPanels(payload: DisplayPayload): Panel[] {
   if (panels.length > 0) {
     panels.push({
       kind: "branding",
-      title: payload.sponsors.length > 0 ? "Our partners" : "Powered by Seedly",
+      title: t(
+        payload.sponsors.length > 0 ? "projector.partners" : "projector.poweredBy",
+      ),
       index: 0,
     });
   }

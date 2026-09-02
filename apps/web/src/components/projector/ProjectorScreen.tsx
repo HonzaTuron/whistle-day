@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useDisplayPayload } from "../../api/display";
 import { bracketStages, tablePools } from "../../lib/format";
+import { useI18n } from "../../lib/i18n";
 import { BracketPanel } from "./BracketPanel";
 import { BrandingPanel } from "./BrandingPanel";
 import { CourtSchedulePanel } from "./CourtSchedulePanel";
@@ -14,13 +15,17 @@ import { buildPanels } from "./panels";
 const DEFAULT_ROTATE_SECONDS = 15;
 
 export function ProjectorScreen({ token }: { token: string }) {
+  const { t, locale } = useI18n();
   const { payload, error, stale, loading } = useDisplayPayload(token);
   const [index, setIndex] = useState(0);
   // Bumped on every dot click so re-picking the current panel restarts its sweep.
   const [cycle, setCycle] = useState(0);
   const [clock, setClock] = useState(() => new Date());
 
-  const panels = useMemo(() => (payload ? buildPanels(payload) : []), [payload]);
+  const panels = useMemo(
+    () => (payload ? buildPanels(t, payload) : []),
+    [t, payload],
+  );
 
   useEffect(() => {
     const tick = setInterval(() => setClock(new Date()), 1000);
@@ -44,7 +49,7 @@ export function ProjectorScreen({ token }: { token: string }) {
   }, [index, panels.length]);
 
   if (loading) {
-    return <div className="screen screen--message">Connecting…</div>;
+    return <div className="screen screen--message">{t("projector.connecting")}</div>;
   }
   if (error) {
     return <div className="screen screen--message">{error}</div>;
@@ -52,7 +57,9 @@ export function ProjectorScreen({ token }: { token: string }) {
   if (!payload || panels.length === 0) {
     return (
       <div className="screen screen--message">
-        {payload?.tournament.name ?? "Seedly"} — nothing to show yet
+        {t("projector.nothingYet", {
+          name: payload?.tournament.name ?? "Seedly",
+        })}
       </div>
     );
   }
@@ -79,9 +86,12 @@ export function ProjectorScreen({ token }: { token: string }) {
         </div>
 
         <div className="screen__meta">
-          {stale && <span className="screen__stale">reconnecting</span>}
+          {stale && <span className="screen__stale">{t("projector.reconnecting")}</span>}
           <span className="screen__clock">
-            {clock.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+            {clock.toLocaleTimeString(locale, {
+              hour: "2-digit",
+              minute: "2-digit",
+            })}
           </span>
         </div>
       </header>

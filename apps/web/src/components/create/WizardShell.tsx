@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { useT } from "../../lib/i18n";
 
 /**
  * The frame every step of the wizard sits in.
@@ -23,20 +24,32 @@ interface Props {
 }
 
 export function WizardShell({ step, title, hint, onBack, children, footer }: Props) {
+  const t = useT();
   const index = WIZARD_STEPS.indexOf(step);
 
   return (
     <div className="wiz">
       <header className="wiz__bar">
         {onBack ? (
-          <button type="button" className="wiz__back" onClick={onBack} aria-label="Back">
+          <button
+            type="button"
+            className="wiz__back"
+            onClick={onBack}
+            aria-label={t("common.back")}
+          >
             ←
           </button>
         ) : (
           <span className="wiz__back wiz__back--empty" aria-hidden="true" />
         )}
 
-        <ol className="wiz__progress" aria-label={`Step ${index + 1} of ${WIZARD_STEPS.length}`}>
+        <ol
+          className="wiz__progress"
+          aria-label={t("wizard.step", {
+            current: index + 1,
+            total: WIZARD_STEPS.length,
+          })}
+        >
           {WIZARD_STEPS.map((name, i) => (
             <li
               key={name}

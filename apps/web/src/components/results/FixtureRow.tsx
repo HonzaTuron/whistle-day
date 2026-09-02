@@ -1,5 +1,6 @@
 import type { Court } from "@seedly/engine";
 import { sideName, timeValue, type BoardRow } from "../../lib/board";
+import { useT, type Translate } from "../../lib/i18n";
 
 interface Props {
   row: BoardRow;
@@ -18,6 +19,7 @@ interface Props {
  * all, rather than something tappable that refuses to do anything.
  */
 export function FixtureRow({ row, courts, unsent = false, onOpen }: Props) {
+  const t = useT();
   // Where and when, when they are known. This is the line the organiser reads
   // to answer "what is on court two?" without opening anything.
   const court = courts.find((c) => c.id === row.fixture.court)?.name ?? "";
@@ -28,15 +30,15 @@ export function FixtureRow({ row, courts, unsent = false, onOpen }: Props) {
     <>
       <span className="match__code">{row.fixture.code}</span>
       <span className="match__teams">
-        <span className={winner(row, "home")}>{sideName(row.home)}</span>
-        <span className={winner(row, "away")}>{sideName(row.away)}</span>
+        <span className={winner(row, "home")}>{sideName(t, row.home)}</span>
+        <span className={winner(row, "away")}>{sideName(t, row.away)}</span>
         {/* Under the names rather than beside the code: "Court 1 · 18:30" is
             wider than a match code and would either squeeze the names or run
             underneath them. */}
         {where ? <span className="match__where">{where}</span> : null}
       </span>
       <span className="match__result">
-        {result(row)}
+        {result(t, row)}
         {/*
           A held result reads as recorded, because it is — the difference is
           only that nobody else can see it yet. So the row keeps its score and
@@ -44,7 +46,7 @@ export function FixtureRow({ row, courts, unsent = false, onOpen }: Props) {
           which would say "this did not work" about something that did.
         */}
         {unsent ? (
-          <span className="match__unsent" title="On this phone, not sent yet">
+          <span className="match__unsent" title={t("match.unsent")}>
             ●
           </span>
         ) : null}
@@ -72,14 +74,14 @@ export function FixtureRow({ row, courts, unsent = false, onOpen }: Props) {
   );
 }
 
-function result(row: BoardRow) {
+function result(t: Translate, row: BoardRow) {
   // Not a score and not a fixture waiting to be played: a match that stopped
   // being one when a team was taken out.
   if (row.cancelled) return "—";
-  if (row.walkover) return "w/o";
+  if (row.walkover) return t("match.walkoverShort");
   if (row.settled) return `${row.fixture.home_score ?? 0}–${row.fixture.away_score ?? 0}`;
-  if (row.live) return <span className="match__live">Live</span>;
-  return row.playable ? "Enter" : "Waiting";
+  if (row.live) return <span className="match__live">{t("match.liveBadge")}</span>;
+  return t(row.playable ? "match.enter" : "match.waiting");
 }
 
 function winner(row: BoardRow, side: "home" | "away"): string {

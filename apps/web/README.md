@@ -155,6 +155,53 @@ still need a signal and say so.
 
 `lib/pending.ts` is pure and is the part with tests — `bun test`.
 
+## Two languages
+
+English and Czech, in `src/locales/`, with no i18n dependency. What a library
+would sell us is a message format, a plural table and a loader; the platform
+ships the plural table as `Intl.PluralRules` — which knows Czech better than
+anything we would paste in — and with two locales in one bundle the loader is a
+static import. What is left is interpolation, and that is twenty lines of
+`src/lib/i18n.ts`.
+
+The part worth having is the part a library cannot give: `en.ts` is the shape
+and `cs.ts` is typed against it, so a key missing from one, or misspelled in a
+component, fails the typecheck rather than showing an organiser a dotted path
+in a hall.
+
+- **Which language, in the order the answers are trustworthy.** `?lang=cs` in
+  the URL, then what this browser was last told, then what it says it prefers,
+  then English. The query parameter wins because it is the only way to *aim* a
+  screen: the laptop driving a projector in Brno is as likely as not to be in
+  English, and the wall should not be. It is remembered once used, so the link
+  gets pasted with it on once rather than every reload.
+- **The switch is two words, not a dropdown or a flag.** With two languages a
+  dropdown is a click to find out what the options are, and a flag is a
+  country — the people in a hall in Brno reading this in English are not
+  English. It sits where somebody is already stopped and reading: the landing
+  page, the account screen, the bottom of the phone view. It is deliberately
+  absent from the organiser's board and the projector, which are screens
+  somebody is working from.
+- **`document.documentElement.lang` is set before the first render**, because a
+  document whose lang disagrees with what is on it is read out in the wrong
+  accent by a screen reader and hyphenated by the wrong rules. It is also the
+  live mirror the few non-component callers read the locale from.
+- **Czech is not English with the words swapped.** Four plural categories where
+  English has two, and `one` is 1, `few` is 2–4, `other` is 0 and 5 up — a form
+  that reads right for 3 does not read right for 5. Nouns after prepositions
+  are not nominative, so a phrase that will be dropped into a sentence carries
+  its own preposition rather than being glued on by the caller. And a bracket
+  is a *pavouk*, a walkover a *kontumace*, seeding *nasazení* — what an
+  organiser actually says out loud, not a translation they have to undo.
+- **Times are formatted in the screen's language, not the browser's.** A laptop
+  set to US English driving a Czech hall's projector should still put the
+  schedule up the way the hall reads it.
+- **Names the app wrote are translated; names a person typed are not.** A
+  tournament, a team and a court are somebody's words and stay exactly as
+  typed. A slot saying "Winner QF1" is ours, and arrives as a kind plus its
+  arguments for `src/lib/labels.ts` to word — see *Names this app wrote* in
+  `docs/DATA-MODEL.md`.
+
 ## Installing it
 
 `vite-plugin-pwa` precaches the built assets, so a reload is not a white
@@ -468,7 +515,9 @@ by the door, not the main wall.
   and the first assignment — drew a court schedule with no rows in it, so the
   panel is only in the rotation once some fixture is actually on a court.
 - **Unresolved bracket slots show their label** — "Winner SF1", "1. A" — in
-  italic grey. The server words these; the client never invents them.
+  italic grey. The server says which label it is and what goes in it; the
+  client does the wording, so the wall says "Vítěz SF1" when the wall is Czech.
+  The client never invents one it was not sent.
 - **A tie is explained.** When a table needed more than points to rank, the
   criteria that actually separated it are printed underneath. That sentence is
   the difference between a table and an argument.

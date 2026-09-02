@@ -1,7 +1,10 @@
 import type { DisplayPayload } from "@seedly/engine";
+import { useT } from "../../lib/i18n";
+import { renderLabel } from "../../lib/labels";
 import { counts, isSettledStatus } from "../../lib/status";
 
 export function StageProgressPanel({ payload }: { payload: DisplayPayload }) {
+  const t = useT();
   const { stages } = payload;
 
   if (stages.length === 0) return null;
@@ -24,10 +27,17 @@ export function StageProgressPanel({ payload }: { payload: DisplayPayload }) {
       {stageStats.map(({ stage, total, finished, live, pct }) => (
         <div key={stage.id} className="stageprogress__stage">
           <div className="stageprogress__head">
-            <h3 className="stageprogress__name">{stage.name}</h3>
+            <h3 className="stageprogress__name">
+              {renderLabel(t, stage.name, stage.name_kind)}
+            </h3>
             <span className="stageprogress__count">
               {finished}/{total}
-              {live > 0 && <span className="stageprogress__live"> · {live} live</span>}
+              {live > 0 && (
+                <span className="stageprogress__live">
+                  {" "}
+                  · {t("board.live", { count: live })}
+                </span>
+              )}
             </span>
           </div>
 
@@ -53,7 +63,7 @@ export function StageProgressPanel({ payload }: { payload: DisplayPayload }) {
               const poolFinished = poolFixtures.filter((f) => isSettledStatus(f.status));
               return (
                 <span key={pool.id} className="stageprogress__pool">
-                  {pool.name}
+                  {renderLabel(t, pool.name, pool.name_kind)}
                   {pool.standings.length > 0 && (
                     <>
                       {pool.standings

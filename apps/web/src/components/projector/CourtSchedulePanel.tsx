@@ -1,7 +1,9 @@
 import type { DisplayFixture, DisplayPayload } from "@seedly/engine";
 import { courtName, sideName } from "../../lib/format";
+import { useT, type Translate } from "../../lib/i18n";
 
 export function CourtSchedulePanel({ payload }: { payload: DisplayPayload }) {
+  const t = useT();
   const { courts, stages } = payload;
 
   const allFixtures = stages.flatMap((stage) =>
@@ -48,7 +50,13 @@ export function CourtSchedulePanel({ payload }: { payload: DisplayPayload }) {
             {live.length > 0 && (
               <div className="courtschedule__matches">
                 {live.map((fixture) => (
-                  <FixtureBadge key={fixture.id} fixture={fixture} payload={payload} live />
+                  <FixtureBadge
+                    key={fixture.id}
+                    t={t}
+                    fixture={fixture}
+                    payload={payload}
+                    live
+                  />
                 ))}
               </div>
             )}
@@ -56,7 +64,7 @@ export function CourtSchedulePanel({ payload }: { payload: DisplayPayload }) {
             {upcoming.length > 0 && (
               <div className="courtschedule__matches">
                 {upcoming.map((fixture) => (
-                  <FixtureBadge key={fixture.id} fixture={fixture} payload={payload} />
+                  <FixtureBadge key={fixture.id} t={t} fixture={fixture} payload={payload} />
                 ))}
               </div>
             )}
@@ -79,10 +87,12 @@ const PLAYED = ["finished", "walkover", "bye"];
  * list nobody aligned.
  */
 function FixtureBadge({
+  t,
   fixture,
   payload,
   live,
 }: {
+  t: Translate;
   fixture: DisplayFixture;
   payload: DisplayPayload;
   live?: boolean;
@@ -91,8 +101,9 @@ function FixtureBadge({
   const played = PLAYED.includes(fixture.status);
   // A match yet to start has 0–0 on the wire, which on a wall reads as a
   // goalless draw somebody has already played.
+  const versus = t("projector.versus");
   const score =
-    played || live ? `${fixture.home.score}–${fixture.away.score}` : "vs";
+    played || live ? `${fixture.home.score}–${fixture.away.score}` : versus;
   // Sets are won one at a time; the one being played is the last one sent.
   const current = live ? fixture.games?.at(-1) : undefined;
 
@@ -100,7 +111,7 @@ function FixtureBadge({
     <div className={live ? "courtschedule__fixture is-live" : "courtschedule__fixture"}>
       <span className="courtschedule__code">
         {fixture.code}
-        {live && <small className="courtschedule__live">Live</small>}
+        {live && <small className="courtschedule__live">{t("match.liveBadge")}</small>}
       </span>
 
       <span
@@ -109,14 +120,18 @@ function FixtureBadge({
           (decided && fixture.winner === fixture.home.entry ? " is-winner" : "")
         }
       >
-        {sideName(fixture.home, payload.entries, "short")}
+        {sideName(t, fixture.home, payload.entries, "short")}
       </span>
 
-      <span className={"courtschedule__score" + (score === "vs" ? " is-empty" : "")}>
+      <span className={"courtschedule__score" + (score === versus ? " is-empty" : "")}>
         {score}
         {current && (
           <small className="courtschedule__set">
-            {`set ${current.number} · ${current.home}–${current.away}`}
+            {t("projector.set", {
+              number: current.number,
+              home: current.home,
+              away: current.away,
+            })}
           </small>
         )}
       </span>
@@ -127,7 +142,7 @@ function FixtureBadge({
           (decided && fixture.winner === fixture.away.entry ? " is-winner" : "")
         }
       >
-        {sideName(fixture.away, payload.entries, "short")}
+        {sideName(t, fixture.away, payload.entries, "short")}
       </span>
     </div>
   );

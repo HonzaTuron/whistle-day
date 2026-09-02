@@ -1,6 +1,7 @@
 import type { DisplayFixture, DisplayPayload, DisplayStage } from "@seedly/engine";
 import { bracketRounds } from "../../lib/bracket";
 import { isPlaceholder, sideName, sideScore } from "../../lib/format";
+import { useT, type Translate } from "../../lib/i18n";
 
 export function BracketPanel({
   payload,
@@ -9,7 +10,8 @@ export function BracketPanel({
   payload: DisplayPayload;
   stage: DisplayStage;
 }) {
-  const rounds = bracketRounds(stage);
+  const t = useT();
+  const rounds = bracketRounds(t, stage);
   if (rounds.length === 0) return null;
 
   return (
@@ -20,13 +22,13 @@ export function BracketPanel({
 
           <div className="bracket__matches">
             {round.fixtures.map((fixture) => (
-              <Match key={fixture.id} fixture={fixture} payload={payload} />
+              <Match key={fixture.id} t={t} fixture={fixture} payload={payload} />
             ))}
 
             {round.thirdPlace && (
               <div className="bracket__bronze">
-                <h4 className="bracket__round-title">Third place</h4>
-                <Match fixture={round.thirdPlace} payload={payload} />
+                <h4 className="bracket__round-title">{t("bracket.thirdPlace")}</h4>
+                <Match t={t} fixture={round.thirdPlace} payload={payload} />
               </div>
             )}
           </div>
@@ -37,9 +39,11 @@ export function BracketPanel({
 }
 
 function Match({
+  t,
   fixture,
   payload,
 }: {
+  t: Translate;
   fixture: DisplayFixture;
   payload: DisplayPayload;
 }) {
@@ -66,10 +70,10 @@ function Match({
               .join(" ")}
           >
             <span className="bracket__name">
-              {sideName(side, payload.entries, "short")}
+              {sideName(t, side, payload.entries, "short")}
             </span>
             <span className="bracket__score">
-              {decided || live ? sideScore(fixture, which) : ""}
+              {decided || live ? sideScore(t, fixture, which) : ""}
             </span>
           </div>
         );

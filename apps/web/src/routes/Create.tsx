@@ -25,6 +25,7 @@ import { DoneStep } from "../components/create/DoneStep";
 import { FormatStep } from "../components/create/FormatStep";
 import { NameStep } from "../components/create/NameStep";
 import { TeamsStep } from "../components/create/TeamsStep";
+import { useI18n, useT } from "../lib/i18n";
 import { defaultPreset, type PresetId } from "../lib/presets";
 import {
   DEFAULT_SPORT,
@@ -42,6 +43,8 @@ interface Resumable {
 }
 
 export function Create() {
+  const t = useT();
+  const { locale } = useI18n();
   const [step, setStep] = useState<Step>("name");
   const [tournament, setTournament] = useState<TournamentRecord | null>(null);
   const [teams, setTeams] = useState<TeamRecord[]>([]);
@@ -92,7 +95,7 @@ export function Create() {
   }, []);
 
   const report = (thrown: unknown) =>
-    setError(thrown instanceof Error ? thrown.message : "Something went wrong.");
+    setError(thrown instanceof Error ? thrown.message : t("error.generic"));
 
   async function run<T>(work: (active: Session) => Promise<T>): Promise<T | null> {
     setBusy(true);
@@ -211,6 +214,7 @@ export function Create() {
           preset,
           teams.length,
           setLaunching,
+          locale,
         );
         setResult(launched);
         setStep("done");
@@ -226,7 +230,7 @@ export function Create() {
       {error ? (
         <div className="wiz__error" role="alert">
           <span>{error}</span>
-          <button type="button" onClick={() => setError(null)} aria-label="Dismiss">
+          <button type="button" onClick={() => setError(null)} aria-label={t("common.dismiss")}>
             ✕
           </button>
         </div>
@@ -286,7 +290,7 @@ export function Create() {
 
       {step === "done" && result ? (
         <DoneStep
-          name={tournament?.name ?? "Your tournament"}
+          name={tournament?.name ?? t("wizard.doneFallbackName")}
           tournamentId={tournament?.id ?? ""}
           result={result}
         />

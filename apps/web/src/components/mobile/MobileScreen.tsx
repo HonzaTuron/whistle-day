@@ -1,6 +1,9 @@
 import { useMemo, useState } from "react";
 import { useDisplayPayload } from "../../api/display";
 import { bracketStages, tablePools } from "../../lib/format";
+import { useT } from "../../lib/i18n";
+import { renderLabel } from "../../lib/labels";
+import { LanguageSwitch } from "../LanguageSwitch";
 import { MobileBracket } from "./MobileBracket";
 import { MobileFixtures } from "./MobileFixtures";
 import { MobileTable } from "./MobileTable";
@@ -16,21 +19,30 @@ type Tab = "live" | "tables" | "bracket" | "results";
  * share only the data hook and the formatting helpers.
  */
 export function MobileScreen({ token }: { token: string }) {
+  const t = useT();
   const { payload, error, stale, loading } = useDisplayPayload(token);
   const [tab, setTab] = useState<Tab>("live");
 
   const tables = useMemo(() => (payload ? tablePools(payload) : []), [payload]);
   const brackets = useMemo(() => (payload ? bracketStages(payload) : []), [payload]);
 
-  if (loading) return <div className="phone phone--message">Loading…</div>;
+  if (loading) return <div className="phone phone--message">{t("common.loading")}</div>;
   if (error) return <div className="phone phone--message">{error}</div>;
   if (!payload) return null;
 
   const tabs: { id: Tab; label: string; badge?: number }[] = [
-    { id: "live", label: "Live", badge: payload.now_playing.length || undefined },
-    ...(tables.length > 0 ? [{ id: "tables" as const, label: "Groups" }] : []),
-    ...(brackets.length > 0 ? [{ id: "bracket" as const, label: "Bracket" }] : []),
-    { id: "results", label: "Results" },
+    {
+      id: "live",
+      label: t("phone.tabLive"),
+      badge: payload.now_playing.length || undefined,
+    },
+    ...(tables.length > 0
+      ? [{ id: "tables" as const, label: t("phone.tabGroups") }]
+      : []),
+    ...(brackets.length > 0
+      ? [{ id: "bracket" as const, label: t("phone.tabBracket") }]
+      : []),
+    { id: "results", label: t("phone.tabResults") },
   ];
 
   const accent = payload.display.theme?.accent;
@@ -42,19 +54,21 @@ export function MobileScreen({ token }: { token: string }) {
     >
       <header className="phone__header">
         <h1>{payload.tournament.name}</h1>
-        {stale && <span className="phone__stale">offline</span>}
+        {stale && <span className="phone__stale">{t("phone.offline")}</span>}
       </header>
 
       <nav className="phone__tabs">
-        {tabs.map((t) => (
+        {tabs.map((entry) => (
           <button
-            key={t.id}
+            key={entry.id}
             type="button"
-            className={t.id === tab ? "phone__tab is-active" : "phone__tab"}
-            onClick={() => setTab(t.id)}
+            className={entry.id === tab ? "phone__tab is-active" : "phone__tab"}
+            onClick={() => setTab(entry.id)}
           >
-            {t.label}
-            {t.badge ? <span className="phone__badge">{t.badge}</span> : null}
+            {entry.label}
+            {entry.badge ? (
+              <span className="phone__badge">{entry.badge}</span>
+            ) : null}
           </button>
         ))}
       </nav>
@@ -62,13 +76,13 @@ export function MobileScreen({ token }: { token: string }) {
       <main className="phone__body">
         {tab === "live" && (
           <>
-            <Section title="Now playing" empty="Nothing is being played right now.">
+            <Section title={t("panel.now_playing")} empty={t("phone.nothingLive")}>
               {payload.now_playing.length > 0 && (
                 <MobileFixtures payload={payload} fixtures={payload.now_playing} live />
               )}
             </Section>
 
-            <Section title="Next up" empty="No matches scheduled.">
+            <Section title={t("panel.next_up")} empty={t("phone.nothingScheduled")}>
               {payload.next_up.length > 0 && (
                 <MobileFixtures payload={payload} fixtures={payload.next_up} showTime />
               )}
@@ -78,26 +92,39 @@ export function MobileScreen({ token }: { token: string }) {
 
         {tab === "tables" &&
           tables.map(({ stage, pool }) => (
-            <Section key={pool.id} title={`Group ${pool.name}`} subtitle={stage.name}>
+            <Section
+              key={pool.id}
+              title={t("board.groupNamed", {
+                name: renderLabel(t, pool.name, pool.name_kind),
+              })}
+              subtitle={renderLabel(t, stage.name, stage.name_kind)}
+            >
               <MobileTable payload={payload} pool={pool} />
             </Section>
           ))}
 
         {tab === "bracket" &&
           brackets.map((stage) => (
-            <Section key={stage.id} title={stage.name}>
+            <Section
+              key={stage.id}
+              title={renderLabel(t, stage.name, stage.name_kind)}
+            >
               <MobileBracket payload={payload} stage={stage} />
             </Section>
           ))}
 
         {tab === "results" && (
-          <Section title="Latest results" empty="No results yet.">
+          <Section title={t("panel.results")} empty={t("phone.noResults")}>
             {payload.recent.length > 0 && (
               <MobileFixtures payload={payload} fixtures={payload.recent} showScore />
             )}
           </Section>
         )}
       </main>
+
+      <footer className="phone__footer">
+        <LanguageSwitch />
+      </footer>
     </div>
   );
 }

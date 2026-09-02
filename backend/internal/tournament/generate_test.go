@@ -207,10 +207,10 @@ func TestQualifierSeedingAvoidsSamePoolMeetings(t *testing.T) {
 	// Two pools, top two advance: A1 B1 A2 B2 in that order. The bracket must
 	// pair A1 with B2 and B1 with A2 — never two teams from the same pool.
 	seeds := []bracketSeed{
-		{SourceType: "pool_rank", SourcePool: "A", SourceRank: 1, Label: "1. A"},
-		{SourceType: "pool_rank", SourcePool: "B", SourceRank: 1, Label: "1. B"},
-		{SourceType: "pool_rank", SourcePool: "A", SourceRank: 2, Label: "2. A"},
-		{SourceType: "pool_rank", SourcePool: "B", SourceRank: 2, Label: "2. B"},
+		{SourceType: "pool_rank", SourcePool: "A", SourceRank: 1, Label: poolRankLabel(1, "A")},
+		{SourceType: "pool_rank", SourcePool: "B", SourceRank: 1, Label: poolRankLabel(1, "B")},
+		{SourceType: "pool_rank", SourcePool: "A", SourceRank: 2, Label: poolRankLabel(2, "A")},
+		{SourceType: "pool_rank", SourcePool: "B", SourceRank: 2, Label: poolRankLabel(2, "B")},
 	}
 	plan := PlanSingleElimination(seeds, StageConfig{})
 

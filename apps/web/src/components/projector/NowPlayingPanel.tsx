@@ -1,7 +1,9 @@
 import type { DisplayPayload } from "@seedly/engine";
 import { courtName, sideName } from "../../lib/format";
+import { useT } from "../../lib/i18n";
 
 export function NowPlayingPanel({ payload }: { payload: DisplayPayload }) {
+  const t = useT();
   const live = payload.now_playing;
 
   // One match gets the whole wall; four have to share it.
@@ -26,7 +28,7 @@ export function NowPlayingPanel({ payload }: { payload: DisplayPayload }) {
             {(["home", "away"] as const).map((which) => (
               <div key={which} className="live__row">
                 <span className="live__team">
-                  {sideName(fixture[which], payload.entries)}
+                  {sideName(t, fixture[which], payload.entries)}
                 </span>
                 <span className="live__score">{fixture[which].score}</span>
               </div>

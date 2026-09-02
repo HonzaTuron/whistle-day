@@ -1,5 +1,6 @@
 import type { DisplayPayload } from "@seedly/engine";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useT, type MessageKey } from "../lib/i18n";
 import { forgetDisplay, readDisplay, writeDisplay } from "./cache";
 
 /**
@@ -81,8 +82,23 @@ function withEmptyLists(payload: DisplayPayload): DisplayPayload {
   };
 }
 
+/**
+ * The same state, with the failure still a key rather than a sentence.
+ *
+ * Held this way because a screen is left running: a projector that lost the
+ * network at eleven is still saying so at noon, and if the sentence were
+ * settled when the read failed then switching the language would leave the one
+ * line on the wall in the language before it. The wording happens on the way
+ * out of the hook, every render, so it follows the switch like everything
+ * else.
+ */
+interface InternalState extends Omit<DisplayState, "error"> {
+  error: MessageKey | null;
+}
+
 export function useDisplayPayload(token: string): DisplayState {
-  const [state, setState] = useState<DisplayState>({
+  const t = useT();
+  const [state, setState] = useState<InternalState>({
     payload: null,
     error: null,
     stale: false,
@@ -127,7 +143,7 @@ export function useDisplayPayload(token: string): DisplayState {
         } else if (response.status === 404) {
           setState({
             payload: null,
-            error: "This screen link is not valid.",
+            error: "error.badScreenLink",
             stale: false,
             loading: false,
           });
@@ -163,7 +179,7 @@ export function useDisplayPayload(token: string): DisplayState {
         setState((prev) => ({
           ...prev,
           stale: prev.payload !== null,
-          error: prev.payload ? null : "Cannot reach the scoring system.",
+          error: prev.payload ? null : "error.unreachable",
           loading: false,
         }));
       }
@@ -307,5 +323,8 @@ export function useDisplayPayload(token: string): DisplayState {
     };
   }, [token]);
 
-  return state;
+  return useMemo(
+    () => ({ ...state, error: state.error ? t(state.error) : null }),
+    [state, t],
+  );
 }

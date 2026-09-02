@@ -7,15 +7,18 @@ import {
   type JoinResult,
 } from "../api/organiser";
 import { usePreviewInvite } from "../api/hooks";
+import { useT, type MessageKey } from "../lib/i18n";
 import type { StaffRole } from "@seedly/engine";
 
-const ROLES: Record<StaffRole, string> = {
-  organizer: "help run it",
-  referee: "referee",
-  scorer: "keep score",
+/** What the invitation says this person is being asked to do. */
+const ROLES: Record<StaffRole, MessageKey> = {
+  organizer: "join.roleOrganizer",
+  referee: "join.roleReferee",
+  scorer: "join.roleScorer",
 };
 
 export function Join({ token }: { token: string }) {
+  const t = useT();
   const navigate = useNavigate();
   const [name, setName] = useState("");
   const [busy, setBusy] = useState(false);
@@ -36,26 +39,22 @@ export function Join({ token }: { token: string }) {
       rememberTournament({ id: joined.tournament, name: joined.name, token: "" });
       await navigate({ to: "/t/$id", params: { id: joined.tournament } });
     } catch (thrown) {
-      setError(
-        thrown instanceof Error ? thrown.message : "Could not join this tournament.",
-      );
+      setError(thrown instanceof Error ? thrown.message : t("join.failed"));
       setBusy(false);
     } finally {
       inflight.current = null;
     }
   };
 
-  if (isLoading) return <p className="results__message">Loading…</p>;
+  if (isLoading) return <p className="results__message">{t("common.loading")}</p>;
 
   if (!invite) {
     return (
       <div className="join">
-        <h1 className="join__title">Nothing to join</h1>
+        <h1 className="join__title">{t("join.nothing")}</h1>
         <p className="join__lead">
-          {isError
-            ? "This invitation has expired, or was never valid."
-            : error ?? "This invitation is not valid."}{" "}
-          Ask whoever is running the day for a fresh code.
+          {isError ? t("join.expired") : error ?? t("join.invalid")}{" "}
+          {t("join.askForFresh")}
         </p>
       </div>
     );
@@ -63,16 +62,18 @@ export function Join({ token }: { token: string }) {
 
   return (
     <div className="join">
-      <p className="join__eyebrow">You have been asked to {ROLES[invite.role]}</p>
+      <p className="join__eyebrow">
+        {t("join.asked", { role: t(ROLES[invite.role]) })}
+      </p>
       <h1 className="join__title">{invite.name}</h1>
 
       <label className="join__field">
-        <span>Your name</span>
+        <span>{t("join.yourName")}</span>
         <input
           type="text"
           value={name}
           onChange={(event) => setName(event.target.value)}
-          placeholder="Jana"
+          placeholder={t("join.namePlaceholder")}
           autoComplete="name"
           maxLength={60}
           enterKeyHint="go"
@@ -80,9 +81,7 @@ export function Join({ token }: { token: string }) {
             if (event.key === "Enter") void join();
           }}
         />
-        <small>
-          So the others can tell who entered a result. You can leave it blank.
-        </small>
+        <small>{t("join.nameHint")}</small>
       </label>
 
       {error ? (
@@ -97,13 +96,10 @@ export function Join({ token }: { token: string }) {
         onClick={() => void join()}
         disabled={busy}
       >
-        {busy ? "Joining…" : "Join and start"}
+        {t(busy ? "join.joining" : "join.start")}
       </button>
 
-      <p className="join__warning">
-        You are joining on this device, without an account. Clearing this
-        browser is the one thing that will lock you out.
-      </p>
+      <p className="join__warning">{t("join.warning")}</p>
     </div>
   );
 }

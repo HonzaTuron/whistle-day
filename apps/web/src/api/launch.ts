@@ -1,4 +1,5 @@
 import type { Id } from "@seedly/engine";
+import { tr, translate, type Locale } from "../lib/i18n";
 import { presetById, type PresetId } from "../lib/presets";
 import { forgetDraft, randomString, rememberTournament, type Session } from "./organiser";
 
@@ -50,7 +51,7 @@ async function api<T>(path: string, session: Session, body?: unknown, method = "
     } catch {
       /* keep the raw body */
     }
-    throw new Error(message || `Request failed (${response.status}).`);
+    throw new Error(message || tr("error.request", { status: response.status }));
   }
   return (text ? JSON.parse(text) : null) as T;
 }
@@ -65,6 +66,14 @@ export async function launchTournament(
   presetId: PresetId,
   teams: number,
   onStep: (step: LaunchStep) => void,
+  /**
+   * The language the organiser set this up in. It decides nothing about what
+   * the tournament looks like later — every generated name travels as a kind
+   * and is worded by whoever draws it — and only picks the English-or-not text
+   * stored alongside, which is what a raw database read or an older client
+   * sees.
+   */
+  locale: Locale = "en",
 ): Promise<LaunchResult> {
   const preset = presetById(presetId);
   const specs = preset.stages(teams);
@@ -89,6 +98,7 @@ export async function launchTournament(
       tournament,
       position,
       name: spec.name,
+      name_kind: spec.nameKind,
       format: spec.format,
       status: "draft",
       config,
@@ -127,7 +137,7 @@ export async function launchTournament(
   if (!screens[0]) {
     await api<unknown>("/api/collections/displays/records", session, {
       tournament,
-      name: "Main screen",
+      name: translate(locale, "display.mainScreen"),
       token,
       mode: "auto",
       rotate_seconds: 12,

@@ -144,6 +144,19 @@ its final positions.
 
 ## Behaviour worth knowing about
 
+- **English and Czech, and the wall can be aimed at one of them.** Every screen
+  reads in either, with no i18n dependency — two typed catalogues in
+  `apps/web/src/locales/` and twenty lines of interpolation, because
+  `Intl.PluralRules` already knows Czech's four plural forms. `cs` is typed
+  against `en`, so a missing key is a compile error rather than a dotted path
+  on a wall. A `?lang=cs` on a link wins over what the browser prefers, which
+  is the only way to aim a projector: the laptop driving it is as likely as not
+  to be in English, and the hall is not.
+- **The names the app wrote travel as facts, not sentences.** "Winner QF1" is
+  composed hours before it is read, and a projector cannot translate prose —
+  only look a message up. So a slot stores its kind and its arguments beside
+  the English, and whoever draws it does the wording. What a person typed — a
+  tournament, a team, a court — has no kind and is never touched.
 - **The sport is the only scoring question anybody is asked.** Three points for
   a win with a draw possible is right for football and wrong for every sport
   played in a hall, so the wizard asks what is being played on the same screen

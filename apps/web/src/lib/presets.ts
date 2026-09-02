@@ -1,3 +1,6 @@
+import type { LabelKind } from "@seedly/engine";
+import type { MessageKey, Translate } from "./i18n";
+
 /**
  * The ways to run a day, and what each one costs in matches.
  *
@@ -7,14 +10,18 @@
  * shown next to each choice are the point of the screen: "28 matches, about
  * four hours on two courts" is a decision someone can actually make.
  *
- * Everything here is pure. The stage records these describe are written at
- * launch, in `lib/launch.ts`.
+ * Everything here is pure. What changed when the app learned a second language
+ * is that the prose left: a preset now holds message keys, and `shape` is
+ * handed a translator rather than building a sentence out of English grammar.
+ * The stage records these describe are written at launch, in `api/launch.ts`.
  */
 
 export type PresetId = "knockout" | "double" | "groups" | "swiss" | "everyone";
 
 export interface StageSpec {
+  /** The English name, still stored, and the kind that lets it be said again. */
   name: string;
+  nameKind: LabelKind;
   format: "round_robin" | "single_elim" | "double_elim" | "swiss";
   config: Record<string, unknown>;
   /**
@@ -27,13 +34,13 @@ export interface StageSpec {
 
 export interface Preset {
   id: PresetId;
-  title: string;
+  title: MessageKey;
   /** One word in the corner of the card: what this choice is FOR. */
-  tag: string;
-  blurb: string;
+  tag: MessageKey;
+  blurb: MessageKey;
   minTeams: number;
   /** "2 groups of 4, then semi-finals" — the shape, for this many teams. */
-  shape: (teams: number) => string;
+  shape: (t: Translate, teams: number) => string;
   matches: (teams: number) => number;
   stages: (teams: number) => StageSpec[];
 }
@@ -69,57 +76,81 @@ const knockoutMatches = (teams: number) => Math.max(teams - 1, 0) + (teams >= 4 
 export const swissRounds = (teams: number) =>
   Math.min(Math.max(3, Math.ceil(Math.log2(Math.max(teams, 2)))), Math.max(teams - 1, 1));
 
-const roundName = (teams: number) =>
-  teams <= 2 ? "a final" :
-  teams <= 4 ? "semi-finals" :
-  teams <= 8 ? "quarter-finals" :
-  `a round of ${2 ** Math.ceil(Math.log2(teams))}`;
-
-/** "5 matches", not "5 matchs". */
-const plural = (n: number, word: string) =>
-  `${n} ${word}${n === 1 ? "" : /[sxz]$|[cs]h$/.test(word) ? "es" : "s"}`;
+/**
+ * How far a knockout reaches, named as the round it starts at.
+ *
+ * 16 and 32 get their own keys rather than being counted into a generic
+ * sentence, because Czech has one word for each — osmifinále, šestnáctifinále
+ * — and "a round of 16" is not a phrase anybody there says.
+ */
+const roundName = (t: Translate, teams: number): string => {
+  if (teams <= 2) return t("round.final");
+  if (teams <= 4) return t("round.semis");
+  if (teams <= 8) return t("round.quarters");
+  const size = 2 ** Math.ceil(Math.log2(teams));
+  if (size === 16) return t("round.of16");
+  if (size === 32) return t("round.of32");
+  return t("round.of", { size });
+};
 
 export const PRESETS: Preset[] = [
   {
     id: "knockout",
-    title: "Straight knockout",
-    tag: "Shortest",
-    blurb: "Lose once and you are out. The quickest way to a winner, and the least playing time for whoever draws badly.",
+    title: "preset.knockout.title",
+    tag: "preset.knockout.tag",
+    blurb: "preset.knockout.blurb",
     minTeams: 2,
-    shape: (teams) => `${roundName(teams)} through to the final, plus a third-place match`,
+    shape: (t, teams) => t("preset.knockout.shape", { round: roundName(t, teams) }),
     matches: knockoutMatches,
     stages: () => [
-      { name: "Playoff", format: "single_elim", config: { thirdPlace: true } },
+      {
+        name: "Playoff",
+        nameKind: "playoff",
+        format: "single_elim",
+        config: { thirdPlace: true },
+      },
     ],
   },
   {
     id: "double",
-    title: "Double elimination",
-    tag: "Two lives",
-    blurb:
-      "Lose once and you drop into the losers bracket; lose twice and you are out. Nobody goes home on one bad game, and the day still ends with one winner.",
+    title: "preset.double.title",
+    tag: "preset.double.tag",
+    blurb: "preset.double.blurb",
     minTeams: 4,
-    shape: () =>
-      "a winners bracket, the losers bracket that catches everyone it knocks out, and a grand final between them",
+    shape: (t) => t("preset.double.shape"),
     // Everybody but the winner loses twice.
     matches: (teams) => Math.max(2 * teams - 2, 1),
     stages: () => [
-      { name: "Double elimination", format: "double_elim", config: {} },
+      {
+        name: "Double elimination",
+        nameKind: "double_elim",
+        format: "double_elim",
+        config: {},
+      },
     ],
   },
   {
     id: "groups",
-    title: "Groups, then playoff",
-    tag: "Recommended",
-    blurb: "Everyone gets a few guaranteed matches, the top two of each group carry on. What most one-day tournaments do.",
+    title: "preset.groups.title",
+    tag: "preset.groups.tag",
+    blurb: "preset.groups.blurb",
     minTeams: 6,
-    shape: (teams) => {
+    shape: (t, teams) => {
       const sizes = poolSizes(teams);
       const even = sizes.every((size) => size === sizes[0]);
+      // Two groups of four reads differently from groups of four and three,
+      // and both are one message with the count in it rather than a phrase
+      // assembled out of pieces — Czech inflects "skupina" past the caller.
       const groups = even
-        ? `${plural(sizes.length, "group")} of ${sizes[0]}`
-        : `${plural(sizes.length, "group")} of ${sizes.join(" and ")}`;
-      return `${groups}, then ${roundName(sizes.length * 2)} for the top two of each`;
+        ? t("preset.groups.even", { count: sizes.length, size: sizes[0]! })
+        : t("preset.groups.uneven", {
+            count: sizes.length,
+            sizes: sizes.join(t("preset.groups.sizesJoin")),
+          });
+      return t("preset.groups.shape", {
+        groups,
+        round: roundName(t, sizes.length * 2),
+      });
     },
     matches: (teams) => {
       const qualifiers = poolCount(teams) * 2;
@@ -129,11 +160,13 @@ export const PRESETS: Preset[] = [
     stages: (teams) => [
       {
         name: "Groups",
+        nameKind: "groups",
         format: "round_robin",
         config: { poolCount: poolCount(teams), advancePerPool: 2 },
       },
       {
         name: "Playoff",
+        nameKind: "playoff",
         format: "single_elim",
         config: { thirdPlace: true },
         seedFromPrevious: true,
@@ -143,24 +176,25 @@ export const PRESETS: Preset[] = [
   },
   {
     id: "swiss",
-    title: "Swiss rounds",
-    tag: "Big fields",
-    blurb:
-      "No groups and nobody knocked out. Everyone plays the same number of matches, each one against a team on the same record — win and you meet a winner, lose and you meet somebody who lost. The table sorts itself out, and the top four play it off.",
+    title: "preset.swiss.title",
+    tag: "preset.swiss.tag",
+    blurb: "preset.swiss.blurb",
     minTeams: 8,
-    shape: (teams) =>
-      `${plural(swissRounds(teams), "round")} for all ${teams}, then semi-finals for the top four`,
+    shape: (t, teams) =>
+      t("preset.swiss.shape", { count: swissRounds(teams), teams }),
     // Each round is half the field, rounded down: an odd team sits out and
     // takes the win for it.
     matches: (teams) => swissRounds(teams) * Math.floor(teams / 2) + knockoutMatches(4),
     stages: (teams) => [
       {
         name: "Swiss",
+        nameKind: "swiss",
         format: "swiss",
         config: { rounds: swissRounds(teams), advancePerPool: 4 },
       },
       {
         name: "Playoff",
+        nameKind: "playoff",
         format: "single_elim",
         config: { thirdPlace: true },
         seedFromPrevious: true,
@@ -170,20 +204,20 @@ export const PRESETS: Preset[] = [
   },
   {
     id: "everyone",
-    title: "Everyone plays everyone",
-    tag: "Longest",
-    blurb: "One table, no knockout. Every team plays every other and the table decides it — nobody goes home after two matches.",
+    title: "preset.everyone.title",
+    tag: "preset.everyone.tag",
+    blurb: "preset.everyone.blurb",
     minTeams: 3,
-    shape: (teams) => `one group of ${teams}, ${plural(teams - 1, "match")} each, the table decides`,
+    shape: (t, teams) => t("preset.everyone.shape", { teams, count: teams - 1 }),
     matches: combinations,
     stages: () => [
-      { name: "Group", format: "round_robin", config: { poolCount: 1 } },
+      { name: "Group", nameKind: "group", format: "round_robin", config: { poolCount: 1 } },
     ],
   },
 ];
 
 export const presetById = (id: PresetId) =>
-  PRESETS.find((preset) => preset.id === id) ?? PRESETS[1];
+  PRESETS.find((preset) => preset.id === id) ?? PRESETS[1]!;
 
 export const availablePresets = (teams: number) =>
   PRESETS.filter((preset) => teams >= preset.minTeams);
@@ -218,11 +252,11 @@ export function estimate(preset: Preset, teams: number, courts: number): Estimat
   };
 }
 
-export function formatDuration(minutes: number): string {
+export function formatDuration(t: Translate, minutes: number): string {
   const rounded = Math.round(minutes / 15) * 15;
   const hours = Math.floor(rounded / 60);
   const rest = rounded % 60;
-  if (hours === 0) return `${rest} min`;
-  if (rest === 0) return `${hours} h`;
-  return `${hours} h ${rest} min`;
+  if (hours === 0) return t("duration.minutes", { minutes: rest });
+  if (rest === 0) return t("duration.hours", { hours });
+  return t("duration.hoursMinutes", { hours, minutes: rest });
 }

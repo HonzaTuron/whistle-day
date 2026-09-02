@@ -1,6 +1,7 @@
 import type { DisplayFixture, DisplayPayload } from "@seedly/engine";
 import type { CSSProperties } from "react";
 import { courtName, scoreline, sideName, timeOfDay } from "../../lib/format";
+import { useI18n } from "../../lib/i18n";
 
 /** The shared shape behind "Next up" and "Latest results". */
 export function FixtureListPanel({
@@ -14,6 +15,8 @@ export function FixtureListPanel({
   showTime?: boolean;
   showScore?: boolean;
 }) {
+  const { t, locale } = useI18n();
+
   return (
     // `--rows` is what sizes the type: a wall with five matches on it should
     // read from the back of the hall, one with sixteen is a schedule.
@@ -26,20 +29,20 @@ export function FixtureListPanel({
           <li key={fixture.id} className="fixtures__row">
             <span className="fixtures__lead">
               {showTime
-                ? timeOfDay(fixture.scheduled_at) || fixture.code
+                ? timeOfDay(locale, fixture.scheduled_at) || fixture.code
                 : fixture.code}
             </span>
 
             <span className={winnerIsHome ? "fixtures__team is-winner" : "fixtures__team"}>
-              {sideName(fixture.home, payload.entries)}
+              {sideName(t, fixture.home, payload.entries)}
             </span>
 
             <span className="fixtures__score">
-              {showScore ? scoreline(fixture) : "v"}
+              {showScore ? scoreline(t, fixture) : t("projector.versusShort")}
             </span>
 
             <span className={winnerIsAway ? "fixtures__team is-winner" : "fixtures__team"}>
-              {sideName(fixture.away, payload.entries)}
+              {sideName(t, fixture.away, payload.entries)}
             </span>
 
             <span className="fixtures__court">

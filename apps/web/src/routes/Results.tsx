@@ -27,6 +27,7 @@ import {
   sentSoFar,
   subscribe,
 } from "../api/outbox";
+import { useT } from "../lib/i18n";
 import { overlay, waitingFixtures, type Intent } from "../lib/pending";
 import type { Display, Entry, ScoringConfig, StaffRole } from "@seedly/engine";
 import { CrewSheet } from "../components/results/CrewSheet";
@@ -41,6 +42,7 @@ import { progress, sections, toRow } from "../lib/board";
 type Tab = "todo" | "done";
 
 export function Results({ id }: { id: string }) {
+  const t = useT();
   const [tab, setTab] = useState<Tab>("todo");
   const [selected, setSelected] = useState<string | null>(null);
   const [settings, setSettings] = useState(false);
@@ -120,7 +122,7 @@ export function Results({ id }: { id: string }) {
       await refetch();
       if (close) setSelected(null);
     } catch (thrown) {
-      setError(thrown instanceof Error ? thrown.message : "Could not save that.");
+      setError(thrown instanceof Error ? thrown.message : t("error.notSaved"));
     } finally {
       setSaving(false);
     }
@@ -168,7 +170,7 @@ export function Results({ id }: { id: string }) {
         : await ensureInvite(active, id, role);
       setInvite({ role, url: `${window.location.origin}/join/${record.token}` });
     } catch (thrown) {
-      setError(thrown instanceof Error ? thrown.message : "Could not make a join code.");
+      setError(thrown instanceof Error ? thrown.message : t("board.inviteFailed"));
     } finally {
       setInviting(false);
     }
@@ -177,8 +179,13 @@ export function Results({ id }: { id: string }) {
   const dropStaff = (member: StaffRecord) =>
     void write((active) => removeStaff(active, member.id), false);
 
-  if (loading) return <p className="results__message">Loading…</p>;
-  if (!displayBoard) return <p className="results__message">{queryError?.message ?? "Nothing here."}</p>;
+  if (loading) return <p className="results__message">{t("common.loading")}</p>;
+  if (!displayBoard)
+    return (
+      <p className="results__message">
+        {queryError?.message ?? t("error.nothingHere")}
+      </p>
+    );
 
   const entries = new Map(displayBoard.entries.map((entry) => [entry.id, entry]));
   const fixtures = overlay(displayBoard.fixtures, held);
@@ -193,8 +200,10 @@ export function Results({ id }: { id: string }) {
   const isOwner = displayBoard.tournament.owner === storedSession()?.userId;
 
   const crewNames = new Map<string, string>([
-    [displayBoard.tournament.owner, "Organiser"],
-    ...displayBoard.staff.map((member) => [member.user, member.name || "Someone"] as const),
+    [displayBoard.tournament.owner, t("board.organiser")],
+    ...displayBoard.staff.map(
+      (member) => [member.user, member.name || t("board.someone")] as const,
+    ),
   ]);
 
   const remaining = new Map<string, number>();
@@ -217,7 +226,7 @@ export function Results({ id }: { id: string }) {
       {error ? (
         <div className="wiz__error" role="alert">
           <span>{error}</span>
-          <button type="button" onClick={() => setError(null)} aria-label="Dismiss">
+          <button type="button" onClick={() => setError(null)} aria-label={t("common.dismiss")}>
             ✕
           </button>
         </div>
@@ -226,14 +235,12 @@ export function Results({ id }: { id: string }) {
       <header className="results__head">
         <div>
           <h1>{displayBoard.tournament.name}</h1>
-          <p>
-            {done.played} of {done.total} matches in
-          </p>
+          <p>{t("board.progress", { played: done.played, count: done.total })}</p>
         </div>
         <div className="results__screens">
           {token ? (
             <Link to="/display/$token" params={{ token }} className="results__screen">
-              Screen
+              {t("board.screen")}
             </Link>
           ) : null}
           {token && displayBoard.screen ? (
@@ -242,7 +249,7 @@ export function Results({ id }: { id: string }) {
               className="results__screen results__screen--settings"
               onClick={() => setSettings(true)}
             >
-              Set up
+              {t("board.setUp")}
             </button>
           ) : null}
           <button
@@ -250,14 +257,14 @@ export function Results({ id }: { id: string }) {
             className="results__screen results__screen--settings"
             onClick={() => setRoster(true)}
           >
-            Teams
+            {t("board.teams")}
           </button>
           <button
             type="button"
             className="results__screen results__screen--settings"
             onClick={() => setScoring(true)}
           >
-            Scoring
+            {t("board.scoring")}
           </button>
           {isOwner ? (
             <button
@@ -265,7 +272,8 @@ export function Results({ id }: { id: string }) {
               className="results__screen results__screen--settings"
               onClick={() => setCrew(true)}
             >
-              Crew {displayBoard.staff.length > 0 ? `· ${displayBoard.staff.length}` : ""}
+              {t("board.crew")}
+              {displayBoard.staff.length > 0 ? ` · ${displayBoard.staff.length}` : ""}
             </button>
           ) : null}
         </div>
@@ -277,24 +285,26 @@ export function Results({ id }: { id: string }) {
           role="status"
         >
           <span>
-            {waiting === 1 ? "1 result" : `${waiting} results`}{" "}
-            {sending
-              ? "sending…"
-              : queue.offline
-                ? "waiting for a signal"
-                : "waiting to send"}
+            {t(
+              sending
+                ? "board.queueSending"
+                : queue.offline
+                  ? "board.queueOffline"
+                  : "board.queueWaiting",
+              { count: waiting },
+            )}
           </span>
           {!sending ? (
             <button type="button" onClick={() => void flush()}>
-              Send now
+              {t("board.sendNow")}
             </button>
           ) : null}
         </div>
       ) : stale ? (
         <div className="results__queue" role="status">
-          <span>Showing the last board this phone saw.</span>
+          <span>{t("board.stale")}</span>
           <button type="button" onClick={() => void refetch()}>
-            Retry
+            {t("common.retry")}
           </button>
         </div>
       ) : null}
@@ -304,10 +314,12 @@ export function Results({ id }: { id: string }) {
           <span>
             {refused.length === 1
               ? refused[0]!.message
-              : `${refused.length} results were refused: ` +
-                refused.map((one) => one.message).join("; ")}
+              : t("error.refusedResults", {
+                  count: refused.length,
+                  messages: refused.map((one) => one.message).join("; "),
+                })}
           </span>
-          <button type="button" onClick={dismissRejections} aria-label="Dismiss">
+          <button type="button" onClick={dismissRejections} aria-label={t("common.dismiss")}>
             ✕
           </button>
         </div>
@@ -321,26 +333,26 @@ export function Results({ id }: { id: string }) {
           className={"results__tab" + (tab === "todo" ? " is-active" : "")}
           onClick={() => setTab("todo")}
         >
-          To play {done.total - done.played > 0 ? `· ${done.total - done.played}` : ""}
+          {t("board.tabTodo")}
+          {done.total - done.played > 0 ? ` · ${done.total - done.played}` : ""}
         </button>
         <button
           type="button"
           className={"results__tab" + (tab === "done" ? " is-active" : "")}
           onClick={() => setTab("done")}
         >
-          Played {done.played > 0 ? `· ${done.played}` : ""}
+          {t("board.tabDone")}
+          {done.played > 0 ? ` · ${done.played}` : ""}
         </button>
       </nav>
 
       <main className="results__body">
         {visible.length === 0 ? (
           <p className="results__empty">
-            {tab === "todo"
-              ? "Every match is in."
-              : "No results yet — the first one goes in from To play."}
+            {t(tab === "todo" ? "board.emptyTodo" : "board.emptyDone")}
           </p>
         ) : (
-          sections(displayBoard, visible).map((section) => (
+          sections(t, displayBoard, visible).map((section) => (
             <section key={section.key} className="results__section">
               <h2>
                 {section.stage}
