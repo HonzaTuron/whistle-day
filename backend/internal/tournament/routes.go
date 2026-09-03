@@ -246,6 +246,41 @@ func RegisterRoutes(app core.App) {
 			})
 		}).Bind(apis.RequireAuth())
 
+		// Put a team in that was not there when the draw was made.
+		//
+		// The other half of the withdrawal above, and the same shape for the
+		// same reason: the record is the small part of it, and what has to
+		// happen around it — the matches they now owe a group, a seat in a
+		// Swiss table, a bracket drawn again — is a transaction rather than a
+		// patch. The entry itself is created through the ordinary collection
+		// API first, exactly as the wizard creates one; this is what fits it
+		// into a tournament that is already under way.
+		//
+		// Idempotent: a team already in a stage is left in it rather than
+		// given a second seat.
+		se.Router.POST("/api/entries/{entry}/admit", func(e *core.RequestEvent) error {
+			entry, err := e.App.FindRecordById("entries", e.Request.PathValue("entry"))
+			if err != nil {
+				return e.NotFoundError("team not found", err)
+			}
+			if err := requireStaff(e, entry.GetString("tournament")); err != nil {
+				return err
+			}
+
+			admitted, err := AdmitEntry(e.App, entry)
+			if err != nil {
+				// The refusal an organiser actually meets is "the playoff has
+				// started", which is a sentence about their tournament rather
+				// than about this server, so it goes back as it is written.
+				return e.BadRequestError(err.Error(), err)
+			}
+
+			return e.JSON(http.StatusOK, map[string]any{
+				"entry":  entry.Id,
+				"stages": admitted,
+			})
+		}).Bind(apis.RequireAuth())
+
 		se.Router.POST("/api/entries/{entry}/reinstate", func(e *core.RequestEvent) error {
 			entry, err := e.App.FindRecordById("entries", e.Request.PathValue("entry"))
 			if err != nil {

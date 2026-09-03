@@ -705,6 +705,10 @@ func PlanStage(app core.App, stage *core.Record) (*StagePlan, error) {
 //
 // It refuses to run if any fixture in the stage has already been played —
 // regenerating would silently destroy results. Clear them deliberately first.
+//
+// "Played" rather than "settled", because a bye is settled and nobody played
+// it: a bracket of six decides two fixtures the moment it is drawn, and
+// refusing on those would mean an untouched draw could never be drawn again.
 func CommitPlan(app core.App, stage *core.Record, plan *StagePlan) error {
 	existing, err := app.FindRecordsByFilter(
 		"fixtures", "stage = {:stage}", "", 0, 0,
@@ -714,7 +718,7 @@ func CommitPlan(app core.App, stage *core.Record, plan *StagePlan) error {
 		return err
 	}
 	for _, f := range existing {
-		if isSettled(f.GetString("status")) {
+		if isPlayed(f.GetString("status")) {
 			return fmt.Errorf(
 				"stage already has played fixtures (%s); refusing to regenerate",
 				f.GetString("code"),

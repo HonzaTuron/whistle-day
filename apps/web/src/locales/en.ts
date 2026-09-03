@@ -496,6 +496,20 @@ export const en = {
   },
   "teams.putBack": "Put back",
   "teams.out": "Out",
+  "teams.add": "Add",
+  "teams.adding": "Adding…",
+  "teams.addLabel": "Name of the team joining",
+  "teams.addPlaceholder": "A team who has just turned up",
+  "teams.addHint":
+    "They go into the group with the least to catch up on and play everybody already in it. A knockout that has been played will not take one.",
+  "teams.addDuplicate": "{name} is already playing.",
+  "teams.joinedPool": {
+    one: "{name} is in group {pool}, with {count} match to play.",
+    other: "{name} is in group {pool}, with {count} matches to play.",
+  },
+  "teams.joinedField": "{name} is in, and will be drawn into the next round.",
+  "teams.joinedRedrawn": "{name} is in, and {stage} has been drawn again.",
+  "teams.joinedWaiting": "{name} is in, and will be in the draw when it is made.",
 
   // -------------------------------------------------------------------------
   // the crew

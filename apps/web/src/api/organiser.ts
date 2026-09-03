@@ -856,6 +856,41 @@ export const withdrawEntry = (
   );
 
 /**
+ * What happened to one stage when a team arrived late.
+ *
+ * `waiting` is a stage that has nothing to do about them: it has not been
+ * drawn yet, or it is a playoff fed by a table they can still qualify through.
+ * `already` is admitting somebody twice, which is a no-op rather than a second
+ * seat.
+ */
+export interface Admission {
+  stage: Id;
+  name: string;
+  action: "waiting" | "already" | "pool" | "field" | "redrawn";
+  pool?: Id;
+  fixtures: number;
+}
+
+/**
+ * Fit a team into a tournament that is already under way.
+ *
+ * The record itself is created the ordinary way, through `addTeam` — this is
+ * the part the collection API cannot do: the matches they now owe a group, a
+ * seat in a Swiss table, a bracket drawn again. All of it in one transaction,
+ * and refused outright rather than half-applied when a bracket has already
+ * been played.
+ *
+ * Not queued offline, for the same reason a withdrawal is not: who is in the
+ * field decides who gets drawn into the next round, and an arrival sitting in
+ * a queue for ten minutes is a round paired without them.
+ */
+export const admitEntry = (session: Session, entry: Id) =>
+  api<{ entry: Id; stages: Admission[] }>(`/api/entries/${entry}/admit`, {
+    method: "POST",
+    token: session.token,
+  });
+
+/**
  * Put one back.
  *
  * Undoes what taking them out did and nothing else — the server tracks which

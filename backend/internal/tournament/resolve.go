@@ -24,6 +24,22 @@ func isSettled(status string) bool {
 	}
 }
 
+// isPlayed reports whether anybody has actually done something to a fixture: a
+// result, a match on court, or a match struck off.
+//
+// Narrower than isSettled, and the difference is the bye. A bye is settled the
+// instant it is written and nobody played it, so a draw with byes in it — which
+// is every draw that is not a power of two — has not started merely by
+// existing.
+func isPlayed(status string) bool {
+	switch status {
+	case "finished", "walkover", "live", "cancelled":
+		return true
+	default:
+		return false
+	}
+}
+
 // RegisterHooks wires fixture outcome derivation and slot propagation into app.
 func RegisterHooks(app core.App) {
 	// Derive winner/loser from the score BEFORE the write, so the stored

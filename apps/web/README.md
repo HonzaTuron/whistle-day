@@ -146,10 +146,11 @@ drains. `winner` is the one exception and is display-only — a recorded match
 that cannot say who won reads as broken — and the server overwrites it on
 arrival.
 
-It is deliberately not a general offline layer. **Taking a team out is not
-queued**, because the answer changes who gets drawn into the next Swiss round,
-and a withdrawal sitting in a queue for ten minutes is a round paired around
-somebody who has already gone home. Neither are join codes, which mint a token
+It is deliberately not a general offline layer. **Neither taking a team out nor
+putting one in is queued**, because both change who gets drawn into the next
+Swiss round, and either of them sitting in a queue for ten minutes is a round
+paired around the wrong field — somebody who has already gone home, or without
+somebody who is standing there. Neither are join codes, which mint a token
 only the server can make, nor the settings sheets, nor the `/new` wizard. Those
 still need a signal and say so.
 
@@ -434,6 +435,35 @@ Every change to a result is logged, and the sheet shows the log for the match
 it is open on — but only when there is something to say. A match entered once
 and left alone shows nothing, because the row above it already says what the
 score is. The line that matters is the second one: "changed 3–1 to 2–4".
+
+## Who is playing
+
+"Teams" on `/t/:id` is the roster, and it exists for the two moments it changes
+after the draw. They are not symmetrical, and the screen is not either.
+
+A team leaving has to be asked a question — do their results stand, or are they
+struck — and the two answers rank everybody else differently, so they are two
+buttons rather than a choice and a confirm. A team arriving has to be typed in,
+which is one field at the top of the same sheet, one tap from the button that
+opens it. A name and nothing else: everything a team has beyond that was asked
+for in the wizard, and somebody standing in a hall with a fifth team in front
+of them wants them on court rather than in a form. The short name is derived
+the way the wizard derives it, through `lib/teams.ts`.
+
+- **Two writes, and the second one may refuse.** The entry is created the
+  ordinary way and then `POST /api/entries/{entry}/admit` fits it into the
+  stages that are already drawn. A bracket that has been played will not take
+  another team, and when that happens the entry is taken back out again: a team
+  in the roster with no matches and no way to get any is a worse answer than
+  the refusal, which is what the organiser sees instead.
+- **The answer says where they landed.** "In group B, with 3 matches to play"
+  is the thing worth knowing, and it is different per format — a Swiss field
+  writes no matches at all and pairs them into the next round. So the server
+  answers with a line per stage and `admissionNotice` says the first one that
+  actually did something.
+- **The field empties on the tap, not on the response.** The same rule as the
+  wizard's team list, for the same reason: hall wifi makes a save take a second
+  or two and whoever is typing has already moved on.
 
 ## Setting the day's scoring
 

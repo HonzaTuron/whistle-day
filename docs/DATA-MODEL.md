@@ -132,6 +132,45 @@ outstanding work, so it leaves every denominator rather than counting as done.
 A day with two cancelled matches is a day of four matches, not a day of six
 that can only ever reach four.
 
+## When a team turns up late
+
+The mirror of a withdrawal, and the harder half of it: taking somebody out only
+has to close what they had left, while putting somebody in has to invent the
+matches they are going to play. There is no one answer, because what a
+participant *is* differs by format.
+
+| Format | What admitting one means |
+|---|---|
+| Round robin | A slot in the pool with the fewest teams, and one fixture against everybody already in it. |
+| Swiss | A slot in the table, and nothing else. The next round is drawn from the table and they are in it. |
+| Knockout, drawn from the entries | The bracket is drawn again — and only while nobody has played. |
+| Knockout, seeded from a table | Nothing. They qualify out of the stage that feeds it, or they do not. |
+
+Three decisions inside that are worth keeping.
+
+**The new fixtures are appended one per round.** A round is what can be played
+at the same time, and a newcomer owing four matches cannot play four at once,
+so they arrive as four catch-up rounds at the end of the pool rather than being
+dropped into rounds that already exist. That is also how they will actually be
+played.
+
+**A team that has gone home is not written in as an opponent.** The fixture
+would look ordinary and close itself as a walkover the instant it was saved —
+`settleWithdrawn` runs from propagation — crediting a newcomer with beating a
+team that was not there to be beaten.
+
+**The refusal comes before the first write.** A tournament is groups and a
+playoff, and admitting somebody to the groups only to be refused by the playoff
+would leave it half-changed, which is the state a withdrawal was arranged to
+avoid as well. `lateEntryFault` asks every stage first; the writes then happen
+in one transaction and end on the same `recomputeTournament` sweep.
+
+Adding a team to a pool that had finished makes that pool incomplete again,
+which is exactly right: `PoolComplete` goes false, nothing new is seeded off it,
+and `ResolvePoolRanks` overwrites the qualifiers when it completes for the
+second time. That is also why a *played* knockout refuses — its slots would be
+rewritten under a bracket that has results in it.
+
 ## How a second person gets in
 
 `staff` gates every write below a tournament and there is no way to insert a
@@ -501,6 +540,10 @@ unaffected. The field is writable — just not by the account it is about.
 - **Schedule conflicts are a warning, not a constraint.** The organiser screen
   says when a team is already down for another match within the hour and a
   half; the database will happily store it either way.
+- **A knockout that has started cannot take a late team.** A group or a Swiss
+  field can, and an untouched bracket is drawn again. Once a bracket holds a
+  result there is no honest answer: the ninth team is not one of eight
+  positions that were decided on Friday.
 - ~~**Result history.**~~ Done: `fixture_events` is append-only and written
   only by the request hooks, so it records what a *person* did — the resolver
   rewrites fixtures constantly and none of that is somebody changing a result.

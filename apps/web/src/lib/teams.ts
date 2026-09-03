@@ -1,4 +1,6 @@
 import type { EntryStatus } from "@seedly/engine";
+import type { Admission } from "../api/organiser";
+import type { Translate } from "./i18n";
 
 /**
  * `entries.short_name` is capped at 16 characters and is what the projector
@@ -45,3 +47,39 @@ export const isDuplicateName = (name: string, existing: { name: string }[]) =>
  */
 export const isOut = (entry: { status: EntryStatus }) =>
   entry.status === "withdrawn" || entry.status === "disqualified";
+
+/**
+ * What to tell somebody about the team they have just added.
+ *
+ * The server answers with a line per stage, and most of those lines are "there
+ * was nothing to do here" — an ungenerated stage, a playoff nobody is added
+ * to. What the organiser wants to know is where the team actually landed and
+ * how much they now owe, so the first stage that did something is the one that
+ * gets said out loud.
+ *
+ * When nothing did anything the team is still in: they were added before the
+ * draw, which is the easy case and worth confirming rather than passing over
+ * in silence.
+ */
+export function admissionNotice(
+  t: Translate,
+  name: string,
+  stages: Admission[],
+  poolName: (id: string) => string,
+): string {
+  for (const stage of stages) {
+    switch (stage.action) {
+      case "pool":
+        return t("teams.joinedPool", {
+          name,
+          pool: poolName(stage.pool ?? ""),
+          count: stage.fixtures,
+        });
+      case "field":
+        return t("teams.joinedField", { name, stage: stage.name });
+      case "redrawn":
+        return t("teams.joinedRedrawn", { name, stage: stage.name });
+    }
+  }
+  return t("teams.joinedWaiting", { name });
+}

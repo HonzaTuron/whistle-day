@@ -1646,6 +1646,88 @@ try {
       status: "finished", home_score: 5, away_score: 2,
     })).status, "finished");
 
+  // =====================================================================
+  console.log("\n19. a team turns up late");
+  // =====================================================================
+  // The mirror of a team going home, and the harder half: the matches they
+  // are going to play have to be invented, and what those are depends on the
+  // format. The assertions that matter are that nothing already played moved,
+  // and that the pool stopped calling itself finished.
+  const admit = (entryId: string) =>
+    fetch(`${BASE}/api/entries/${entryId}/admit`, {
+      method: "POST",
+      headers: { "content-type": "application/json", Authorization: token },
+    });
+
+  const lt = await buildPool("Late Cup");
+  const ltBefore = await fixturesOf(lt.stage.id);
+  await patch("fixtures", ltBefore[0].id, {
+    status: "finished", home_score: 3, away_score: 0,
+  });
+
+  const newcomer = await create("entries", {
+    tournament: lt.t.id, name: "Q", seed: 5, status: "active",
+  });
+  const admitted = await admit(newcomer.id);
+  check("a late team is accepted", admitted.status, 200);
+  const landed = (await admitted.json()).stages[0];
+  check("into a group", landed.action, "pool");
+  check("with a match against everybody already in it", landed.fixtures, 4);
+
+  const ltAfter = await fixturesOf(lt.stage.id);
+  const ltTheirs = ltAfter.filter((f: any) =>
+    f.home_entry === newcomer.id || f.away_entry === newcomer.id);
+  check("the pool has four more matches in it", ltAfter.length - ltBefore.length, 4);
+  check("all of them theirs", ltTheirs.length, 4);
+  check("each in a round of its own, since nobody plays four at once",
+    new Set(ltTheirs.map((f: any) => f.round)).size, 4);
+  check("after everything that was already drawn",
+    Math.min(...ltTheirs.map((f: any) => f.round)) >
+      Math.max(...ltBefore.map((f: any) => f.round)), true);
+  check("the result recorded before they arrived is untouched",
+    (await get("fixtures", ltBefore[0].id)).status, "finished");
+
+  const ltTable = await tableOf(lt.stage.id);
+  check("they are in the table", ltTable.length, 5);
+  check("on nothing at all",
+    ltTable.find((r: any) => r.entry === newcomer.id).played, 0);
+
+  const twice = await admit(newcomer.id);
+  check("admitting the same team again is accepted", twice.status, 200);
+  check("and does nothing", (await twice.json()).stages[0].action, "already");
+  check("no second set of matches",
+    (await fixturesOf(lt.stage.id)).length, ltAfter.length);
+
+  // A bracket is the shape of the whole competition and it was decided before
+  // anybody played. Once somebody has, there is no way in.
+  const shut = await create("tournaments", {
+    name: "Shut Cup", slug: `shut-${Date.now()}`,
+    status: "published", owner: organiser.id,
+  });
+  for (let i = 1; i <= 4; i++) {
+    await create("entries", {
+      tournament: shut.id, name: `K${i}`, seed: i, status: "active",
+    });
+  }
+  const shutStage = await create("stages", {
+    tournament: shut.id, position: 0, name: "Playoff",
+    format: "single_elim", status: "draft",
+  });
+  await api("POST", `/api/stages/${shutStage.id}/generate`);
+  const shutFirst = (await fixturesOf(shutStage.id))[0];
+  await patch("fixtures", shutFirst.id, {
+    status: "finished", home_score: 2, away_score: 0,
+  });
+
+  const tooLate = await create("entries", {
+    tournament: shut.id, name: "K5", seed: 5, status: "active",
+  });
+  const refusedEntry = await admit(tooLate.id);
+  check("a bracket that has started refuses another team", refusedEntry.status, 400);
+  const stillSlotless = await api("GET",
+    `/api/collections/slots/records?filter=${encodeURIComponent(`entry='${tooLate.id}'`)}`);
+  check("and the refusal wrote nothing at all", stillSlotless.items.length, 0);
+
 } catch (error) {
   console.error("\nsmoke run threw:");
   console.error(error instanceof Error ? error.message : error);

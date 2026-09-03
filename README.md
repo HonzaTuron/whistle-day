@@ -96,8 +96,8 @@ bun run check   # typecheck + go vet/test + smoke
 |---|---|
 | `bun run typecheck` | TypeScript 7 |
 | `bun run web:test` | 32 tests: the offline queue's collapse and overlay rules, and what a match format lets a score end on |
-| `bun run pb:test` | `go vet` + 150 unit tests: generators, pairing, tiebreaks, outcomes |
-| `bun run smoke` | 200 assertions against a real PocketBase on a temp data dir |
+| `bun run pb:test` | `go vet` + 161 unit tests: generators, pairing, tiebreaks, outcomes, late entries |
+| `bun run smoke` | 215 assertions against a real PocketBase on a temp data dir |
 
 The smoke run is the one that matters. It boots the server, generates a
 two-pool group stage and a playoff seeded from it, plays every group fixture
@@ -142,6 +142,7 @@ its final positions.
 | `POST /api/stages/{stage}/pair` | Draw a Swiss stage's next round. Normally unnecessary — finishing a round is what draws the next one — so this is the repair path. Idempotent; answers `{"round": -1}` when there is nothing to draw, and `rematch: true` when the field had run out of fresh opponents. |
 | `POST /api/entries/{entry}/withdraw` | Take a team out. `policy` is `forfeit` or `void` and has no default. Closes everything they had left and retallies every stage in one transaction. |
 | `POST /api/entries/{entry}/reinstate` | Put one back, undoing exactly what taking them out did and nothing else. |
+| `POST /api/entries/{entry}/admit` | Put a team in that was not there when the draw was made. Writes the matches they now owe a group, a seat in a Swiss table, or a bracket drawn again. Idempotent; refuses outright rather than half-applying when a knockout has already been played. |
 | `GET /api/staff/invite/{token}` | What a join code is for — a name and a role, nothing else. Public, so the join screen can say what is being accepted before anyone accepts it. |
 | `POST /api/staff/join` | Accept one, as whoever is signed in on this device. Idempotent; re-scanning a different role's code changes the role rather than adding a second row. |
 | `GET /api/display/{token}` | The whole projector screen in one response. Public — the token is the only credential. Read it with `If-None-Match`; an unchanged tournament answers 304. |
@@ -238,6 +239,24 @@ its final positions.
   no sponsors at all, so there is nothing on a public endpoint for a screen to
   un-hide, and no account can sell itself the upgrade — the date sits on a
   record its owner may otherwise write, so a hook refuses that write.
+- **A team that turns up late is put in, not started again.** The mirror of a
+  withdrawal and the harder half of it: taking somebody out only has to close
+  what they had left, while putting somebody in has to invent the matches they
+  are going to play. What those are depends on the format, so it is three
+  answers rather than one. A group takes them into whichever pool has the least
+  to catch up on and writes one match against everybody already in it — each in
+  a round of its own, appended at the end, because a team owing four matches
+  cannot play four at once. A Swiss field takes them into the table and writes
+  nothing: the next round is drawn from the table and they are now in it, on
+  nothing, which is the only defensible answer for somebody who has not played
+  rounds one and two. A bracket has no room at all — it is the shape of the
+  whole competition, decided before anybody threw a ball — so it is drawn
+  again, and only while nobody has played. Once somebody has, the answer is no,
+  and it is refused before anything is written rather than applied to the
+  groups and refused by the playoff. Somebody who has already gone home is not
+  written in as an opponent: that fixture would close itself as a walkover the
+  moment it was saved, crediting a newcomer with beating a team that was not
+  there to be beaten.
 - **A match knows when it is over.** `scoring.bestOf` was written by the sport
   presets from the day the wizard asked what was being played, and read by
   nobody: a best-of-three could be saved at 1–0 with the third set still to
@@ -316,12 +335,11 @@ a draw without a round trip. They are now Go only, and preview goes through
    when a team is already down for another match at the same time; nothing
    stops them going ahead, because reshuffling a schedule passes through
    states that are briefly wrong on purpose.
-4. **Nobody can be *added* once a stage is generated.** Taking a team out is
-   built — see the withdrawal note above — but putting a new one in is not.
-   The wizard takes the teams and the generator takes them all, so a late
-   arrival still means starting the draw again. It is the harder half: adding
-   to a drawn round robin means extending a pool or byeing it, and adding to a
-   bracket is worse.
+4. **A knockout that has started cannot take a late team.** Adding one to a
+   group or a Swiss field is built — see the note above — and so is redrawing a
+   bracket nobody has played yet. Once a bracket has a result in it there is no
+   answer: the ninth team is not one of eight positions decided on Friday, and
+   rewriting the draw around them would rewrite a match that has been played.
 5. **Roles are recorded, not enforced.** `staff.role` is set by which code
    someone scanned and shown in the crew list, and every crew member can do
    everything `/t/:id` offers. The distinction that *is* enforced is owner

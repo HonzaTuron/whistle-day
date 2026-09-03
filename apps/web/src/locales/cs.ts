@@ -513,6 +513,21 @@ export const cs: Record<keyof Catalog, Message> = {
   },
   "teams.putBack": "Vrátit zpět",
   "teams.out": "Vyřadit",
+  "teams.add": "Přidat",
+  "teams.adding": "Přidává se…",
+  "teams.addLabel": "Název týmu, který dorazil",
+  "teams.addPlaceholder": "Tým, který právě dorazil",
+  "teams.addHint":
+    "Půjde do skupiny, kde má nejmíň co dohánět, a zahraje si se všemi, kdo v ní už jsou. Do rozehraného pavouka přidat nejde.",
+  "teams.addDuplicate": "{name} už hraje.",
+  "teams.joinedPool": {
+    one: "{name} je ve skupině {pool} a čeká ho {count} zápas.",
+    few: "{name} je ve skupině {pool} a čekají ho {count} zápasy.",
+    other: "{name} je ve skupině {pool} a čeká ho {count} zápasů.",
+  },
+  "teams.joinedField": "{name} je v poli a nalosuje se do dalšího kola.",
+  "teams.joinedRedrawn": "{name} je v poli, {stage} se losoval znovu.",
+  "teams.joinedWaiting": "{name} je v poli a bude v losování, až se bude losovat.",
 
   // -------------------------------------------------------------------------
   // the crew

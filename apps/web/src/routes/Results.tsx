@@ -1,10 +1,13 @@
 import { Link } from "@tanstack/react-router";
 import { useRef, useState, useSyncExternalStore } from "react";
 import {
+  addTeam,
+  admitEntry,
   ensureOrganiser,
   ensureInvite,
   rememberTournament,
   removeStaff,
+  removeTeam,
   resetInvite,
   reinstateEntry,
   statusAfterClearing,
@@ -28,6 +31,7 @@ import {
   subscribe,
 } from "../api/outbox";
 import { useT } from "../lib/i18n";
+import { admissionNotice } from "../lib/teams";
 import { overlay, waitingFixtures, type Intent } from "../lib/pending";
 import type { Display, Entry, ScoringConfig, StaffRole } from "@seedly/engine";
 import { CrewSheet } from "../components/results/CrewSheet";
@@ -50,6 +54,8 @@ export function Results({ id }: { id: string }) {
   const [crew, setCrew] = useState(false);
   const [roster, setRoster] = useState(false);
   const [invite, setInvite] = useState<{ role: StaffRole; url: string } | null>(null);
+  /** Where the team just added landed, said once and shown in the sheet. */
+  const [joined, setJoined] = useState<string | null>(null);
   const [inviting, setInviting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -218,6 +224,36 @@ export function Results({ id }: { id: string }) {
   const takeOut = (team: Entry, policy: "forfeit" | "void") =>
     void write((active) => withdrawEntry(active, team.id, policy), false);
 
+  /**
+   * A team that turned up after the draw.
+   *
+   * Two writes, and the second one is allowed to refuse: a bracket that has
+   * been played cannot take another team, and the server says so rather than
+   * quietly doing something clever. The entry is taken back out when that
+   * happens — a team in the roster with no matches and no way to get any is a
+   * worse answer than the refusal itself.
+   */
+  const letIn = (name: string, shortName: string) =>
+    void write(async (active) => {
+      setJoined(null);
+      const team = await addTeam(active, id, {
+        name,
+        shortName,
+        seed: displayBoard.entries.length + 1,
+      });
+      try {
+        const { stages } = await admitEntry(active, team.id);
+        setJoined(
+          admissionNotice(t, team.name, stages, (pool) =>
+            displayBoard.pools.find((one) => one.id === pool)?.name ?? "",
+          ),
+        );
+      } catch (refused) {
+        await removeTeam(active, team.id).catch(() => {});
+        throw refused;
+      }
+    }, false);
+
   const putBack = (team: Entry) =>
     void write((active) => reinstateEntry(active, team.id), false);
 
@@ -379,9 +415,14 @@ export function Results({ id }: { id: string }) {
           teams={displayBoard.entries}
           remaining={remaining}
           busy={saving}
+          joined={joined}
+          onAdd={letIn}
           onWithdraw={takeOut}
           onReinstate={putBack}
-          onClose={() => setRoster(false)}
+          onClose={() => {
+            setRoster(false);
+            setJoined(null);
+          }}
         />
       ) : null}
 
