@@ -433,6 +433,19 @@ export const en = {
     "Saving replaces the recorded result. The tables and anything seeded from them are rebuilt.",
   "match.setInPlay":
     "Set {number} is still in play, so it is not counted above. Saving ends the match and records {home}–{away}.",
+  "match.bestOf": {
+    one: "Best of {bestOf}: the match goes to whoever wins a set.",
+    other: "Best of {bestOf}: the match goes to the first side to win {count} sets.",
+  },
+  "match.notOverYet": {
+    one: "{home}–{away} does not end a best of {bestOf} — it is won at a set.",
+    other: "{home}–{away} does not end a best of {bestOf} — it is won at {count} sets.",
+  },
+  "match.tooManySets": {
+    one: "A best of {bestOf} is over at a set, so it cannot end {home}–{away}.",
+    other: "A best of {bestOf} is over at {count} sets, so it cannot end {home}–{away}.",
+  },
+  "match.thatIsTheMatch": "That is the match: {home}–{away} to {name}.",
   "match.scoreFor": "Score for {name}",
   "match.oneFewerFor": "One fewer for {name}",
   "match.oneMoreFor": "One more for {name}",
@@ -573,6 +586,14 @@ export const en = {
   "scoring.drawsNo": "A level score is refused when the result is saved.",
   "scoring.drawsTail":
     "A knockout match never ends level either way — somebody has to go through.",
+  "scoring.formatTitle": "Sets per match",
+  "scoring.oneGame": "One game",
+  "scoring.bestOfSets": "Best of {bestOf}",
+  "scoring.formatNote": {
+    one: "A match is one score, and the match sheet records whatever is entered.",
+    other:
+      "A match ends when somebody has won {count} sets, and a result that says otherwise is refused.",
+  },
   "scoring.walkoverTitle": "A walkover counts as",
   "scoring.score": "Score",
   "scoring.walkoverNote":

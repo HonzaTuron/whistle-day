@@ -1,4 +1,4 @@
-import type { Court, Entry, Id } from "@seedly/engine";
+import type { Court, Entry, Id, ScoringConfig } from "@seedly/engine";
 import { useEffect, useRef, useState } from "react";
 import {
   ensureOrganiser,
@@ -15,12 +15,15 @@ import {
   timeValue,
   type BoardRow,
 } from "../../lib/board";
+import { canAddSet, matchIsDecided, scoreFault, setsToWin } from "../../lib/bestof";
 import { useT, type Translate } from "../../lib/i18n";
 import { MatchHistory } from "./MatchHistory";
 
 interface Props {
   row: BoardRow;
   courts: Court[];
+  /** How the day is scored, which is where the match format lives. */
+  scoring: ScoringConfig | null;
   allFixtures: BoardFixture[];
   entries: Map<Id, Entry>;
   /** Actor id to the name they gave when they joined, for the history. */
@@ -56,6 +59,7 @@ const POINTS_DEBOUNCE_MS = 700;
 export function MatchSheet({
   row,
   courts,
+  scoring,
   allFixtures,
   entries,
   crew,
@@ -210,6 +214,22 @@ export function MatchSheet({
   const savedScore = fromPoints ? final : { home, away };
   const endsASet =
     fromPoints && (final.home !== counted.home || final.away !== counted.away);
+
+  /**
+   * The format, and what it says about the score about to be saved.
+   *
+   * A best-of-three is over at two sets and not before, and the server will
+   * not store anything else. Finding that out here rather than there is the
+   * difference between a disabled button and a result refused half an hour
+   * later, when the queue drains and the teams have gone.
+   */
+  const bestOf = scoring?.bestOf ?? 0;
+  const need = setsToWin(scoring);
+  const fault = scoreFault(bestOf, savedScore.home, savedScore.away);
+  const decided = matchIsDecided(scoring, savedScore.home, savedScore.away);
+  const moreSets = canAddSet(scoring, points.length, final.home, final.away);
+  const winning =
+    savedScore.home > savedScore.away ? sideName(t, row.home) : sideName(t, row.away);
 
   /** Every change to the points is a change on the wall, so it is written. */
   const changeSets = (update: (previous: SetScore[]) => SetScore[]) => {
@@ -414,6 +434,7 @@ export function MatchSheet({
               name={sideName(t, row.home)}
               value={homeScore}
               counted={fromPoints}
+              max={need > 0 ? need : MAX_SCORE}
               onChange={(value) => setHome(clamp(value))}
             />
             <Score
@@ -421,8 +442,41 @@ export function MatchSheet({
               name={sideName(t, row.away)}
               value={awayScore}
               counted={fromPoints}
+              max={need > 0 ? need : MAX_SCORE}
               onChange={(value) => setAway(clamp(value))}
             />
+
+            {/* What the format is, said once, above the sets it governs. The
+                fault line replaces it when there is one: an organiser looking
+                at a greyed-out Save needs to be told which rule holds it. */}
+            {need > 0 ? (
+              <p
+                className={"sheet__hint" + (fault ? " is-fault" : "")}
+                role={fault ? "alert" : undefined}
+              >
+                {fault === "unfinished"
+                  ? t("match.notOverYet", {
+                      home: savedScore.home,
+                      away: savedScore.away,
+                      bestOf,
+                      count: need,
+                    })
+                  : fault === "over"
+                    ? t("match.tooManySets", {
+                        home: savedScore.home,
+                        away: savedScore.away,
+                        bestOf,
+                        count: need,
+                      })
+                    : decided && !row.settled
+                      ? t("match.thatIsTheMatch", {
+                          name: winning,
+                          home: savedScore.home,
+                          away: savedScore.away,
+                        })
+                      : t("match.bestOf", { bestOf, count: need })}
+              </p>
+            ) : null}
 
             <Sets
               t={t}
@@ -431,6 +485,7 @@ export function MatchSheet({
               sets={points}
               inPlay={inPlay}
               state={pointsState}
+              canAdd={moreSets}
               onEdit={editSet}
               onStep={stepSet}
               onAdd={() => changeSets((previous) => [...previous, { home: 0, away: 0 }])}
@@ -459,7 +514,7 @@ export function MatchSheet({
               <button
                 type="button"
                 className="btn btn--primary btn--block"
-                disabled={saving}
+                disabled={saving || fault !== null}
                 onClick={() => {
                   forgetPoints();
                   onSave(savedScore.home, savedScore.away, points);
@@ -559,6 +614,7 @@ function Score({
   name,
   value,
   counted,
+  max,
   onChange,
 }: {
   t: Translate;
@@ -566,6 +622,9 @@ function Score({
   value: number;
   /** Counted from the points below, so this is a read-out rather than a field. */
   counted: boolean;
+  /** The sets that win the match, where the format has an opinion. Stepping
+      past it is not a mistake worth letting somebody make and then explaining. */
+  max: number;
   onChange: (value: number) => void;
 }) {
   return (
@@ -587,7 +646,7 @@ function Score({
           type="number"
           inputMode="numeric"
           min={0}
-          max={MAX_SCORE}
+          max={max}
           value={value}
           readOnly={counted}
           onFocus={(event) => event.target.select()}
@@ -598,7 +657,7 @@ function Score({
           type="button"
           className="stepper__button"
           onClick={() => onChange(value + 1)}
-          disabled={counted}
+          disabled={counted || value >= max}
           aria-label={t("match.oneMoreFor", { name })}
         >
           +
@@ -629,6 +688,7 @@ function Sets({
   sets,
   inPlay,
   state,
+  canAdd,
   onEdit,
   onStep,
   onAdd,
@@ -641,6 +701,8 @@ function Sets({
   /** Index of the set being played, or -1 when the match is not on court. */
   inPlay: number;
   state: "idle" | "saving" | "failed";
+  /** False once the format has run out of sets, or the match has been won. */
+  canAdd: boolean;
   onEdit: (index: number, side: "home" | "away", value: number) => void;
   onStep: (index: number, side: "home" | "away", delta: number) => void;
   onAdd: () => void;
@@ -655,7 +717,12 @@ function Sets({
         ) : state === "saving" ? (
           <span className="sets__state">{t("common.saving")}</span>
         ) : null}
-        <button type="button" className="btn btn--quiet btn--tiny" onClick={onAdd}>
+        <button
+          type="button"
+          className="btn btn--quiet btn--tiny"
+          disabled={!canAdd}
+          onClick={onAdd}
+        >
           {t("sets.add")}
         </button>
       </div>

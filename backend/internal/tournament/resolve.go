@@ -29,17 +29,25 @@ func RegisterHooks(app core.App) {
 	// Derive winner/loser from the score BEFORE the write, so the stored
 	// outcome can never disagree with the stored score.
 	app.OnRecordCreate("fixtures").BindFunc(func(e *core.RecordEvent) error {
-		if err := guardLevelScore(e.App, e.Record); err != nil {
+		if err := guardResult(e.App, e.Record); err != nil {
 			return err
 		}
 		deriveOutcome(e.Record)
 		return e.Next()
 	})
 	app.OnRecordUpdate("fixtures").BindFunc(func(e *core.RecordEvent) error {
-		if err := guardLevelScore(e.App, e.Record); err != nil {
+		if err := guardResult(e.App, e.Record); err != nil {
 			return err
 		}
 		deriveOutcome(e.Record)
+		return e.Next()
+	})
+
+	// A set the format does not have. Create only — see guardSetNumber.
+	app.OnRecordCreate("games").BindFunc(func(e *core.RecordEvent) error {
+		if err := guardSetNumber(e.App, e.Record); err != nil {
+			return err
+		}
 		return e.Next()
 	})
 
@@ -130,6 +138,16 @@ func recomputeForGame(app core.App, game *core.Record) error {
 		return nil
 	}
 	return ComputeStandings(app, fixture.GetString("stage"))
+}
+
+// guardResult is every rule about what a stored result may say, in the order
+// an organiser meets them: a match that cannot end level, and a match that
+// cannot end at that many sets.
+func guardResult(app core.App, f *core.Record) error {
+	if err := guardLevelScore(app, f); err != nil {
+		return err
+	}
+	return guardBestOf(app, f)
 }
 
 // guardLevelScore refuses to store a finished fixture whose sides are level,

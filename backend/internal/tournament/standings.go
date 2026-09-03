@@ -19,6 +19,11 @@ type ScoringConfig struct {
 	// rulebook says otherwise — most award a nominal 3-0 or 2-0, and leaving it
 	// at 0 at least keeps an absence from flattering anyone's goal difference.
 	WalkoverScore int `json:"walkoverScore"`
+	// BestOf is how many sets a match is played to: 3 means first to two of
+	// them. Zero and one are the same answer — a match decided by one score —
+	// and neither is a series with a shape to enforce, which is why this is a
+	// plain int where DrawsAllowed is a pointer. Read it through SetsToWin.
+	BestOf int `json:"bestOf"`
 	// DrawsAllowed is a pointer because absent and false are different answers.
 	// Every tournament written before this field existed means "football", and
 	// a plain bool would read those as "volleyball" and start refusing the
@@ -33,6 +38,19 @@ type ScoringConfig struct {
 // existed meant.
 func (c ScoringConfig) DrawsAllowedOr() bool {
 	return c.DrawsAllowed == nil || *c.DrawsAllowed
+}
+
+// SetsToWin is how many sets take the match, or 0 when the format is a single
+// game and there is no series to be over.
+//
+// An even BestOf is not a format anybody plays, but it is a number somebody
+// can type into the scoring sheet, and half of four plus one is three — which
+// is the only reading of "best of 4" that ends the match.
+func (c ScoringConfig) SetsToWin() int {
+	if c.BestOf < 2 {
+		return 0
+	}
+	return c.BestOf/2 + 1
 }
 
 // DefaultTiebreakers is what most rulebooks say, in the order they say it.

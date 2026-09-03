@@ -287,6 +287,26 @@ It costs nothing on the ordinary path — the guard reads no records at all unti
 the score is level *and* the fixture is finished, which is a case that mostly
 does not arise.
 
+**`bestOf` is what makes a match end.** It is stored as a plain int where
+`drawsAllowed` is a pointer, because absent and 1 are the same answer — a match
+decided by a single score — and neither is a series with a shape to enforce.
+`SetsToWin()` is the only way it is read: 0 for those, and `bestOf/2 + 1` for a
+format that has sets in it.
+
+What the server enforces is the shape of the score and the number of sets that
+may exist, and not the agreement between them. A best-of-three ends 2–0 or 2–1
+and nothing else, and there is no set 4 in it. But plenty of days are run on
+sets alone — the organiser types 2–1 and never opens the per-set entry — so a
+score with no `games` behind it is a complete result, and a match with points
+recorded for only the first set is not a contradiction to be refused. The match
+sheet counts the score from the sets whenever there are any, which is what
+keeps the two agreeing in practice.
+
+The client applies the same arithmetic before the write rather than after it
+(`apps/web/src/lib/bestof.ts`). Not for the round trip — for the queue: a
+result may sit on a phone for ten minutes, and a refusal that arrives once the
+teams have left is not one anybody can act on.
+
 ## Deliberate impurities
 
 **`fixtures.home_entry` / `away_entry` are denormalised from the slots.**
@@ -481,10 +501,6 @@ unaffected. The field is writable — just not by the account it is about.
 - **Schedule conflicts are a warning, not a constraint.** The organiser screen
   says when a team is already down for another match within the hour and a
   half; the database will happily store it either way.
-- **`scoring.bestOf` is stored and read by nothing.** The presets write it and
-  `ScoringConfig` in Go has no field for it, so no code knows that a best-of-
-  three is over when somebody has won two sets. `games` holds the sets and the
-  match sheet counts them; ending the match is still the organiser's call.
 - ~~**Result history.**~~ Done: `fixture_events` is append-only and written
   only by the request hooks, so it records what a *person* did — the resolver
   rewrites fixtures constantly and none of that is somebody changing a result.

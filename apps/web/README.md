@@ -379,6 +379,14 @@ Two rules keep them honest:
   in, and the wall says 1–1 while it is being played. Saving is what ends the
   match, so the recorded result counts every set — the sheet says which score
   that will be before the button is pressed.
+- **The format says when there is nothing left to enter.** `scoring.bestOf` is
+  read now, so a best-of-three ends at two sets: the score steppers stop there,
+  "Add a set" stops at the third, and Save is held until the score is one the
+  match could have ended on, with the reason where the format line was. The
+  server enforces the same rule, and `lib/bestof.ts` is the arithmetic said
+  once for both — checking here is not belt and braces, because the result goes
+  into a queue that may not drain for ten minutes and a refusal arriving after
+  the teams have left is not one anybody can act on.
 
 When the result is saved, the points go before the fixture, because the fixture
 write is the one that rebuilds the tables and should be the last thing the
@@ -444,6 +452,14 @@ is a hook rather than a second copy.
   that already means it.
 - **The draw column disappears when there are no draws.** A control that can
   only ever be set wrong is worse than one that is not there.
+- **Sets per match is here because it now has teeth.** One game, best of three,
+  best of five: whichever is picked is what the match sheet counts to and what
+  the server will accept. A preset that says best of three is a good guess
+  about volleyball and a wrong one about the hall playing single sets all
+  morning to get forty teams through, and that hall should not have to argue
+  with a Save button. Czech says the format as the sets that win it — "na dva
+  vítězné sety" is best of three — so the chip is written from `count` there
+  and from `bestOf` in English.
 - **Points is drawn in the tiebreak list and cannot be moved.** A table ordered
   by anything before its own points column is not a table, so it is in the list
   for orientation and out of the drag.

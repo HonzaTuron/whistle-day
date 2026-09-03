@@ -423,6 +423,7 @@ export function Results({ id }: { id: string }) {
         <MatchSheet
           row={open}
           courts={displayBoard.courts}
+          scoring={displayBoard.tournament.scoring}
           allFixtures={fixtures}
           entries={entries}
           crew={crewNames}

@@ -10,6 +10,7 @@ import {
   sportById,
   type SportId,
 } from "../../lib/scoring";
+import { setsToWin } from "../../lib/bestof";
 import { useT, type Translate } from "../../lib/i18n";
 import { Grip, Group } from "./SheetParts";
 
@@ -116,6 +117,42 @@ export function ScoringSheet({ sport, scoring, state, onChange, onClose }: Props
             {picked
               ? t(sportById(picked as SportId).hint)
               : t("scoring.byHand")}
+          </p>
+        </Group>
+
+        {/*
+          The format has teeth now: the match sheet counts the sets and the
+          server refuses a result the format cannot end on. Which is exactly
+          why it is editable here — a preset that says best of three is a good
+          guess about volleyball and a wrong one about the hall that plays
+          single sets all morning to get through forty teams.
+        */}
+        <Group label={t("scoring.formatTitle")}>
+          <div className="chips" role="group" aria-label={t("scoring.formatTitle")}>
+            {[1, 3, 5].map((option) => {
+              const on = (config.bestOf ?? 1) === option;
+              return (
+                <button
+                  key={option}
+                  type="button"
+                  className={"chip" + (on ? " is-on" : "")}
+                  aria-pressed={on}
+                  onClick={() => patch({ bestOf: option })}
+                >
+                  {option === 1
+                    ? t("scoring.oneGame")
+                    : t("scoring.bestOfSets", {
+                        bestOf: option,
+                        count: setsToWin({ bestOf: option } as ScoringConfig),
+                      })}
+                </button>
+              );
+            })}
+          </div>
+          <p className="sheet__hint">
+            {t("scoring.formatNote", {
+              count: Math.max(setsToWin(config), 1),
+            })}
           </p>
         </Group>
 

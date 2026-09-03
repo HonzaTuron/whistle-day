@@ -1591,6 +1591,61 @@ try {
     "cannot end level",
   );
 
+  // =====================================================================
+  console.log("\n18. a match knows when it is over");
+  // =====================================================================
+  // scoring.bestOf was stored by the sport presets for months and read by
+  // nobody, so a best-of-three could be saved at 1-0 with the third set still
+  // to come. These are the four scorelines that decides.
+  const bestOfThree = await scoredCup({
+    bestOf: 3, pointsWin: 2, pointsLoss: 0, drawsAllowed: false,
+  });
+  const series = await levelFixture(bestOfThree, "round_robin");
+
+  await bounces(
+    "a best-of-three is not over at one set",
+    () => patch("fixtures", series.id, {
+      status: "finished", home_score: 1, away_score: 0,
+    }),
+    "not over yet",
+  );
+  await bounces(
+    "and cannot have been won three-nil",
+    () => patch("fixtures", series.id, {
+      status: "finished", home_score: 3, away_score: 0,
+    }),
+    "cannot end",
+  );
+  check("a live match on its way there is left alone",
+    (await patch("fixtures", series.id, {
+      status: "live", home_score: 1, away_score: 0,
+    })).status, "live");
+  check("and 2-1 is a result", (await patch("fixtures", series.id, {
+    status: "finished", home_score: 2, away_score: 1,
+  })).status, "finished");
+
+  // The sets themselves are bounded by the same number.
+  for (let number = 1; number <= 3; number++) {
+    await create("games", {
+      fixture: series.id, number, home_score: 25, away_score: 20,
+    });
+  }
+  await bounces(
+    "a best-of-three has no fourth set",
+    () => create("games", {
+      fixture: series.id, number: 4, home_score: 25, away_score: 20,
+    }),
+    "no set 4",
+  );
+
+  // A tournament that never said what it plays keeps every result it had.
+  const unsaid = await scoredCup({ pointsWin: 3, pointsDraw: 1 });
+  const anyScore = await levelFixture(unsaid, "round_robin");
+  check("a day with no format takes the score it is given",
+    (await patch("fixtures", anyScore.id, {
+      status: "finished", home_score: 5, away_score: 2,
+    })).status, "finished");
+
 } catch (error) {
   console.error("\nsmoke run threw:");
   console.error(error instanceof Error ? error.message : error);

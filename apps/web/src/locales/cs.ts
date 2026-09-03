@@ -443,6 +443,25 @@ export const cs: Record<keyof Catalog, Message> = {
     "Uložením se zapsaný výsledek přepíše. Tabulky a všechno, co se z nich nasazuje, se přepočítá.",
   "match.setInPlay":
     "{number}. set se ještě hraje, takže se nahoře nepočítá. Uložením zápas skončí a zapíše se {home}–{away}.",
+  // Česky se formát říká počtem vítězných setů — „na dva vítězné sety“ je
+  // anglické „best of three“. Proto se tady používá {count}, tedy kolik setů
+  // zápas bere, a ne {bestOf}, kolik se jich vejde.
+  "match.bestOf": {
+    one: "Hraje se na jeden vítězný set.",
+    few: "Hraje se na {count} vítězné sety, kdo je má první, bere zápas.",
+    other: "Hraje se na {count} vítězných setů, kdo je má první, bere zápas.",
+  },
+  "match.notOverYet": {
+    one: "{home}–{away} zápas nekončí — hraje se na vítězný set.",
+    few: "{home}–{away} zápas nekončí — hraje se na {count} vítězné sety.",
+    other: "{home}–{away} zápas nekončí — hraje se na {count} vítězných setů.",
+  },
+  "match.tooManySets": {
+    one: "Zápas končí prvním vítězným setem, takže nemůže skončit {home}–{away}.",
+    few: "Zápas končí na {count} vítězné sety, takže nemůže skončit {home}–{away}.",
+    other: "Zápas končí na {count} vítězných setů, takže nemůže skončit {home}–{away}.",
+  },
+  "match.thatIsTheMatch": "A je konec: {home}–{away} pro {name}.",
   "match.scoreFor": "Skóre pro {name}",
   "match.oneFewerFor": "O jedna méně pro {name}",
   "match.oneMoreFor": "O jedna více pro {name}",
@@ -587,6 +606,18 @@ export const cs: Record<keyof Catalog, Message> = {
   "scoring.drawsNo": "Nerozhodné skóre se při uložení výsledku odmítne.",
   "scoring.drawsTail":
     "Zápas ve vyřazovací části tak jako tak nerozhodně skončit nemůže — někdo musí postoupit.",
+  "scoring.formatTitle": "Setů na zápas",
+  "scoring.oneGame": "Jedna hra",
+  "scoring.bestOfSets": {
+    one: "Na vítězný set",
+    few: "Na {count} vítězné sety",
+    other: "Na {count} vítězných setů",
+  },
+  "scoring.formatNote": {
+    one: "Zápas je jedno skóre a zapíše se to, co se zadá.",
+    few: "Zápas končí, jakmile má někdo {count} sety; jiný výsledek se neuloží.",
+    other: "Zápas končí, jakmile má někdo {count} setů; jiný výsledek se neuloží.",
+  },
   "scoring.walkoverTitle": "Kontumace se počítá jako",
   "scoring.score": "Skóre",
   "scoring.walkoverNote":

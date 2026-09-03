@@ -2431,6 +2431,14 @@ th,
   line-height: 1.45;
 }
 
+/* A hint that is holding something up: the format says this score cannot end
+   the match, and Save is greyed out until it does. Same size and place as the
+   ordinary hint, because it is the same sentence's job — it has just become
+   the reason a button will not work. */
+.sheet__hint.is-fault {
+  color: var(--live);
+}
+
 .sheet__actions {
   display: grid;
   gap: 0.4rem;

@@ -95,9 +95,9 @@ bun run check   # typecheck + go vet/test + smoke
 | Command | What it covers |
 |---|---|
 | `bun run typecheck` | TypeScript 7 |
-| `bun run web:test` | 20 tests over the offline queue's collapse and overlay rules |
-| `bun run pb:test` | `go vet` + 129 unit tests: generators, pairing, tiebreaks, outcomes |
-| `bun run smoke` | 194 assertions against a real PocketBase on a temp data dir |
+| `bun run web:test` | 32 tests: the offline queue's collapse and overlay rules, and what a match format lets a score end on |
+| `bun run pb:test` | `go vet` + 150 unit tests: generators, pairing, tiebreaks, outcomes |
+| `bun run smoke` | 200 assertions against a real PocketBase on a temp data dir |
 
 The smoke run is the one that matters. It boots the server, generates a
 two-pool group stage and a playoff seeded from it, plays every group fixture
@@ -238,6 +238,20 @@ its final positions.
   no sponsors at all, so there is nothing on a public endpoint for a screen to
   un-hide, and no account can sell itself the upgrade — the date sits on a
   record its owner may otherwise write, so a hook refuses that write.
+- **A match knows when it is over.** `scoring.bestOf` was written by the sport
+  presets from the day the wizard asked what was being played, and read by
+  nobody: a best-of-three could be saved at 1–0 with the third set still to
+  come, and the table took it as a result. The server now refuses any score the
+  format cannot end on — not over yet, or over twice — and refuses a fourth set
+  in a format that has three. What is enforced is the shape of the score rather
+  than the presence of the points underneath it, because plenty of days are run
+  on sets alone and 2–1 typed straight in is a complete result. The match sheet
+  applies the same arithmetic before the write: the score steppers stop at the
+  sets that win, "Add a set" stops when the format runs out, and Save is held
+  until the score is one the match could have ended on. That last part is not
+  belt and braces — a result goes into a queue that may not drain for ten
+  minutes, and a refusal arriving after the teams have left is not one anybody
+  can act on.
 - **A team going home is two questions, not one.** Whether they are still *in*
   decides what happens next — who gets drawn into the next Swiss round, whose
   remaining fixtures are still going to be played. Whether their results
@@ -316,10 +330,3 @@ a draw without a round trip. They are now Go only, and preview goes through
    sponsor slots read, and the only things that set it are an admin and
    whatever writes the record server-side. There is no checkout, no provider
    and no webhook.
-7. **`scoring.bestOf` is written and never read.** The sport presets store it —
-   3 for volleyball, 1 for everything else — and no Go code has a field for it,
-   so nothing knows a match is over when a side has won two sets. The match
-   sheet counts the sets that were entered and the organiser decides when to
-   save. Making it real means the sheet ending a match on its own and refusing
-   a result that does not match the format, which reaches into the set-by-set
-   entry path rather than sitting beside it.
