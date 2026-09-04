@@ -135,8 +135,15 @@ const isLocale = (value: string | null | undefined): value is Locale =>
  *
  * Then what this browser was last told, then what it says it prefers. English
  * last, because it is the fallback rather than anybody's answer.
+ *
+ * On the server there is no browser to ask, so it answers English and the
+ * client corrects it after hydration. A request cannot be asked what a phone
+ * has in its localStorage, and guessing from `Accept-Language` would render a
+ * page the device then disagrees with.
  */
 export function detectLocale(): Locale {
+  if (typeof window === "undefined") return "en";
+
   try {
     const asked = new URLSearchParams(window.location.search).get("lang");
     if (isLocale(asked)) {

@@ -48,13 +48,14 @@ export interface Preset {
 /** A rough court slot: the match, plus getting the next pair on. */
 const MINUTES_PER_MATCH = 25;
 
-const combinations = (n: number) => (n * (n - 1)) / 2;
+/** Every pair meets once: the size of a round robin, in matches. */
+export const combinations = (n: number) => (n * (n - 1)) / 2;
 
 /** Pools of at most five, and never fewer than two pools. */
 export const poolCount = (teams: number) => Math.max(2, Math.ceil(teams / 5));
 
 /** Snake distribution fills pools as evenly as it can; sizes follow. */
-function poolSizes(teams: number): number[] {
+export function poolSizes(teams: number): number[] {
   const pools = poolCount(teams);
   const base = Math.floor(teams / pools);
   const remainder = teams % pools;
@@ -65,7 +66,7 @@ function poolSizes(teams: number): number[] {
  * A knockout plays one match per eliminated team, whatever the byes do to the
  * bracket size, plus the third-place match when there are semi-finals.
  */
-const knockoutMatches = (teams: number) => Math.max(teams - 1, 0) + (teams >= 4 ? 1 : 0);
+export const knockoutMatches = (teams: number) => Math.max(teams - 1, 0) + (teams >= 4 ? 1 : 0);
 
 /**
  * Swiss rounds: ceil(log2(teams)), the fewest that can leave one team

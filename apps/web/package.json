@@ -3,8 +3,9 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "vite dev",
     "build": "tsc --noEmit && vite build",
+    "start": "node dist/server/server.js",
     "preview": "vite preview"
   },
   "dependencies": {
@@ -13,13 +14,15 @@
     "@tanstack/react-router": "^1.170.31",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
-    "uqr": "^0.1.3"
+    "uqr": "^0.1.3",
+    "@tanstack/react-start": "^1.168.49"
   },
   "devDependencies": {
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.4",
     "@vitejs/plugin-react": "^6.1.0",
     "vite": "^8.2.2",
-    "vite-plugin-pwa": "^1.3.0"
+    "vite-plugin-pwa": "^1.3.0",
+    "nitro": "^3.0.0"
   }
 }

@@ -1,0 +1,13 @@
+User-agent: *
+Allow: /
+
+# One organiser's live board, and screens whose token is their only credential.
+# Nothing here is secret, but a tournament that turns up in a search result is
+# one somebody can read who was never given the link.
+Disallow: /t/
+Disallow: /display/
+Disallow: /m/
+Disallow: /account
+Disallow: /new
+
+Sitemap: https://whistle.day/sitemap.xml

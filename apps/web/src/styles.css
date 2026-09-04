@@ -3519,3 +3519,195 @@ th,
   justify-self: center;
   margin-top: 0.5rem;
 }
+
+/* ==========================================================================
+   Marketing pages
+   --------------------------------------------------------------------------
+   The pages that exist to be found: format guides, per-team-count brackets,
+   comparisons. Read on a phone in a hand or a laptop at a desk, so sized in
+   rem throughout — none of the projector's vmin reasoning applies here.
+
+   One measure, one column, no sidebar. These pages are read top to bottom or
+   not at all, and a page whose numbers are the answer to the query should not
+   put anything beside them.
+   ========================================================================== */
+
+.doc {
+  max-width: 44rem;
+  margin: 0 auto;
+  padding: 3rem 1.25rem 5rem;
+  display: grid;
+  gap: 2.5rem;
+}
+
+.doc--slim {
+  gap: 1rem;
+  text-align: center;
+  padding-top: 6rem;
+}
+
+.doc__head {
+  display: grid;
+  gap: 1rem;
+}
+
+.doc__title {
+  margin: 0;
+  font-size: clamp(1.9rem, 5vw, 2.6rem);
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+}
+
+/* The lede answers the query. It is deliberately larger than the body. */
+.doc__lede {
+  margin: 0;
+  font-size: 1.15rem;
+  line-height: 1.6;
+  color: var(--muted);
+}
+
+/* --- the facts panel ------------------------------------------------------
+   On a parametric page these three or four numbers *are* the answer, so they
+   sit above the prose and above the call to action. Making somebody scroll
+   past a button to find out how many matches an 8-team knockout is would be
+   the whole point of the page, missed.
+   -------------------------------------------------------------------------- */
+
+.doc__facts {
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+  gap: 1px;
+  background: var(--line);
+  border: 1px solid var(--line);
+  border-radius: 0.75rem;
+  overflow: hidden;
+}
+
+.doc__fact {
+  background: var(--surface);
+  padding: 1rem 1.1rem;
+  display: grid;
+  gap: 0.3rem;
+  align-content: start;
+}
+
+.doc__fact-label {
+  font-size: 0.8rem;
+  font-weight: 650;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+
+.doc__fact-value {
+  margin: 0;
+  font-family: var(--numeric);
+  font-size: 1.5rem;
+  font-weight: 650;
+  line-height: 1.1;
+}
+
+.doc__fact-note {
+  margin: 0;
+  font-size: 0.85rem;
+  line-height: 1.45;
+  color: var(--muted);
+}
+
+/* --- the call to action --------------------------------------------------- */
+
+.doc__cta {
+  display: grid;
+  gap: 0.65rem;
+  padding: 1.5rem;
+  border: 1px solid var(--line);
+  border-radius: 0.75rem;
+  background: var(--surface);
+}
+
+.doc__cta-note {
+  margin: 0;
+  font-size: 0.9rem;
+  text-align: center;
+  color: var(--muted);
+}
+
+/* --- prose ---------------------------------------------------------------- */
+
+.doc__section {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.doc__heading {
+  margin: 0;
+  font-size: 1.3rem;
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+}
+
+.doc__para {
+  margin: 0;
+  line-height: 1.7;
+}
+
+.doc__faq {
+  display: grid;
+  gap: 0.5rem;
+  padding-top: 0.5rem;
+}
+
+.doc__faq-q {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 650;
+  color: var(--muted);
+}
+
+/* --- see also ------------------------------------------------------------- */
+
+.doc__related {
+  display: grid;
+  gap: 0.9rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--line);
+}
+
+.doc__related-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 0.55rem;
+}
+
+.doc__related-link {
+  color: var(--accent);
+  text-decoration: none;
+  line-height: 1.5;
+}
+
+.doc__related-link:hover {
+  text-decoration: underline;
+}
+
+.doc__foot {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 0.9rem;
+  align-items: baseline;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--line);
+  font-size: 0.9rem;
+}
+
+.doc__foot-link {
+  color: var(--text);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.doc__foot-note {
+  color: var(--muted);
+}

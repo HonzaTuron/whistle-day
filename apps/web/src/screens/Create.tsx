@@ -26,7 +26,7 @@ import { FormatStep } from "../components/create/FormatStep";
 import { NameStep } from "../components/create/NameStep";
 import { TeamsStep } from "../components/create/TeamsStep";
 import { useI18n, useT } from "../lib/i18n";
-import { defaultPreset, type PresetId } from "../lib/presets";
+import { defaultPreset, presetById, type PresetId } from "../lib/presets";
 import {
   DEFAULT_SPORT,
   matchSport,
@@ -42,7 +42,17 @@ interface Resumable {
   courts: CourtRecord[];
 }
 
-export function Create() {
+interface Props {
+  /**
+   * The format the marketing page that sent them here was about. A suggestion
+   * the organiser can override on the way through — a page about an 8-team
+   * double elimination should not drop somebody onto a blank format screen,
+   * and it should not stop them picking groups either.
+   */
+  initialPreset?: PresetId;
+}
+
+export function Create({ initialPreset }: Props = {}) {
   const t = useT();
   const { locale } = useI18n();
   const [step, setStep] = useState<Step>("name");
@@ -196,7 +206,14 @@ export function Create() {
       }
 
       setCourts(saved);
-      setPreset(defaultPreset(teams.length));
+      // The format the page advertised wins, but only while the field is
+      // actually big enough for it — arriving from "16 team Swiss" and then
+      // entering five teams has to fall back to something that can be drawn.
+      setPreset(
+        initialPreset && teams.length >= presetById(initialPreset).minTeams
+          ? initialPreset
+          : defaultPreset(teams.length),
+      );
       setStep("format");
     });
 

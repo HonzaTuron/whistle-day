@@ -1,93 +1,21 @@
-import {
-  createRootRoute,
-  createRoute,
-  createRouter,
-  Outlet,
-} from "@tanstack/react-router";
-import { MobileScreen } from "./components/mobile/MobileScreen";
-import { ProjectorScreen } from "./components/projector/ProjectorScreen";
-import { Account } from "./routes/Account";
-import { Create } from "./routes/Create";
-import { Join } from "./routes/Join";
-import { Landing } from "./routes/Landing";
-import { Results } from "./routes/Results";
+import { createRouter } from "@tanstack/react-router";
+import { routeTree } from "./routeTree.gen";
 
-const rootRoute = createRootRoute({ component: Outlet });
-
-const indexRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: "/",
-  component: Landing,
-});
-
-/** The organiser: name, teams, courts, format, and a link for the wall. */
-const createRouteEntry = createRoute({
-  getParentRoute: () => rootRoute,
-  path: "/new",
-  component: Create,
-});
-
-/** Keeping a tournament that only this browser can reach. */
-const accountRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: "/account",
-  component: Account,
-});
-
-/** Running the day: the match list, and a score for each. */
-const resultsRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: "/t/$id",
-  component: function ResultsRoute() {
-    const { id } = resultsRoute.useParams();
-    return <Results id={id} />;
-  },
-});
-
-/** The other end of a QR code: a second person on a second phone. */
-const joinRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: "/join/$token",
-  component: function JoinRoute() {
-    const { token } = joinRoute.useParams();
-    return <Join token={token} />;
-  },
-});
-
-/** The projector: unattended, rotating, read from across a hall. */
-const displayRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: "/display/$token",
-  component: function DisplayRoute() {
-    const { token } = displayRoute.useParams();
-    return <ProjectorScreen token={token} />;
-  },
-});
-
-/** The phone: held by one person looking for one thing. */
-const mobileRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: "/m/$token",
-  component: function MobileRoute() {
-    const { token } = mobileRoute.useParams();
-    return <MobileScreen token={token} />;
-  },
-});
-
-const routeTree = rootRoute.addChildren([
-  indexRoute,
-  createRouteEntry,
-  accountRoute,
-  joinRoute,
-  resultsRoute,
-  displayRoute,
-  mobileRoute,
-]);
-
-export const router = createRouter({ routeTree });
+/**
+ * Start calls this on the server for every request and once on the client to
+ * hydrate, so it has to be a factory rather than a module-level instance — one
+ * shared router would leak one request's state into the next.
+ */
+export function getRouter() {
+  return createRouter({
+    routeTree,
+    scrollRestoration: true,
+    defaultPreload: "intent",
+  });
+}
 
 declare module "@tanstack/react-router" {
   interface Register {
-    router: typeof router;
+    router: ReturnType<typeof getRouter>;
   }
 }

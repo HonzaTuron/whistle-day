@@ -9,7 +9,9 @@ Two public screens, and the two the organiser drives them from.
 | `/account` | Claiming the device account, and signing in on another device. |
 | `/display/:token` | The projector: unattended, rotates itself, read from across a hall. |
 | `/m/:token` | A phone: held by one person looking for one thing. |
+| `/join/:token` | The other end of a crew QR code. |
 | `/` | Start a tournament, or paste a token to open a screen. |
+| everything else | A marketing page, prerendered — see [The pages that exist to be found](#the-pages-that-exist-to-be-found). |
 
 ## Why two routes and not one responsive layout
 
@@ -24,6 +26,50 @@ bracket round shape, the tiebreak wording, name formatting. Round titles were
 briefly duplicated and immediately drifted: the phone kept labelling the final
 round "Semi-finals" after the projector was fixed. That is why `lib/bracket.ts`
 exists.
+
+## The pages that exist to be found
+
+The app is five screens. Alongside them are 123 pages that exist so somebody
+searching "8 team double elimination bracket" or "how many Swiss rounds for 16
+players" arrives on a page that answers the question and then offers the thing
+that does it.
+
+They live in `src/content/` as data rather than components, because the
+interesting difference between one and the next is three numbers and a
+paragraph. `routes/$.tsx` is a splat that renders whichever one the slug names;
+`vite.config.ts` imports the same list to decide what to prerender and what
+goes in the sitemap. That import is the point — a page cannot be served without
+being prerendered and listed, or listed without existing.
+
+**The numbers are never typed in.** `content/shape.ts` derives every count from
+`lib/presets.ts` — the same functions the format screen quotes from, which in
+turn have to agree with the Go generators. A page promising "12 matches, about
+two hours" beside a wizard that then runs 14 is worse than having no page: it
+is a wrong answer with a search engine pointing at it. So the parametric pages
+are generated from a team count and a format, and correcting the arithmetic in
+one place corrects sixty pages.
+
+**Nothing here generates a draw.** Generation lives on the server and there is
+one implementation of it. This only counts what that implementation will
+produce, which is not the thing that drifts — bracket seeding is.
+
+**No page exists for something the product cannot do.** There is no `ladder`
+page because nothing generates a ladder, and no padel americano page because
+that format rotates partners and scores individuals. A page that wins a search
+and then fails the person who clicked is the one kind that costs more than it
+earns.
+
+**Why Start.** The marketing pages have to be readable without executing a
+bundle, and the app was already on TanStack Router, so Start was the smallest
+step to a server-rendered document: same router, same Vite, one repo.
+`routes/__root.tsx` is now the document — it replaces `index.html` and carries
+what `main.tsx` used to do on the way in. The app screens are unchanged and
+still `noindex`; they simply arrive with their shell already drawn.
+
+The `?preset=` on `/new` is a marketing page handing the wizard the one thing
+it knows about whoever followed its call to action. It is a suggestion: the
+format screen still opens on the default when the field turns out too small
+for it.
 
 ## Data
 
@@ -204,6 +250,11 @@ in a hall.
   `docs/DATA-MODEL.md`.
 
 ## Installing it
+
+> **Broken on this branch.** Under Start the plugin emits the manifest and the
+> icons but no `sw.js`, so nothing is precached and the offline queue below has
+> no shell to come back to. See the note in `vite.config.ts`. This branch does
+> not merge until it is fixed.
 
 `vite-plugin-pwa` precaches the built assets, so a reload is not a white
 screen: a phone in a pocket has its tab evicted, somebody pulls to refresh out
