@@ -429,6 +429,41 @@ func RegisterRoutes(app core.App) {
 			return joined(role)
 		}).Bind(apis.RequireAuth())
 
+		// Draw a stage that does not exist.
+		//
+		// Public and unauthenticated, because it reads nothing and writes
+		// nothing: a format, a field size and a config in, a plan out. It is
+		// what lets a page about an eight-team knockout show an eight-team
+		// knockout to somebody who has never been here before, and what the
+		// printable bracket sheets are rendered from.
+		//
+		// It runs the same four generators as a real stage. That is the whole
+		// reason it exists rather than a bracket drawn in TypeScript on the
+		// client: two implementations of bracket seeding is how brackets
+		// drift, and this way a marketing page cannot promise a draw the hall
+		// would not get.
+		se.Router.POST("/api/preview", func(e *core.RequestEvent) error {
+			req := PreviewRequest{}
+			if err := e.BindBody(&req); err != nil {
+				return e.BadRequestError("could not read the request", err)
+			}
+
+			plan, err := PreviewPlan(req)
+			if err != nil {
+				return e.BadRequestError(err.Error(), err)
+			}
+
+			// Deterministic for a given body and derived from no stored data,
+			// so it is worth letting a CDN keep it. The prerendered pages are
+			// built against it and would otherwise ask on every build.
+			e.Response.Header().Set("Cache-Control", "public, max-age=3600")
+
+			return e.JSON(http.StatusOK, map[string]any{
+				"format": req.Format,
+				"plan":   plan,
+			})
+		})
+
 		// One assembled payload for a projector screen.
 		//
 		// Public on purpose: the unguessable token is the only credential, so

@@ -145,6 +145,7 @@ its final positions.
 | `POST /api/entries/{entry}/admit` | Put a team in that was not there when the draw was made. Writes the matches they now owe a group, a seat in a Swiss table, or a bracket drawn again. Idempotent; refuses outright rather than half-applying when a knockout has already been played. |
 | `GET /api/staff/invite/{token}` | What a join code is for — a name and a role, nothing else. Public, so the join screen can say what is being accepted before anyone accepts it. |
 | `POST /api/staff/join` | Accept one, as whoever is signed in on this device. Idempotent; re-scanning a different role's code changes the role rather than adding a second row. |
+| `POST /api/preview` | Draw a stage that does not exist: a format, a field size and a config in, a plan out. Public and unauthenticated because it reads and writes nothing, capped at 128 teams because a round robin is quadratic. Runs the same four generators a real stage does, which is what lets a marketing page show a bracket without being able to promise one the hall would not get. |
 | `GET /api/display/{token}` | The whole projector screen in one response. Public — the token is the only credential. Read it with `If-None-Match`; an unchanged tournament answers 304. |
 | `GET /api/realtime` | PocketBase's stream. A screen subscribes to `tournament/{id}` and is told when to re-read the line above — the nudge carries no data of its own. |
 

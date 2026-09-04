@@ -18,6 +18,7 @@ import { FORMAT_PAGES, HUB } from "./formats";
 import { GUIDE_PAGES } from "./guides";
 import { OPERATIONAL_PAGES } from "./operational";
 import { PARAMETRIC_PAGES, SLUG_ALIASES } from "./parametric";
+import { PRINTABLE_PAGES } from "./printables";
 import { SPORT_PAGES } from "./sports";
 import type { Page } from "./types";
 
@@ -29,6 +30,7 @@ const ALL: Page[] = [
   ...OPERATIONAL_PAGES,
   ...GUIDE_PAGES,
   ...COMPARISON_PAGES,
+  ...PRINTABLE_PAGES,
 ];
 
 /**

@@ -1,6 +1,8 @@
 import { Link } from "@tanstack/react-router";
 import { pageBySlug } from "../../content";
 import type { Page } from "../../content/types";
+import { PrintableSheet } from "./PrintableSheet";
+import { FORMAT_OF } from "../../content/formats-map";
 
 /**
  * The layout every marketing page uses.
@@ -35,6 +37,17 @@ export function PageView({ page }: { page: Page }) {
           ))}
         </dl>
       )}
+
+      {page.kind === "printable" && page.generator?.teams ? (
+        <PrintableSheet
+          request={{
+            format: FORMAT_OF[page.generator.preset],
+            teams: page.generator.teams,
+            config: { thirdPlace: true },
+          }}
+          teams={page.generator.teams}
+        />
+      ) : null}
 
       {page.generator && <Cta page={page} />}
 

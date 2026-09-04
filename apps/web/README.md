@@ -71,6 +71,23 @@ it knows about whoever followed its call to action. It is a suggestion: the
 format screen still opens on the default when the field turns out too small
 for it.
 
+**Sheets to print.** `printable/*` pages draw a blank bracket or schedule from
+`POST /api/preview`, which runs the same four generators a real stage does. A
+sheet printed on Friday that disagrees with the draw on Saturday is a bug
+nobody finds until the hall does, which is why these are not a bracket drawn in
+the browser — that is what `packages/engine` used to be and exactly why it is
+types only now.
+
+The draw is fetched on arrival rather than prerendered: the endpoint needs a
+running server and the build has none. The page is complete without it — the
+prose and the match counts are prerendered — and better with it.
+
+A bracket holds a power of two, so a field of 12 is drawn into 16 and the four
+spare positions become bye slots. The fixtures against them are still written
+and their status is `pending` like any other, so the sheet finds them through
+the slot's `source_type` rather than the fixture's status. Filtering on the
+fixture would print four "Team 5 vs Bye" lines somebody has to cross out.
+
 ## Data
 
 Everything comes from `GET /api/display/:token` — one request, no auth. See

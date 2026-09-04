@@ -3711,3 +3711,164 @@ th,
 .doc__foot-note {
   color: var(--muted);
 }
+
+/* ==========================================================================
+   Printable sheets
+   --------------------------------------------------------------------------
+   A blank draw, drawn by the server, to be printed and written on.
+
+   The screen layout and the paper layout disagree about almost everything, so
+   the print rules below are not a tweak of the screen ones — they remove the
+   page around the sheet and re-set it in ink on white. What comes out of the
+   printer is the bracket and nothing else: no navigation, no prose, no call to
+   action, and no name inputs, which on paper are boxes somebody has already
+   filled in.
+   ========================================================================== */
+
+.sheet {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.sheet__controls {
+  display: grid;
+  gap: 0.75rem;
+  padding: 1.5rem;
+  border: 1px solid var(--line);
+  border-radius: 0.75rem;
+  background: var(--surface);
+}
+
+.sheet__names {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr));
+  gap: 0.5rem;
+}
+
+.sheet__name {
+  width: 100%;
+}
+
+.sheet__status {
+  color: var(--muted);
+}
+
+.sheet__paper {
+  display: grid;
+  gap: 2rem;
+  padding: 1.5rem;
+  border: 1px solid var(--line);
+  border-radius: 0.75rem;
+  background: var(--surface);
+}
+
+.sheet__pool {
+  display: grid;
+  gap: 1rem;
+}
+
+.sheet__pool-name,
+.sheet__round-name {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.sheet__round-name {
+  color: var(--muted);
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.sheet__round {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.sheet__table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+/* Fixed widths, because each row is its own grid: content-sized columns put
+   every row's score box wherever that row's names happened to end. Same
+   reasoning as the projector's court schedule. */
+.sheet__code {
+  width: 3.5rem;
+  font-family: var(--numeric);
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.sheet__team {
+  padding: 0.4rem 0.5rem;
+}
+
+.sheet__team--away {
+  text-align: right;
+}
+
+.sheet__score {
+  width: 2.5rem;
+  height: 2rem;
+  border: 1px solid var(--line);
+}
+
+@media print {
+  /* Everything that is not the sheet. */
+  .doc__head,
+  .doc__facts,
+  .doc__cta,
+  .doc__section,
+  .doc__related,
+  .doc__foot,
+  .sheet__controls,
+  .sheet__status {
+    display: none !important;
+  }
+
+  /* Ink on white, whatever the screen was set to. A printer has no dark mode
+     and a dark background is a cartridge. */
+  :root,
+  body,
+  .sheet__paper {
+    background: #fff !important;
+    color: #000 !important;
+  }
+
+  .doc {
+    max-width: none;
+    padding: 0;
+    gap: 0;
+  }
+
+  .sheet__paper {
+    border: 0;
+    padding: 0;
+    gap: 1.5rem;
+  }
+
+  .sheet__code,
+  .sheet__round-name {
+    color: #444 !important;
+  }
+
+  .sheet__score {
+    border-color: #000 !important;
+  }
+
+  /* A round that breaks across two pages is a round somebody has to turn over
+     mid-match to finish writing. */
+  .sheet__round,
+  .sheet__pool {
+    break-inside: avoid;
+  }
+
+  @page {
+    margin: 12mm;
+  }
+}

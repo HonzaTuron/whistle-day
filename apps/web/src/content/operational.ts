@@ -304,6 +304,82 @@ export const OPERATIONAL_PAGES: Page[] = [
   },
 
   {
+    slug: "referee-scoring-app",
+    kind: "operational",
+    title: "Referee Scoring App — A Phone Per Court, No Accounts",
+    h1: "A phone per court",
+    description:
+      "Hand each referee a QR code and they score their own court from their own phone. No accounts, no app to install, free.",
+    lede:
+      "The organiser holds up a QR code, the referee scans it, types their name, and starts refereeing. No account to create, no app to install, and no queue of paper scraps building up at one person's desk.",
+    generator: { preset: "groups", teams: 16 },
+    sections: [
+      {
+        heading: "Why results pile up at a desk",
+        body: [
+          "The commonest way a one-day tournament goes wrong is not the format. It is that results come back to a desk on scraps of paper, and by lunchtime the tables are an hour behind, nobody knows who is qualifying, and the playoff draw is late.",
+          "That happens because entering results is one person's job, and that person is also the one being asked when the next match is. Spreading the entering across the people already standing at the courts is the fix, and the reason it usually is not done is that giving five volunteers logins is more work than writing on paper.",
+        ],
+      },
+      {
+        heading: "Proximity is the authentication",
+        body: [
+          "The referee is standing next to the organiser, so the invitation is something held up and scanned. Anyone close enough to scan the code is somebody already being handed a court, which is a better check than a password nobody will remember.",
+          "There is one code per role rather than per person, because typing names into a phone in a hall is exactly the friction the code exists to avoid. The name is asked for at the far end, by the person who knows it, and it lands on the crew record rather than on an account — so the organiser holding a log of who changed which result can actually render those names.",
+        ],
+      },
+      {
+        heading: "Roles are recorded, not enforced",
+        body: [
+          "Every crew member can do everything the results screen offers. The role says what somebody was handed a code for and shows up in the crew list; it does not lock anything.",
+          "The distinction that is enforced is owner versus crew: handing out codes and removing people are the owner's alone. Anything looser would be a way around that — a scorer who could write to the crew list could issue themselves an organiser code.",
+        ],
+      },
+      {
+        heading: "It keeps working when the wifi does not",
+        body: [
+          "Five phones on a sports hall's wifi is exactly where a connection gives out. Every write from the match sheet goes into a durable queue on the device and sends itself when the signal comes back, so the sheet closes on the tap rather than on a round trip.",
+          "What is queued is the intent — \"2–0, with these sets\" — rather than the request, so replaying it later runs the same write as the online path. Offline a result closes its own match and nothing else: no table rebuilt, no playoff place promoted. That is the server's, worked out from every fixture at once, so the bracket stands still until the queue drains rather than showing a guess.",
+        ],
+      },
+      {
+        heading: "Email is the upgrade, not the entry",
+        body: [
+          "A referee who works every weekend can claim their device account and sign in anywhere, which is the same bargain the organiser's own account makes. Nobody has to do it to referee one afternoon.",
+        ],
+      },
+    ],
+    faq: [
+      {
+        q: "Do referees need to make an account?",
+        a: "No. They scan a code, type their name, and start. Claiming an account with an email is optional and only worth it for somebody who does this regularly.",
+      },
+      {
+        q: "How many people can score at once?",
+        a: "There is no limit. One code can be scanned by as many people as you hand it to, which is why minting codes is the owner's alone.",
+      },
+      {
+        q: "Can a referee change another court's results?",
+        a: "Yes. Roles are recorded rather than enforced — every crew member can do everything the results screen offers. If that matters for your event, hand out fewer codes.",
+      },
+      {
+        q: "What if a referee's phone loses signal?",
+        a: "Results queue on the device and send themselves when it comes back. The tables and bracket wait until the queue drains rather than showing a guess.",
+      },
+      {
+        q: "Is there an app to install?",
+        a: "No. It is a web page, and it can be added to a home screen if somebody wants it there.",
+      },
+    ],
+    related: [
+      "run-a-tournament-from-your-phone",
+      "multi-court-tournament-scheduler",
+      "qr-code-tournament-results",
+      "guide/how-to-run-a-one-day-tournament",
+    ],
+  },
+
+  {
     slug: "multi-court-tournament-scheduler",
     kind: "operational",
     title: "Multi-Court Tournament Scheduler — Spread Matches Across Courts",
