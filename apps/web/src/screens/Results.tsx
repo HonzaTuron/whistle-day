@@ -33,7 +33,7 @@ import {
 import { useT } from "../lib/i18n";
 import { admissionNotice } from "../lib/teams";
 import { overlay, waitingFixtures, type Intent } from "../lib/pending";
-import type { Display, Entry, ScoringConfig, StaffRole } from "@seedly/engine";
+import type { Display, Entry, ScoringConfig, StaffRole } from "@whistleday/engine";
 import { CrewSheet } from "../components/results/CrewSheet";
 import { FixtureRow } from "../components/results/FixtureRow";
 import { TeamsSheet } from "../components/results/TeamsSheet";

@@ -6,7 +6,7 @@ import type {
   DisplayTheme,
   Pool,
   Stage,
-} from "@seedly/engine";
+} from "@whistleday/engine";
 import { useEffect, useState } from "react";
 import { useT, type MessageKey, type Translate } from "../../lib/i18n";
 import { renderLabel } from "../../lib/labels";

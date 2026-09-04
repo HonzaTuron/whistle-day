@@ -1,4 +1,4 @@
-# @seedly/web
+# @whistleday/web
 
 Two public screens, and the two the organiser drives them from.
 

@@ -1,4 +1,4 @@
-import type { DisplayFixture, DisplayPayload, DisplayStage } from "@seedly/engine";
+import type { DisplayFixture, DisplayPayload, DisplayStage } from "@whistleday/engine";
 import { bracketRounds } from "../../lib/bracket";
 import { isPlaceholder, sideName, sideScore } from "../../lib/format";
 import { useT, type Translate } from "../../lib/i18n";

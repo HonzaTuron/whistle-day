@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import type { ScoringConfig } from "@seedly/engine";
+import type { ScoringConfig } from "@whistleday/engine";
 import { canAddSet, matchIsDecided, scoreFault, setsToWin } from "./bestof";
 
 /**

@@ -1,4 +1,4 @@
-import type { Court } from "@seedly/engine";
+import type { Court } from "@whistleday/engine";
 import { sideName, timeValue, type BoardRow } from "../../lib/board";
 import { useT, type Translate } from "../../lib/i18n";
 

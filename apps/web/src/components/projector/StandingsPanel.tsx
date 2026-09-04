@@ -1,4 +1,4 @@
-import type { DisplayPayload, DisplayPool } from "@seedly/engine";
+import type { DisplayPayload, DisplayPool } from "@whistleday/engine";
 import type { CSSProperties } from "react";
 import { entryName } from "../../lib/format";
 import { useT } from "../../lib/i18n";

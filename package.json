@@ -1,5 +1,5 @@
 {
-  "name": "seedly",
+  "name": "whistleday",
   "private": true,
   "packageManager": "bun@1.4.0",
   "version": "0.0.0",
@@ -16,7 +16,7 @@
     "pb:migrate": "cd backend && go run . migrate up",
     "pb:down": "cd backend && go run . migrate down 1",
     "pb:serve": "cd backend && go run . serve --http=127.0.0.1:8090",
-    "pb:superuser": "cd backend && go run . superuser upsert admin@seedly.local seedlyadmin1",
+    "pb:superuser": "cd backend && go run . superuser upsert admin@whistleday.local whistledayadmin1",
     "pb:reset": "rm -rf backend/pb_data && bun run pb:migrate",
     "smoke": "bun run pb:build && bun run scripts/smoke.ts",
     "dev": "bun run pb:serve",

@@ -1,4 +1,4 @@
-import type { LabelKind } from "@seedly/engine";
+import type { LabelKind } from "@whistleday/engine";
 import type { MessageKey, Translate } from "./i18n";
 
 /**

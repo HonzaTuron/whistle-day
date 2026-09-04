@@ -1,4 +1,4 @@
-import type { FixtureEvent } from "@seedly/engine";
+import type { FixtureEvent } from "@whistleday/engine";
 import { useEffect, useState } from "react";
 import { ensureOrganiser, loadHistory } from "../../api/organiser";
 import { timeOfDay } from "../../lib/format";

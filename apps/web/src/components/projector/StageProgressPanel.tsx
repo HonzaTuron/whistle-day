@@ -1,4 +1,4 @@
-import type { DisplayPayload } from "@seedly/engine";
+import type { DisplayPayload } from "@whistleday/engine";
 import { useT } from "../../lib/i18n";
 import { renderLabel } from "../../lib/labels";
 import { counts, isSettledStatus } from "../../lib/status";

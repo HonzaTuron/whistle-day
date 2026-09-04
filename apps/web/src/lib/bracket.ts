@@ -1,4 +1,4 @@
-import type { DisplayFixture, DisplayStage } from "@seedly/engine";
+import type { DisplayFixture, DisplayStage } from "@whistleday/engine";
 import type { Translate } from "./i18n";
 
 /**

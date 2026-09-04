@@ -1,4 +1,4 @@
-import type { DisplayPayload, DisplayPool } from "@seedly/engine";
+import type { DisplayPayload, DisplayPool } from "@whistleday/engine";
 import { entryName } from "../../lib/format";
 import { useT } from "../../lib/i18n";
 import { tiebreakNote } from "../../lib/tiebreak";

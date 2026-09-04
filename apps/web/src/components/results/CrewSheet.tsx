@@ -1,4 +1,4 @@
-import type { StaffRole } from "@seedly/engine";
+import type { StaffRole } from "@whistleday/engine";
 import { useEffect, useState } from "react";
 import { renderSVG } from "uqr";
 import type { StaffRecord } from "../../api/organiser";

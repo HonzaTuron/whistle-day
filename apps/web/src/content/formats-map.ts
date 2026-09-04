@@ -1,4 +1,4 @@
-import type { StageFormat } from "@seedly/engine";
+import type { StageFormat } from "@whistleday/engine";
 import type { PresetId } from "../lib/presets";
 
 /**

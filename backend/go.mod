@@ -1,4 +1,4 @@
-module seedly/backend
+module whistleday/backend
 
 go 1.27
 

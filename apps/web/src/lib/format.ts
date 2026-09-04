@@ -3,7 +3,7 @@ import type {
   DisplayFixture,
   DisplayPayload,
   DisplaySide,
-} from "@seedly/engine";
+} from "@whistleday/engine";
 import type { Translate } from "./i18n";
 import { renderLabel } from "./labels";
 

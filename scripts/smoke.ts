@@ -20,7 +20,7 @@ const BACKEND = new URL("../backend/", import.meta.url).pathname;
 const BIN = `${BACKEND}pocketbase`;
 const PORT = 8099;
 const BASE = `http://127.0.0.1:${PORT}`;
-const ADMIN = { identity: "smoke@seedly.local", password: "smokesmoke123" };
+const ADMIN = { identity: "smoke@whistleday.local", password: "smokesmoke123" };
 
 let passed = 0;
 const failures: string[] = [];
@@ -76,7 +76,7 @@ const get = (collection: string, id: string) =>
 
 // ---------------------------------------------------------------------------
 
-const dataDir = await mkdtemp(join(tmpdir(), "seedly-smoke-"));
+const dataDir = await mkdtemp(join(tmpdir(), "whistleday-smoke-"));
 console.log(`data dir: ${dataDir}\n`);
 
 await $`${BIN} superuser upsert ${ADMIN.identity} ${ADMIN.password} --dir=${dataDir}`.quiet();
@@ -108,7 +108,7 @@ try {
   token = auth.token;
 
   const organiser = await create("users", {
-    email: "organiser@seedly.local",
+    email: "organiser@whistleday.local",
     password: "organiser123",
     passwordConfirm: "organiser123",
   });
@@ -652,7 +652,7 @@ try {
   // The wizard's accounts are anonymous by design; this is the only way one
   // ever becomes something a person can sign in with, so its refusals matter
   // as much as its success.
-  const deviceEmail = `organiser-${Date.now()}@device.seedly.local`;
+  const deviceEmail = `organiser-${Date.now()}@device.whistleday.local`;
   const devicePassword = "device-generated-secret";
   await create("users", {
     email: deviceEmail,
@@ -1183,7 +1183,7 @@ try {
 
   // The referee's phone: a device account it never had to type for, which is
   // what `ensureOrganiser` makes on the join screen.
-  const refEmail = `referee-${Date.now()}@device.seedly.local`;
+  const refEmail = `referee-${Date.now()}@device.whistleday.local`;
   await create("users", {
     email: refEmail, password: "device-secret-1", passwordConfirm: "device-secret-1",
     name: "Organiser",
@@ -1288,7 +1288,7 @@ try {
   const withdrawn = await fetch(`${BASE}/api/staff/invite/${refToken}`);
   check("a withdrawn code stops naming its tournament", withdrawn.status, 404);
 
-  const lateEmail = `late-${Date.now()}@device.seedly.local`;
+  const lateEmail = `late-${Date.now()}@device.whistleday.local`;
   await create("users", {
     email: lateEmail, password: "device-secret-2", passwordConfirm: "device-secret-2",
   });

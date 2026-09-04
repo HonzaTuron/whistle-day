@@ -8,9 +8,9 @@ import (
 	"github.com/pocketbase/pocketbase"
 	"github.com/pocketbase/pocketbase/plugins/migratecmd"
 
-	"seedly/backend/internal/mcp"
-	"seedly/backend/internal/tournament"
-	_ "seedly/backend/migrations"
+	"whistleday/backend/internal/mcp"
+	"whistleday/backend/internal/tournament"
+	_ "whistleday/backend/migrations"
 )
 
 func main() {

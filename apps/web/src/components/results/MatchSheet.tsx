@@ -1,4 +1,4 @@
-import type { Court, Entry, Id, ScoringConfig } from "@seedly/engine";
+import type { Court, Entry, Id, ScoringConfig } from "@whistleday/engine";
 import { useEffect, useRef, useState } from "react";
 import {
   ensureOrganiser,

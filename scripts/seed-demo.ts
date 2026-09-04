@@ -8,12 +8,12 @@
  * full of unresolved placeholders.
  */
 
-const BASE = process.env.SEEDLY_API ?? "http://127.0.0.1:8090";
+const BASE = process.env.WHISTLEDAY_API ?? "http://127.0.0.1:8090";
 const ADMIN = {
-  identity: process.env.SEEDLY_ADMIN ?? "admin@seedly.local",
-  password: process.env.SEEDLY_ADMIN_PASSWORD ?? "seedlyadmin1",
+  identity: process.env.WHISTLEDAY_ADMIN ?? "admin@whistleday.local",
+  password: process.env.WHISTLEDAY_ADMIN_PASSWORD ?? "whistledayadmin1",
 };
-const SCREEN_TOKEN = process.env.SEEDLY_TOKEN ?? "hala-1";
+const SCREEN_TOKEN = process.env.WHISTLEDAY_TOKEN ?? "hala-1";
 
 let token = "";
 
@@ -95,9 +95,9 @@ const auth = await api("POST", "/api/collections/_superusers/auth-with-password"
 token = auth.token;
 
 const organiser =
-  (await list("users", `filter=(email='organiser@seedly.local')`)).items[0] ??
+  (await list("users", `filter=(email='organiser@whistleday.local')`)).items[0] ??
   (await create("users", {
-    email: "organiser@seedly.local",
+    email: "organiser@whistleday.local",
     password: "organiser123",
     passwordConfirm: "organiser123",
     name: "Turnajový výbor",

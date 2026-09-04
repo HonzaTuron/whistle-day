@@ -1,4 +1,4 @@
-import type { Entry } from "@seedly/engine";
+import type { Entry } from "@whistleday/engine";
 import { useEffect, useState } from "react";
 import { useT } from "../../lib/i18n";
 import { isDuplicateName, isOut, SHORT_NAME_MAX, suggestShortName } from "../../lib/teams";

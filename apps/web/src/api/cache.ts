@@ -1,4 +1,4 @@
-import type { DisplayPayload, Id } from "@seedly/engine";
+import type { DisplayPayload, Id } from "@whistleday/engine";
 import type { Board } from "./organiser";
 
 /**
@@ -25,7 +25,7 @@ import type { Board } from "./organiser";
  * so the asynchrony costs nothing here.
  */
 
-const DB_NAME = "seedly";
+const DB_NAME = "whistleday";
 const BOARDS = "boards";
 const DISPLAYS = "displays";
 const VERSION = 2;

@@ -1,4 +1,4 @@
-import type { Id } from "@seedly/engine";
+import type { Id } from "@whistleday/engine";
 import type { BoardFixture, SetScore } from "../api/organiser";
 import { stamp } from "../api/organiser";
 

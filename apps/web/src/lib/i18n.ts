@@ -120,7 +120,7 @@ export type Translate = (key: MessageKey, vars?: Vars) => string;
 // which language this browser is in
 // ---------------------------------------------------------------------------
 
-const STORAGE_KEY = "seedly.locale";
+const STORAGE_KEY = "whistleday.locale";
 
 const isLocale = (value: string | null | undefined): value is Locale =>
   LOCALES.includes(value as Locale);

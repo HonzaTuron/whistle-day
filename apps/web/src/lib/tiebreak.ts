@@ -1,4 +1,4 @@
-import type { DisplayPool, Tiebreaker } from "@seedly/engine";
+import type { DisplayPool, Tiebreaker } from "@whistleday/engine";
 import type { Translate } from "./i18n";
 import { TIEBREAK_LABELS } from "./scoring";
 

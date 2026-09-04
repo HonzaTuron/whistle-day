@@ -17,8 +17,8 @@ func lateCup(
 	t.Helper()
 
 	owner := save(t, app, "users", map[string]any{
-		"email": "owner@seedly.test", "password": "seedlytest1",
-		"passwordConfirm": "seedlytest1",
+		"email": "owner@whistleday.test", "password": "whistledaytest1",
+		"passwordConfirm": "whistledaytest1",
 	})
 	cup := save(t, app, "tournaments", map[string]any{
 		"name": "Late Cup", "slug": "late-cup", "status": "published",
@@ -431,8 +431,8 @@ func TestAPlayoffSeededFromTheGroupsIsLeftAlone(t *testing.T) {
 func TestALateTeamBeforeTheDrawIsJustAnEntry(t *testing.T) {
 	app := newScoringApp(t)
 	owner := save(t, app, "users", map[string]any{
-		"email": "owner@seedly.test", "password": "seedlytest1",
-		"passwordConfirm": "seedlytest1",
+		"email": "owner@whistleday.test", "password": "whistledaytest1",
+		"passwordConfirm": "whistledaytest1",
 	})
 	cup := save(t, app, "tournaments", map[string]any{
 		"name": "Undrawn", "slug": "undrawn", "status": "published", "owner": owner.Id,

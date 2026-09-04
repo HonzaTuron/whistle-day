@@ -1,4 +1,4 @@
-import type { DisplayFixture, DisplayPayload } from "@seedly/engine";
+import type { DisplayFixture, DisplayPayload } from "@whistleday/engine";
 import { courtName, sideName } from "../../lib/format";
 import { useT, type Translate } from "../../lib/i18n";
 

@@ -1,4 +1,4 @@
-import type { Id } from "@seedly/engine";
+import type { Id } from "@whistleday/engine";
 import { tr, translate, type Locale } from "../lib/i18n";
 import { presetById, type PresetId } from "../lib/presets";
 import { forgetDraft, randomString, rememberTournament, type Session } from "./organiser";

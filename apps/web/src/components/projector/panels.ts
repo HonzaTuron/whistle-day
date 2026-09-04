@@ -1,4 +1,4 @@
-import type { DisplayPanel, DisplayPayload } from "@seedly/engine";
+import type { DisplayPanel, DisplayPayload } from "@whistleday/engine";
 import { bracketStages, tablePools } from "../../lib/format";
 import type { Translate } from "../../lib/i18n";
 import { renderLabel } from "../../lib/labels";

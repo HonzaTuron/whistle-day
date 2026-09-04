@@ -1,4 +1,4 @@
-import type { Fixture, Pool, Stage } from "@seedly/engine";
+import type { Fixture, Pool, Stage } from "@whistleday/engine";
 import { useT } from "../../lib/i18n";
 import { renderLabel } from "../../lib/labels";
 import { counts, isSettledStatus } from "../../lib/status";

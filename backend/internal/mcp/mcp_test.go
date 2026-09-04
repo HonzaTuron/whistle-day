@@ -11,13 +11,13 @@ import (
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/pocketbase/pocketbase/tests"
 
-	"seedly/backend/internal/tournament"
-	_ "seedly/backend/migrations"
+	"whistleday/backend/internal/tournament"
+	_ "whistleday/backend/migrations"
 )
 
 func newTestApp(t *testing.T) *tests.TestApp {
 	t.Helper()
-	dir, err := os.MkdirTemp("", "seedly-mcp-test-*")
+	dir, err := os.MkdirTemp("", "whistleday-mcp-test-*")
 	if err != nil {
 		t.Fatalf("temp dir: %v", err)
 	}
@@ -904,7 +904,7 @@ func TestEnsureSystemUser(t *testing.T) {
 	if e != nil {
 		t.Fatalf("first call: %v", e)
 	}
-	if user.GetString("email") != "mcp@seedly.local" {
+	if user.GetString("email") != "mcp@whistleday.local" {
 		t.Fatalf("email = %q", user.GetString("email"))
 	}
 
@@ -1018,7 +1018,7 @@ func call(t *testing.T, fn func(context.Context, mcp.CallToolRequest) (*mcp.Call
 
 // playPool settles every fixture in one pool, with descending scores so the
 // table comes out in a definite order rather than a tied heap.
-func playPool(t *testing.T, s *SeedlyMCP, stageID, poolID string) {
+func playPool(t *testing.T, s *WhistleMCP, stageID, poolID string) {
 	t.Helper()
 	var fixtures []map[string]any
 	call(t, s.listFixtures, "list_fixtures",

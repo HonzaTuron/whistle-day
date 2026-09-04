@@ -527,7 +527,7 @@ func RegisterRoutes(app core.App) {
 // DeviceAccountDomain marks an account created by the wizard rather than by a
 // person. Nothing depends on the exact string except the claim endpoint, which
 // uses it to tell "never had an email" from "has one already".
-const DeviceAccountDomain = "@device.seedly.local"
+const DeviceAccountDomain = "@device.whistleday.local"
 
 const minPasswordLength = 8
 

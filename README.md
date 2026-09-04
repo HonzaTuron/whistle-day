@@ -11,13 +11,8 @@ the playoff seeded from them fills itself in, the next Swiss round draws
 itself, and the wall keeps up on its own. Hand a referee a second QR code and
 they run their court from their own phone.
 
-The repository, the package scope (`@seedly/engine`), the Go module and the
-local superuser are all still on the project's old name. Renaming them is a
-day's mechanical work with nothing to learn from it, so it is outstanding
-rather than done; nothing below reads on it either way.
-
 ```
-seedly/
+whistleday/
 ├── docs/DATA-MODEL.md       ← start here
 ├── backend/                  PocketBase as a Go framework
 │   ├── migrations/           the schema
@@ -55,7 +50,7 @@ the path is not a problem worth solving by hand.
 bun install
 bun run pb:build      # compile backend/pocketbase
 bun run pb:migrate    # apply the schema
-bun run pb:superuser  # admin@seedly.local / seedlyadmin1
+bun run pb:superuser  # admin@whistleday.local / whistledayadmin1
 ```
 
 Then, in three terminals:

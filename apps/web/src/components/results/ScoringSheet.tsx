@@ -1,4 +1,4 @@
-import type { ScoringConfig, Tiebreaker } from "@seedly/engine";
+import type { ScoringConfig, Tiebreaker } from "@whistleday/engine";
 import { useEffect } from "react";
 import { useReorder } from "../../lib/reorder";
 import {

@@ -1,4 +1,4 @@
-import type { DisplayPayload, DisplaySponsor } from "@seedly/engine";
+import type { DisplayPayload, DisplaySponsor } from "@whistleday/engine";
 import { useState } from "react";
 import { useT } from "../../lib/i18n";
 

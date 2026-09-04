@@ -1,4 +1,4 @@
-import type { Id } from "@seedly/engine";
+import type { Id } from "@whistleday/engine";
 import { tr } from "../lib/i18n";
 import {
   ApiError,
@@ -40,7 +40,7 @@ import { collapse, type Intent, type Queued } from "../lib/pending";
  * window where the phone can be locked, the tab killed, and the write gone.
  */
 
-const KEY = "seedly.outbox";
+const KEY = "whistleday.outbox";
 
 /** 0 is the first try. After that, long enough to be worth waiting for. */
 const BACKOFF_MS = [0, 2_000, 5_000, 10_000, 20_000, 30_000];

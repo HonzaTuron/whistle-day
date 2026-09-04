@@ -8,7 +8,7 @@ import {
 } from "../api/organiser";
 import { usePreviewInvite } from "../api/hooks";
 import { useT, type MessageKey } from "../lib/i18n";
-import type { StaffRole } from "@seedly/engine";
+import type { StaffRole } from "@whistleday/engine";
 
 /** What the invitation says this person is being asked to do. */
 const ROLES: Record<StaffRole, MessageKey> = {

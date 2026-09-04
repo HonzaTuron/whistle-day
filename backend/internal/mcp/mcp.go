@@ -14,17 +14,17 @@ import (
 	"github.com/pocketbase/dbx"
 	"github.com/pocketbase/pocketbase/core"
 
-	"seedly/backend/internal/tournament"
+	"whistleday/backend/internal/tournament"
 )
 
-type SeedlyMCP struct {
+type WhistleMCP struct {
 	app core.App
 	mcp *server.MCPServer
 	sse *server.SSEServer
 }
 
-func New(app core.App) *SeedlyMCP {
-	s := &SeedlyMCP{app: app}
+func New(app core.App) *WhistleMCP {
+	s := &WhistleMCP{app: app}
 
 	s.mcp = server.NewMCPServer(
 		// The name an MCP client shows in its list of servers, so it is the
@@ -48,11 +48,11 @@ func New(app core.App) *SeedlyMCP {
 	return s
 }
 
-func (s *SeedlyMCP) SSEHandler() http.Handler {
+func (s *WhistleMCP) SSEHandler() http.Handler {
 	return s.sse.SSEHandler()
 }
 
-func (s *SeedlyMCP) MessageHandler() http.Handler {
+func (s *WhistleMCP) MessageHandler() http.Handler {
 	return s.sse.MessageHandler()
 }
 
@@ -60,7 +60,7 @@ func (s *SeedlyMCP) MessageHandler() http.Handler {
 // Tools
 // ---------------------------------------------------------------------------
 
-func (s *SeedlyMCP) registerTools() {
+func (s *WhistleMCP) registerTools() {
 	s.mcp.AddTool(listTournamentsTool(), s.listTournaments)
 	s.mcp.AddTool(getTournamentTool(), s.getTournament)
 	s.mcp.AddTool(createTournamentTool(), s.createTournament)
@@ -87,7 +87,7 @@ func listTournamentsTool() mcp.Tool {
 	)
 }
 
-func (s *SeedlyMCP) listTournaments(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+func (s *WhistleMCP) listTournaments(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	records, err := s.app.FindRecordsByFilter("tournaments", "", "created", 0, 0, nil)
 	if err != nil {
 		return nil, fmt.Errorf("list tournaments: %w", err)
@@ -102,7 +102,7 @@ func getTournamentTool() mcp.Tool {
 	)
 }
 
-func (s *SeedlyMCP) getTournament(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+func (s *WhistleMCP) getTournament(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	id := req.GetArguments()["id"].(string)
 	r, err := s.app.FindRecordById("tournaments", id)
 	if err != nil {
@@ -121,7 +121,7 @@ func listStagesTool() mcp.Tool {
 	)
 }
 
-func (s *SeedlyMCP) listStages(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+func (s *WhistleMCP) listStages(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	tid := req.GetArguments()["tournament_id"].(string)
 	records, err := s.app.FindRecordsByFilter(
 		"stages", "tournament = {:t}", "position", 0, 0,
@@ -140,7 +140,7 @@ func getStageTool() mcp.Tool {
 	)
 }
 
-func (s *SeedlyMCP) getStage(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+func (s *WhistleMCP) getStage(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	id := req.GetArguments()["id"].(string)
 	r, err := s.app.FindRecordById("stages", id)
 	if err != nil {
@@ -159,7 +159,7 @@ func listPoolsTool() mcp.Tool {
 	)
 }
 
-func (s *SeedlyMCP) listPools(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+func (s *WhistleMCP) listPools(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	sid := req.GetArguments()["stage_id"].(string)
 	records, err := s.app.FindRecordsByFilter(
 		"pools", "stage = {:s}", "position", 0, 0,
@@ -181,7 +181,7 @@ func listFixturesTool() mcp.Tool {
 	)
 }
 
-func (s *SeedlyMCP) listFixtures(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+func (s *WhistleMCP) listFixtures(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	sid := req.GetArguments()["stage_id"].(string)
 
 	filter := "stage = {:stage}"
@@ -218,7 +218,7 @@ func getFixtureTool() mcp.Tool {
 	)
 }
 
-func (s *SeedlyMCP) getFixture(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+func (s *WhistleMCP) getFixture(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	id := req.GetArguments()["id"].(string)
 	r, err := s.app.FindRecordById("fixtures", id)
 	if err != nil {
@@ -255,7 +255,7 @@ func listEntriesTool() mcp.Tool {
 	)
 }
 
-func (s *SeedlyMCP) listEntries(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+func (s *WhistleMCP) listEntries(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	tid := req.GetArguments()["tournament_id"].(string)
 	records, err := s.app.FindRecordsByFilter(
 		"entries", "tournament = {:t}", "seed", 0, 0,
@@ -274,7 +274,7 @@ func listStandingsTool() mcp.Tool {
 	)
 }
 
-func (s *SeedlyMCP) listStandings(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+func (s *WhistleMCP) listStandings(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	pid := req.GetArguments()["pool_id"].(string)
 	records, err := s.app.FindRecordsByFilter(
 		"standings", "pool = {:p}", "position", 0, 0,
@@ -302,7 +302,7 @@ func getStageTableTool() mcp.Tool {
 	)
 }
 
-func (s *SeedlyMCP) getStageTable(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+func (s *WhistleMCP) getStageTable(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	sid := req.GetArguments()["stage_id"].(string)
 	records, err := tournament.StageTable(s.app, sid)
 	if err != nil {
@@ -326,7 +326,7 @@ func updateFixtureTool() mcp.Tool {
 	)
 }
 
-func (s *SeedlyMCP) updateFixture(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+func (s *WhistleMCP) updateFixture(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	id := req.GetArguments()["id"].(string)
 
 	r, err := s.app.FindRecordById("fixtures", id)
@@ -367,7 +367,7 @@ func generateStageTool() mcp.Tool {
 	)
 }
 
-func (s *SeedlyMCP) generateStage(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+func (s *WhistleMCP) generateStage(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	sid := req.GetArguments()["stage_id"].(string)
 	dryRun, _ := req.GetArguments()["dry_run"].(bool)
 
@@ -410,7 +410,7 @@ func resolveStageTool() mcp.Tool {
 	)
 }
 
-func (s *SeedlyMCP) resolveStage(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+func (s *WhistleMCP) resolveStage(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	sid := req.GetArguments()["stage_id"].(string)
 	resolved, err := tournament.ResolveStage(s.app, sid)
 	if err != nil {
@@ -457,7 +457,7 @@ func slugify(name string) string {
 	return base + "-" + rand
 }
 
-func (s *SeedlyMCP) createTournament(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+func (s *WhistleMCP) createTournament(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	name := req.GetArguments()["name"].(string)
 
 	owner, err := s.ensureSystemUser()
@@ -490,9 +490,9 @@ func (s *SeedlyMCP) createTournament(ctx context.Context, req mcp.CallToolReques
 	return resultJSON(recordToMap(r, "id", "name", "status", "created"))
 }
 
-func (s *SeedlyMCP) ensureSystemUser() (*core.Record, error) {
+func (s *WhistleMCP) ensureSystemUser() (*core.Record, error) {
 	users, err := s.app.FindRecordsByFilter("users", "email = {:email}", "", 1, 0,
-		dbx.Params{"email": "mcp@seedly.local"})
+		dbx.Params{"email": "mcp@whistleday.local"})
 	if err != nil {
 		return nil, err
 	}
@@ -505,7 +505,7 @@ func (s *SeedlyMCP) ensureSystemUser() (*core.Record, error) {
 		return nil, err
 	}
 	r := core.NewRecord(col)
-	r.Set("email", "mcp@seedly.local")
+	r.Set("email", "mcp@whistleday.local")
 	r.Set("password", "mcp-system-account-2026")
 	r.Set("passwordConfirm", "mcp-system-account-2026")
 	r.Set("name", "MCP System")
@@ -524,7 +524,7 @@ func addEntryTool() mcp.Tool {
 	)
 }
 
-func (s *SeedlyMCP) addEntry(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+func (s *WhistleMCP) addEntry(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	tid := req.GetArguments()["tournament_id"].(string)
 	name := req.GetArguments()["name"].(string)
 	seed := int(req.GetArguments()["seed"].(float64))
@@ -558,7 +558,7 @@ func createStageTool() mcp.Tool {
 	)
 }
 
-func (s *SeedlyMCP) createStage(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+func (s *WhistleMCP) createStage(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	tid := req.GetArguments()["tournament_id"].(string)
 	name := req.GetArguments()["name"].(string)
 	format := req.GetArguments()["format"].(string)
@@ -602,7 +602,7 @@ func createDisplayTool() mcp.Tool {
 	)
 }
 
-func (s *SeedlyMCP) createDisplay(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+func (s *WhistleMCP) createDisplay(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	tid := req.GetArguments()["tournament_id"].(string)
 	name := "Main screen"
 	if n, ok := req.GetArguments()["name"].(string); ok && n != "" {
@@ -653,7 +653,7 @@ func publishTournamentTool() mcp.Tool {
 	)
 }
 
-func (s *SeedlyMCP) publishTournament(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+func (s *WhistleMCP) publishTournament(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	tid := req.GetArguments()["tournament_id"].(string)
 
 	r, err := s.app.FindRecordById("tournaments", tid)
@@ -673,7 +673,7 @@ func (s *SeedlyMCP) publishTournament(ctx context.Context, req mcp.CallToolReque
 // Resources
 // ---------------------------------------------------------------------------
 
-func (s *SeedlyMCP) registerResources() {
+func (s *WhistleMCP) registerResources() {
 	s.mcp.AddResource(
 		mcp.NewResource("tournaments://overview", "Tournaments Overview",
 			mcp.WithResourceDescription("Overview of all tournaments"),

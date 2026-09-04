@@ -1,4 +1,4 @@
-import type { Court, Entry, Id, LabelArgs, LabelKind, Pool, Stage } from "@seedly/engine";
+import type { Court, Entry, Id, LabelArgs, LabelKind, Pool, Stage } from "@whistleday/engine";
 import type { Board, BoardFixture, SetScore } from "../api/organiser";
 import type { Translate } from "./i18n";
 import { renderLabel } from "./labels";

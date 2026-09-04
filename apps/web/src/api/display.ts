@@ -1,4 +1,4 @@
-import type { DisplayPayload } from "@seedly/engine";
+import type { DisplayPayload } from "@whistleday/engine";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useT, type MessageKey } from "../lib/i18n";
 import { forgetDisplay, readDisplay, writeDisplay } from "./cache";

@@ -1,4 +1,4 @@
-# @seedly/engine
+# @whistleday/engine
 
 Shared domain types for the frontend. **Types only** — there is no logic here.
 

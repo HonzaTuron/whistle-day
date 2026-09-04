@@ -3,16 +3,16 @@
   "configVersion": 1,
   "workspaces": {
     "": {
-      "name": "seedly",
+      "name": "whistleday",
       "devDependencies": {
         "@types/bun": "^1.4.0",
         "typescript": "^7.0.2",
       },
     },
     "apps/web": {
-      "name": "@seedly/web",
+      "name": "@whistleday/web",
       "dependencies": {
-        "@seedly/engine": "workspace:*",
+        "@whistleday/engine": "workspace:*",
         "@tanstack/react-query": "^5.102.8",
         "@tanstack/react-router": "^1.170.31",
         "@tanstack/react-start": "^1.168.49",
@@ -31,7 +31,7 @@
       },
     },
     "packages/engine": {
-      "name": "@seedly/engine",
+      "name": "@whistleday/engine",
       "version": "0.0.0",
     },
   },
@@ -390,9 +390,9 @@
 
     "@rollup/rollup-win32-x64-msvc": ["@rollup/rollup-win32-x64-msvc@4.63.1", "", { "os": "win32", "cpu": "x64" }, "sha512-at8QVep6S3h5Y6gSbdGU06bRY5WJkf6WUduM9YtvYMbYhB1MOFfUgc6kehitQXzOtMSaT70q7f9ydPhpqu821w=="],
 
-    "@seedly/engine": ["@seedly/engine@workspace:packages/engine"],
+    "@whistleday/engine": ["@whistleday/engine@workspace:packages/engine"],
 
-    "@seedly/web": ["@seedly/web@workspace:apps/web"],
+    "@whistleday/web": ["@whistleday/web@workspace:apps/web"],
 
     "@tanstack/history": ["@tanstack/history@1.162.1", "", {}, "sha512-DR9t6lfLVdrjgCwpglrR9DR7Ok8/HlXjcOE+goWXF3zyuLUO/ug7vMbSFxTqrQTtbRghJfyhmIZ0S6LhPIy44w=="],
 

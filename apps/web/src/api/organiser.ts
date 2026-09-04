@@ -13,7 +13,7 @@ import type {
   Slot,
   Stage,
   StaffRole,
-} from "@seedly/engine";
+} from "@whistleday/engine";
 import { tr } from "../lib/i18n";
 import { sportById, type SportId } from "../lib/scoring";
 
@@ -34,9 +34,9 @@ import { sportById, type SportId } from "../lib/scoring";
  * real email is the fix; that screen is not built yet.
  */
 
-const SESSION_KEY = "seedly.organiser.session";
-const DRAFT_KEY = "seedly.organiser.draft";
-const RUNNING_KEY = "seedly.organiser.running";
+const SESSION_KEY = "whistleday.organiser.session";
+const DRAFT_KEY = "whistleday.organiser.draft";
+const RUNNING_KEY = "whistleday.organiser.running";
 
 export interface Session {
   userId: Id;
@@ -137,7 +137,7 @@ function writeSession(session: Session): Session {
 }
 
 async function signUp(): Promise<Session> {
-  const email = `organiser-${randomString(12)}@device.seedly.local`;
+  const email = `organiser-${randomString(12)}@device.whistleday.local`;
   const password = randomString(24);
 
   const user = await api<{ id: Id }>("/api/collections/users/records", {
@@ -259,7 +259,7 @@ export const storedSession = (): Session | null => readSession();
 
 /** True while the account is still the throwaway one the wizard made. */
 export const isDeviceAccount = (session: Session) =>
-  session.email.toLowerCase().endsWith("@device.seedly.local");
+  session.email.toLowerCase().endsWith("@device.whistleday.local");
 
 /**
  * Put a real email and password on the device account, so it can be signed

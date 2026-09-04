@@ -17,7 +17,7 @@ import type { Plugin } from "vite";
  */
 export function serviceWorker(): Plugin {
   return {
-    name: "seedly:service-worker",
+    name: "whistleday:service-worker",
     apply: "build",
 
     // Both environments fire this hook; only the client one has anything to

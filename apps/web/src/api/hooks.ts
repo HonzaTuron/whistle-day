@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import type { Id, ScoringConfig, StaffRole } from "@seedly/engine";
+import type { Id, ScoringConfig, StaffRole } from "@whistleday/engine";
 import {
   ensureOrganiser,
   loadBoard,
@@ -452,7 +452,7 @@ export function useUpdateDisplay(tournament: Id) {
     }: {
       session: Session;
       id: Id;
-      patch: Partial<import("@seedly/engine").Display>;
+      patch: Partial<import("@whistleday/engine").Display>;
     }) => updateDisplay(session, id, patch),
     onMutate: async ({ id, patch }) => {
       await qc.cancelQueries({ queryKey: keys.board(tournament) });
@@ -524,7 +524,7 @@ export function useWithdrawEntry(tournament: Id) {
       session: Session;
       entry: Id;
       policy: "forfeit" | "void";
-      status?: import("@seedly/engine").EntryExit;
+      status?: import("@whistleday/engine").EntryExit;
     }) => withdrawEntry(session, entry, policy, status),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: keys.board(tournament) });

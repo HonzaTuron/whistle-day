@@ -1,4 +1,4 @@
-import type { ScoringConfig } from "@seedly/engine";
+import type { ScoringConfig } from "@whistleday/engine";
 
 /**
  * What "best of three" means to a match sheet.

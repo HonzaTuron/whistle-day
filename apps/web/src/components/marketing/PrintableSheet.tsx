@@ -1,4 +1,4 @@
-import type { FixtureDraft, SlotDraft, StagePlan } from "@seedly/engine";
+import type { FixtureDraft, SlotDraft, StagePlan } from "@whistleday/engine";
 import { useMemo, useState } from "react";
 import { usePreview, type PreviewRequest } from "../../api/preview";
 import { roundTitle } from "../../lib/bracket";

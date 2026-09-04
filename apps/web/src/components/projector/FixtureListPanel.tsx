@@ -1,4 +1,4 @@
-import type { DisplayFixture, DisplayPayload } from "@seedly/engine";
+import type { DisplayFixture, DisplayPayload } from "@whistleday/engine";
 import type { CSSProperties } from "react";
 import { courtName, scoreline, sideName, timeOfDay } from "../../lib/format";
 import { useI18n } from "../../lib/i18n";

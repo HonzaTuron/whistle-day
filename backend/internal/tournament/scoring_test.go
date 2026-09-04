@@ -7,7 +7,7 @@ import (
 	"github.com/pocketbase/pocketbase/core"
 	"github.com/pocketbase/pocketbase/tests"
 
-	_ "seedly/backend/migrations"
+	_ "whistleday/backend/migrations"
 )
 
 // The draw guard is a hook, so the only honest way to ask whether it works is
@@ -15,7 +15,7 @@ import (
 // real database for that reason, where the rest of the package's do not.
 func newScoringApp(t *testing.T) *tests.TestApp {
 	t.Helper()
-	dir, err := os.MkdirTemp("", "seedly-scoring-test-*")
+	dir, err := os.MkdirTemp("", "whistleday-scoring-test-*")
 	if err != nil {
 		t.Fatalf("temp dir: %v", err)
 	}
@@ -56,8 +56,8 @@ func scoringFixture(t *testing.T, app core.App, scoring, format string) *core.Re
 	t.Helper()
 
 	owner := save(t, app, "users", map[string]any{
-		"email": "owner@seedly.test", "password": "seedlytest1",
-		"passwordConfirm": "seedlytest1",
+		"email": "owner@whistleday.test", "password": "whistledaytest1",
+		"passwordConfirm": "whistledaytest1",
 	})
 	cup := save(t, app, "tournaments", map[string]any{
 		"name": "Scoring Cup", "slug": "scoring-cup", "status": "published",

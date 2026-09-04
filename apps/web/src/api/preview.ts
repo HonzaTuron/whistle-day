@@ -1,4 +1,4 @@
-import type { StageFormat, StagePlan } from "@seedly/engine";
+import type { StageFormat, StagePlan } from "@whistleday/engine";
 import { useEffect, useState } from "react";
 
 /**

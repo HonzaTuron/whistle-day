@@ -1,4 +1,4 @@
-import type { DisplayPayload } from "@seedly/engine";
+import type { DisplayPayload } from "@whistleday/engine";
 import { courtName, sideName } from "../../lib/format";
 import { useT } from "../../lib/i18n";
 

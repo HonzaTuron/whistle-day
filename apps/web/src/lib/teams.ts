@@ -1,4 +1,4 @@
-import type { EntryStatus } from "@seedly/engine";
+import type { EntryStatus } from "@whistleday/engine";
 import type { Admission } from "../api/organiser";
 import type { Translate } from "./i18n";
 
