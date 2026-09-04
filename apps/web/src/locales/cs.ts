@@ -86,8 +86,20 @@ export const cs: Record<keyof Catalog, Message> = {
   },
 
   // -------------------------------------------------------------------------
+  // the bar across the top of the landing and marketing pages
+  // -------------------------------------------------------------------------
+  "nav.label": "Sekce webu",
+  "nav.formats": "Systémy",
+  "nav.guides": "Návody",
+  "nav.screens": "Obrazovky",
+  "nav.print": "K vytištění",
+  "nav.compare": "Srovnání",
+  "nav.setUp": "Založit",
+
+  // -------------------------------------------------------------------------
   // landing
   // -------------------------------------------------------------------------
+  "landing.eyebrow": "Živé skóre rovnou na zeď",
   "landing.tagline": "Řiďte turnaj z mobilu a pusťte ho na zeď.",
   "landing.resume": "Zpět na {name}",
   "landing.setUp": "Založit turnaj",
@@ -102,6 +114,20 @@ export const cs: Record<keyof Catalog, Message> = {
   "landing.step3Title": "Pusťte to na zeď",
   "landing.step3Body":
     "Obrazovka pro projektor, která se aktualizuje sama — tabulky se přepočítají, pavouk se doplní, další švýcarské kolo se vylosuje samo.",
+  "landing.demoCourt": "Kurt 2",
+  "landing.demoLive": "Živě",
+  "landing.demoHome": "Sokol Bystrc",
+  "landing.demoAway": "Lokomotiva",
+  "landing.demoCaption":
+    "Zápas na projektoru: Sokol Bystrc a Lokomotiva mají po jednom setu a třetí se hraje za stavu 11-8.",
+  "landing.statSetupValue": "60 s",
+  "landing.statSetupLabel": "k odkazu a QR kódu",
+  "landing.statFreeValue": "0",
+  "landing.statFreeLabel": "účtů, reklam a limitů",
+  "landing.statFormatsValue": "4",
+  "landing.statFormatsLabel": "systémy v libovolném pořadí",
+  "landing.statLiveValue": "0,2 s",
+  "landing.statLiveLabel": "od sítě na zeď",
   "landing.formatsTitle": "Systémy",
   "landing.formatRoundRobin": "Každý s každým",
   "landing.formatRoundRobinBody":
@@ -115,6 +141,19 @@ export const cs: Record<keyof Catalog, Message> = {
   "landing.formatSwiss": "Švýcarský systém",
   "landing.formatSwissBody":
     "Každé kolo se páruje podobné s podobným. Nikdo nevypadává — všechny týmy hrají všechna kola.",
+  "landing.formatMore": "Jak to běží",
+  "landing.sportsTitle": "Ať se hraje cokoli",
+  "landing.sportsNote":
+    "Losu je jedno, s čím se hraje. Stejný den, stejný mobil — tady je stránka pro ten váš sport.",
+  "landing.sportVolleyball": "Volejbal",
+  "landing.sportBeach": "Plážový volejbal",
+  "landing.sportPadel": "Padel",
+  "landing.sportPickleball": "Pickleball",
+  "landing.sportBadminton": "Badminton",
+  "landing.sportTableTennis": "Stolní tenis",
+  "landing.sportFutsal": "Futsal",
+  "landing.sportChess": "Šachy",
+  "landing.sportEsports": "Esport",
   "landing.screenTitle": "Otevřít obrazovku",
   "landing.screenNote":
     "Zadejte kód z QR kódu u dveří, nebo z obrazovky pořadatele.",

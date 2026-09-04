@@ -6,6 +6,7 @@ import {
   Scripts,
 } from "@tanstack/react-router";
 import { useEffect, useState, type ReactNode } from "react";
+import { SiteNav } from "../components/marketing/SiteNav";
 import { I18nProvider, detectLocale, useI18n } from "../lib/i18n";
 import "../styles.css";
 
@@ -30,7 +31,6 @@ export const Route = createRootRoute({
         name: "viewport",
         content: "width=device-width, initial-scale=1, viewport-fit=cover",
       },
-      { name: "theme-color", content: "#0b0f14" },
       { name: "apple-mobile-web-app-capable", content: "yes" },
       { title: "Whistle.day — run a tournament off a phone" },
       {
@@ -71,6 +71,26 @@ function RootDocument({ children }: Readonly<{ children: ReactNode }>) {
   return (
     <html lang="en">
       <head>
+        {/*
+          The browser's own chrome around the page — the address bar on
+          Android, the status bar on an installed PWA. One flat value would put
+          a near-black strip above a light page, so each palette names its own
+          ground and the browser picks with the same query the stylesheet uses.
+
+          Written here rather than in the route's `head`, because that one
+          keys meta tags by `name` and keeps the last: two theme-colours went
+          in and only the light one came out.
+        */}
+        <meta
+          name="theme-color"
+          content="#0b0f14"
+          media="(prefers-color-scheme: dark)"
+        />
+        <meta
+          name="theme-color"
+          content="#f3f6f9"
+          media="(prefers-color-scheme: light)"
+        />
         <HeadContent />
       </head>
       <body>
@@ -129,15 +149,18 @@ function ServiceWorker() {
 
 function NotFound() {
   return (
-    <div className="doc doc--slim">
-      <h1 className="doc__title">Not found</h1>
-      <p className="doc__lede">
-        There is no page at this address. If you were opening a screen, check
-        the token from the QR code.
-      </p>
-      <a href="/" className="btn btn--primary">
-        Whistle.day
-      </a>
-    </div>
+    <>
+      <SiteNav />
+      <div className="doc doc--slim">
+        <h1 className="doc__title">Not found</h1>
+        <p className="doc__lede">
+          There is no page at this address. If you were opening a screen, check
+          the token from the QR code.
+        </p>
+        <a href="/" className="btn btn--primary">
+          Whistle.day
+        </a>
+      </div>
+    </>
   );
 }

@@ -2,6 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { pageBySlug } from "../../content";
 import type { Page } from "../../content/types";
 import { PrintableSheet } from "./PrintableSheet";
+import { SiteNav } from "./SiteNav";
 import { FORMAT_OF } from "../../content/formats-map";
 
 /**
@@ -20,71 +21,75 @@ import { FORMAT_OF } from "../../content/formats-map";
  */
 export function PageView({ page }: { page: Page }) {
   return (
-    <article className="doc">
-      <header className="doc__head">
-        <h1 className="doc__title">{page.h1}</h1>
-        <p className="doc__lede">{page.lede}</p>
-      </header>
+    <>
+      <SiteNav />
 
-      {page.facts && page.facts.length > 0 && (
-        <dl className="doc__facts">
-          {page.facts.map((fact) => (
-            <div className="doc__fact" key={fact.label}>
-              <dt className="doc__fact-label">{fact.label}</dt>
-              <dd className="doc__fact-value">{fact.value}</dd>
-              {fact.note && <dd className="doc__fact-note">{fact.note}</dd>}
-            </div>
-          ))}
-        </dl>
-      )}
+      <article className="doc">
+        <header className="doc__head">
+          <h1 className="doc__title">{page.h1}</h1>
+          <p className="doc__lede">{page.lede}</p>
+        </header>
 
-      {page.kind === "printable" && page.generator?.teams ? (
-        <PrintableSheet
-          request={{
-            format: FORMAT_OF[page.generator.preset],
-            teams: page.generator.teams,
-            config: { thirdPlace: true },
-          }}
-          teams={page.generator.teams}
-        />
-      ) : null}
+        {page.facts && page.facts.length > 0 && (
+          <dl className="doc__facts">
+            {page.facts.map((fact) => (
+              <div className="doc__fact" key={fact.label}>
+                <dt className="doc__fact-label">{fact.label}</dt>
+                <dd className="doc__fact-value">{fact.value}</dd>
+                {fact.note && <dd className="doc__fact-note">{fact.note}</dd>}
+              </div>
+            ))}
+          </dl>
+        )}
 
-      {page.generator && <Cta page={page} />}
+        {page.kind === "printable" && page.generator?.teams ? (
+          <PrintableSheet
+            request={{
+              format: FORMAT_OF[page.generator.preset],
+              teams: page.generator.teams,
+              config: { thirdPlace: true },
+            }}
+            teams={page.generator.teams}
+          />
+        ) : null}
 
-      {page.sections?.map((section) => (
-        <section className="doc__section" key={section.heading}>
-          <h2 className="doc__heading">{section.heading}</h2>
-          {section.body.map((paragraph) => (
-            <p className="doc__para" key={paragraph.slice(0, 48)}>
-              {paragraph}
-            </p>
-          ))}
-        </section>
-      ))}
+        {page.generator && <Cta page={page} />}
 
-      {page.faq && page.faq.length > 0 && (
-        <section className="doc__section">
-          <h2 className="doc__heading">Common questions</h2>
-          {page.faq.map((item) => (
-            <div className="doc__faq" key={item.q}>
-              <h3 className="doc__faq-q">{item.q}</h3>
-              <p className="doc__para">{item.a}</p>
-            </div>
-          ))}
-        </section>
-      )}
+        {page.sections?.map((section) => (
+          <section className="doc__section" key={section.heading}>
+            <h2 className="doc__heading">{section.heading}</h2>
+            {section.body.map((paragraph) => (
+              <p className="doc__para" key={paragraph.slice(0, 48)}>
+                {paragraph}
+              </p>
+            ))}
+          </section>
+        ))}
 
-      <Related page={page} />
+        {page.faq && page.faq.length > 0 && (
+          <section className="doc__section">
+            <h2 className="doc__heading">Common questions</h2>
+            {page.faq.map((item) => (
+              <div className="doc__faq" key={item.q}>
+                <h3 className="doc__faq-q">{item.q}</h3>
+                <p className="doc__para">{item.a}</p>
+              </div>
+            ))}
+          </section>
+        )}
 
-      <footer className="doc__foot">
-        <Link to="/" className="doc__foot-link">
-          Whistle.day
-        </Link>
-        <span className="doc__foot-note">
-          Free tournament organiser. No account, no ads, no cap.
-        </span>
-      </footer>
-    </article>
+        <Related page={page} />
+
+        <footer className="doc__foot">
+          <Link to="/" className="doc__foot-link">
+            Whistle.day
+          </Link>
+          <span className="doc__foot-note">
+            Free tournament organiser. No account, no ads, no cap.
+          </span>
+        </footer>
+      </article>
+    </>
   );
 }
 

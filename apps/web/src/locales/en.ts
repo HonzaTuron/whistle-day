@@ -85,8 +85,20 @@ export const en = {
   },
 
   // -------------------------------------------------------------------------
+  // the bar across the top of the landing and marketing pages
+  // -------------------------------------------------------------------------
+  "nav.label": "Site sections",
+  "nav.formats": "Formats",
+  "nav.guides": "Guides",
+  "nav.screens": "Screens",
+  "nav.print": "Print",
+  "nav.compare": "Compare",
+  "nav.setUp": "Set up",
+
+  // -------------------------------------------------------------------------
   // landing
   // -------------------------------------------------------------------------
+  "landing.eyebrow": "Live scores, on the wall",
   "landing.tagline": "Run a tournament off a phone and put it on the wall.",
   "landing.resume": "Back to {name}",
   "landing.setUp": "Set up a tournament",
@@ -101,6 +113,20 @@ export const en = {
   "landing.step3Title": "Put it on the wall",
   "landing.step3Body":
     "A projector screen that updates itself — tables rebuild, the bracket fills in, the next Swiss round draws itself.",
+  "landing.demoCourt": "Court 2",
+  "landing.demoLive": "Live",
+  "landing.demoHome": "Harbour Hawks",
+  "landing.demoAway": "Old Mill",
+  "landing.demoCaption":
+    "A match on the projector: Harbour Hawks and Old Mill are level at one set each, and the third set is being played at 11-8.",
+  "landing.statSetupValue": "60s",
+  "landing.statSetupLabel": "to a link and a QR code",
+  "landing.statFreeValue": "0",
+  "landing.statFreeLabel": "accounts, ads or caps",
+  "landing.statFormatsValue": "4",
+  "landing.statFormatsLabel": "formats, in any order",
+  "landing.statLiveValue": "0.2s",
+  "landing.statLiveLabel": "from the net to the wall",
   "landing.formatsTitle": "Formats",
   "landing.formatRoundRobin": "Round Robin",
   "landing.formatRoundRobinBody":
@@ -114,6 +140,19 @@ export const en = {
   "landing.formatSwiss": "Swiss",
   "landing.formatSwissBody":
     "Every round pairs like with like. No elimination — every team plays every round.",
+  "landing.formatMore": "See how it runs",
+  "landing.sportsTitle": "Whatever is being played",
+  "landing.sportsNote":
+    "A draw does not care what the ball is. Same day, same phone — here is the page for yours.",
+  "landing.sportVolleyball": "Volleyball",
+  "landing.sportBeach": "Beach volleyball",
+  "landing.sportPadel": "Padel",
+  "landing.sportPickleball": "Pickleball",
+  "landing.sportBadminton": "Badminton",
+  "landing.sportTableTennis": "Table tennis",
+  "landing.sportFutsal": "Futsal",
+  "landing.sportChess": "Chess",
+  "landing.sportEsports": "Esports",
   "landing.screenTitle": "Open a screen",
   "landing.screenNote":
     "Enter the token from the QR code by the door, or from the organiser screen.",

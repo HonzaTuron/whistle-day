@@ -10,7 +10,7 @@ Two public screens, and the two the organiser drives them from.
 | `/display/:token` | The projector: unattended, rotates itself, read from across a hall. |
 | `/m/:token` | A phone: held by one person looking for one thing. |
 | `/join/:token` | The other end of a crew QR code. |
-| `/` | Start a tournament, or paste a token to open a screen. |
+| `/` | The landing page: what the wall looks like, and a token box to open a screen. |
 | everything else | A marketing page, prerendered — see [The pages that exist to be found](#the-pages-that-exist-to-be-found). |
 
 ## Why two routes and not one responsive layout
@@ -26,6 +26,75 @@ bracket round shape, the tiebreak wording, name formatting. Round titles were
 briefly duplicated and immediately drifted: the phone kept labelling the final
 round "Semi-finals" after the projector was fixed. That is why `lib/bracket.ts`
 exists.
+
+## Dark, unless the operating system says otherwise
+
+Everything is drawn with nine palette tokens — `--bg`, `--surface`, `--line`,
+`--text`, `--accent`, and the rest — and nothing anywhere names a colour
+directly. That was already true for the projector's sake, and it is what makes
+a light mode nine lines rather than a second stylesheet: a
+`prefers-color-scheme: light` block redefines the tokens on `:root` and every
+rule in the file, including a panel added next month, follows.
+
+Two of them do not simply invert. `--accent` and `--live` were picked to glow
+on near-black, and the same green and orange on white are a pale wash, so the
+light palette takes the darker pair. A darker fill flips what can be read on
+top of it, which is why `--on-accent` and `--on-live` are tokens at all: the
+text on a primary button is nearly black on the dark palette and white on the
+light one, and six rules used to hard-code the first of those.
+
+**The projector is deliberately exempt.** `.screen` sets its own tokens for
+reasons that have nothing to do with anybody's preference — see [Notes on the
+projector](#notes-on-the-projector) — and a wall that changed colour because
+the laptop driving it was in light mode would be a hall's problem, not a
+preference honoured.
+
+The `theme-color` meta is the one place this could not be expressed as a
+token, so the document carries two of them, one per media query. They are
+written into `<head>` in `routes/__root.tsx` rather than in the route's `head`
+config, because that one keys meta tags by `name` and keeps the last: two
+theme-colours went in and only the light one came out.
+
+## The bar across the top
+
+`components/marketing/SiteNav.tsx` is on the landing page, on all 123
+marketing pages and on the 404 — and on none of the app screens. A search used
+to drop somebody on "12 team round robin" and the only ways out were the call
+to action and whatever that page listed under "see also"; five destinations
+across the top turn a hundred dead ends into a site, and give every page an
+outbound link to the hub, the guides, the screens, the sheets and the
+comparisons.
+
+It has no disclosure button and no state. On a phone the destinations become a
+row that scrolls sideways — the same thing the spectator view does with its
+tabs — because these pages are prerendered precisely so they can be read
+before the bundle arrives, and a menu that needs the bundle to open would give
+that back. Its destinations are slugs, checked against `src/content` at module
+load the same way `related` is: a renamed page drops the link rather than
+putting a 404 on every page of the site.
+
+It is absent from `/t/:id`, `/display/:token` and `/m/:token` on purpose.
+Those are screens somebody is working from with a match in front of them, and
+a marketing nav on the projector is an advert in a hall.
+
+## The landing page
+
+Written for somebody who is not yet running anything, and read by somebody who
+watches rather than organises — the two are the same person on different days.
+What convinces them is not a feature list, it is a score, so the hero carries
+a match mid-third-set instead of a screenshot of a settings screen, and the
+four numbers under it are the ones a hall actually asks: how long to set up,
+what it costs, what it can run, how fast the wall catches up.
+
+The scoreboard is fixed markup, not the real `.live__card` fed a fake fixture.
+Those components take a payload from a live tournament, and wiring an invented
+one through them to save twenty lines of CSS is how a marketing page starts
+crashing on a schema change. It is a `<figure>` with a caption rather than
+`aria-hidden`, because it is the answer to "what do I actually get" and not
+decoration.
+
+The formats and the sports below it are links rather than prose. Whoever is
+reading has one of each in mind already, and the page about theirs exists.
 
 ## The pages that exist to be found
 
@@ -246,6 +315,12 @@ in a hall.
   page, the account screen, the bottom of the phone view. It is deliberately
   absent from the organiser's board and the projector, which are screens
   somebody is working from.
+- **The bar across the top is translated; the marketing pages under it are
+  not.** The 123 pages are English data in `src/content/`, and a Czech visitor
+  reading one of them still gets Czech chrome — the destinations, and the "Set
+  up" that leads into a wizard which is fully translated. Chrome in a language
+  somebody does not read is worse than a mixed page: the point of the bar is to
+  be the way out.
 - **`document.documentElement.lang` is set before the first render**, because a
   document whose lang disagrees with what is on it is read out in the wrong
   accent by a screen reader and hyphenated by the wrong rules. It is also the
@@ -625,12 +700,14 @@ by the door, not the main wall.
 
 ## Notes on the projector
 
-- **The wall is light; everything else in the app is dark.** A phone is held a
-  foot from a face, often at night. A projector cannot throw black — only
-  decline to send light — so a dark background arrives as whatever grey the
-  hall's lights make of the screen, taking the contrast the palette assumed
-  with it. `.screen` redefines the palette tokens and nothing else, so every
-  rule under it, and every panel added later, is light without being told. The
+- **The wall is light whatever anybody's phone is set to.** A projector cannot
+  throw black — only decline to send light — so a dark background arrives as
+  whatever grey the hall's lights make of the screen, taking the contrast the
+  palette assumed with it. `.screen` redefines the palette tokens and nothing
+  else, so every rule under it, and every panel added later, is light without
+  being told. This is the one screen that ignores
+  `prefers-color-scheme`: it is aimed at a wall by whoever set it up, not read
+  by whoever is holding the laptop. The
   accent and the live orange are darker there than in the app: those values
   were picked to glow on near-black and are a pale wash on white at five
   metres. Dark is still reachable through `theme.mode` for a hall that dimmed
