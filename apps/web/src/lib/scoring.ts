@@ -47,8 +47,7 @@ export const SPORTS: Sport[] = [
     sport: "volleyball",
     hint: "sport.volleyball.hint",
     scoring: {
-      // Sets per fixture. Nothing reads this yet — see the README — but a
-      // stored 1 would be wrong the day something does.
+      // Sets per fixture. Read by the match sheet and enforced on the wire.
       bestOf: 3,
       pointsWin: 2,
       pointsDraw: 0,

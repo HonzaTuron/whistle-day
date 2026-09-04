@@ -310,6 +310,10 @@ its final positions.
 - **Every fixture side is renderable.** When a slot has no entry yet the
   projector payload sends its label instead — "Winner SF1", "1. A", "TBD" — so
   a screen never has to draw a blank box.
+- **Schedule conflicts are surfaced, not prevented.** The organiser is warned
+  when a team is already down for another match at the same time; nothing stops
+  them going ahead, because reshuffling a schedule passes through states that
+  are briefly wrong on purpose.
 
 ## Generation lives on the server
 
@@ -327,20 +331,24 @@ a draw without a round trip. They are now Go only, and preview goes through
    best-of-next teams come from is not known until the groups have been played,
    and the bracket is drawn before that. Competitions that care fix it with a
    published table of every possible combination.
-3. **Schedule conflicts are surfaced, not prevented.** The organiser is warned
-   when a team is already down for another match at the same time; nothing
-   stops them going ahead, because reshuffling a schedule passes through
-   states that are briefly wrong on purpose.
-4. **A knockout that has started cannot take a late team.** Adding one to a
-   group or a Swiss field is built — see the note above — and so is redrawing a
-   bracket nobody has played yet. Once a bracket has a result in it there is no
-   answer: the ninth team is not one of eight positions decided on Friday, and
-   rewriting the draw around them would rewrite a match that has been played.
-5. **Roles are recorded, not enforced.** `staff.role` is set by which code
+3. **Roles are recorded, not enforced.** `staff.role` is set by which code
    someone scanned and shown in the crew list, and every crew member can do
    everything `/t/:id` offers. The distinction that *is* enforced is owner
    versus crew: handing out codes and removing people are the owner's alone.
-6. **Nothing sells a subscription.** `users.subscription_until` is what the
+4. **Nothing sells a subscription.** `users.subscription_until` is what the
    sponsor slots read, and the only things that set it are an admin and
    whatever writes the record server-side. There is no checkout, no provider
    and no webhook.
+5. **Match call notifications (PWA Web Push & WhatsApp).** A team warming up in
+   a corridor or standing at the canteen only knows their match is called if
+   someone walks over to tell them. Web Push over the PWA is the zero-cost path
+   (one tap on `/m/:token` without asking for a phone number), while WhatsApp
+   Cloud API utility templates reach players who have closed the browser, at a
+   couple of cents per tournament. Neither is wired to the schedule yet.
+6. **Bulk team import.** Entering sixteen teams in the wizard is done one by
+   one so nobody loses their place on a phone, but somebody holding a WhatsApp
+   export or a spreadsheet column has to type them all out. A two-tier import —
+   an instant offline parser for clean lines and comma-separated lists, with an
+   optional LLM/vision pass for messy chat chatter or a photo of a paper
+   registration sheet — would turn fifty taps into one paste and an editable
+   preview.

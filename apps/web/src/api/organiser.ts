@@ -31,7 +31,7 @@ import { sportById, type SportId } from "../lib/scoring";
  * The cost is worth stating plainly: those credentials live in this browser
  * and nowhere else. Clear the site data and the tournament stays live and
  * stays on the wall, but nobody can edit it again. Claiming the account with a
- * real email is the fix; that screen is not built yet.
+ * real email is the fix, offered at `/account`.
  */
 
 const SESSION_KEY = "whistleday.organiser.session";
