@@ -76,6 +76,57 @@
   }
 }
 
+/*
+ * The ink on an accent nobody here picked.
+ *
+ * `--accent` is a fill, and on `/m/:token` it is whatever the organiser chose
+ * for their wall — set inline on `.phone`, so it overrides both palettes above
+ * while the `--on-accent` that goes on top of it does not. That was harmless
+ * while the ink was near-black on both grounds and every plausible pick was
+ * brighter than it. It stopped being harmless when the light palette made the
+ * ink white: a neon green from the swatch then carried white text at 2.2:1.
+ *
+ * So the ink follows the fill. Lightness 0 or 1 at chroma 0 — black or white,
+ * whichever the fill can carry — with the crossover at the point where the two
+ * contrast equally. This is the same problem `--accent-ink` solves for the
+ * wall, from the other side: there the accent is the text and gets a floor,
+ * here it is the ground and what sits on it flips.
+ *
+ * Guarded, and for the same reason as the block down there: a custom property
+ * that does not parse is invalid at computed value time, and `color` would
+ * fall back to inherited rather than to the fixed token. The two palettes keep
+ * the pair they set — right for the accent each of them ships, which is what
+ * an engine without relative colour is left with.
+ */
+.phone {
+  /* The floor for engines without relative colour, and the value both blocks
+     below improve on: the pick itself, which is what these rules printed
+     before either of them existed. */
+  --accent-ink: var(--accent);
+}
+
+@supports (color: oklch(from red l c h)) {
+  .phone {
+    --on-accent: oklch(from var(--accent) clamp(0, (0.6 - l) * 100, 1) 0 h);
+    /* The same accent used as text rather than as a fill — a qualified row's
+       rank, a winner's score. On near-black the risk is a pick that is too
+       dark to carry, so lightness has a floor here and a ceiling below;
+       either way the hue and the chroma the organiser chose are untouched,
+       which is the whole reason this is a cap and not a mix. */
+    --accent-ink: oklch(from var(--accent) max(l, 0.62) c h);
+  }
+}
+
+@media (prefers-color-scheme: light) {
+  @supports (color: oklch(from red l c h)) {
+    .phone {
+      /* And on white it is the bright pick that disappears — the same cap,
+         and the same number, as the wall three hundred lines down. */
+      --accent-ink: oklch(from var(--accent) min(l, 0.5) c h);
+    }
+  }
+}
+
 * {
   box-sizing: border-box;
 }
@@ -1109,7 +1160,7 @@ th,
 
 .card__side.is-winner .card__team,
 .card__side.is-winner .card__score {
-  color: var(--accent);
+  color: var(--accent-ink);
 }
 
 .card__score {
@@ -1199,7 +1250,7 @@ th,
 
 .mini-table tbody tr.is-qualified .mini-table__rank,
 .mini-table tbody tr.is-qualified .mini-table__points {
-  color: var(--accent);
+  color: var(--accent-ink);
 }
 
 .phone-bracket {

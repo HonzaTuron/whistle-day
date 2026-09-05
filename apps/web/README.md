@@ -43,6 +43,19 @@ top of it, which is why `--on-accent` and `--on-live` are tokens at all: the
 text on a primary button is nearly black on the dark palette and white on the
 light one, and six rules used to hard-code the first of those.
 
+Neither pair is the whole answer on `/m/:token`, because there `--accent` is
+not ours: `MobileScreen` puts the organiser's `theme.accent` on `.phone`
+inline, and inline wins. A fixed ink is then right on exactly one of the two
+grounds — white text on a neon green from the swatch reads at 2.2:1 — so on
+that element both tokens are derived from the fill instead. `--on-accent`
+flips to black or white at the lightness where the two contrast equally, and
+`--accent-ink` — the accent printed as text, a qualified rank or a winner's
+score — takes a floor on the dark ground and a ceiling on the light one, the
+same cap the wall applies for the same reason. Capping lightness in `oklch`
+keeps the hue and the chroma somebody picked and moves only what legibility
+depends on; the plain tokens stay as the floor for engines without relative
+colour.
+
 **The projector is deliberately exempt.** `.screen` sets its own tokens for
 reasons that have nothing to do with anybody's preference — see [Notes on the
 projector](#notes-on-the-projector) — and a wall that changed colour because
