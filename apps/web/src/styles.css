@@ -767,22 +767,32 @@ th,
   max-width: 28vmin;
 }
 
+/*
+ * The plate a sponsor's logo sits on, and it is white on both grounds.
+ *
+ * Logos are drawn for white paper, and neither wall is white — the dark one
+ * obviously, and the light one deliberately, since its ground is a step down
+ * from the panels so a projector's blur does not join rows to it. On the dark
+ * wall the plate is the difference between a logo and a smudge. On the light
+ * one it is the difference between a mark that was placed and a mark that
+ * happens to be there: every other thing on a panel sits on `--surface`, and
+ * the slots are the only ones that would meet the ground directly. It also
+ * settles the logo that arrives opaque rather than cut out — a white rectangle
+ * on a grey ground reads as a mistake, and the same rectangle on a plate reads
+ * as the plate.
+ *
+ * Literal white rather than `--surface`, because that token follows the ground
+ * and the dark one would put a logo back on near-black.
+ */
 .branding__logo {
   max-width: 100%;
   max-height: 15vmin;
   object-fit: contain;
-  border-radius: var(--radius);
-  /* Kept in both grounds even though only one paints behind it: the box is
-     border-sized, so dropping the padding would draw a logo a quarter larger
-     on the light wall than the same logo on the dark one. */
-  padding: 1.5vmin 2vmin;
-}
-
-/* Sponsor logos are drawn for white paper. The light wall is close enough to
-   hand them straight over; the dark one is where the plate is the difference
-   between a logo and a smudge. */
-.screen[data-theme="dark"] .branding__logo {
   background: #fff;
+  border-radius: var(--radius);
+  /* The box is border-sized, so this is what keeps a logo the same size on
+     both walls rather than a quarter larger wherever the plate is thinner. */
+  padding: 1.5vmin 2vmin;
 }
 
 .branding__name {
