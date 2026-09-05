@@ -21,10 +21,59 @@
   --accent: #22c55e;
   --live: #f97316;
 
+  /* What gets printed on top of those two fills. Both were picked to glow on
+     near-black, so the thing written on them is nearly black — and on the
+     light palette below, where the pair goes darker, it flips to white. A rule
+     that hard-codes either one is a rule that is wrong on one of the two
+     grounds; six of them used to. */
+  --on-accent: #06210f;
+  --on-live: #2a1000;
+
   --radius: 0.6vmin;
   --font: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
     "Helvetica Neue", Arial, sans-serif;
   --numeric: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+}
+
+/*
+ * The palette the operating system asked for.
+ *
+ * Dark was never a preference anybody expressed here. It is the right ground
+ * for a phone at the side of a court at night, and the wrong one for a laptop
+ * at a desk in daylight, so the tokens are redefined and every rule in the
+ * file follows — including a panel added next month. That is the same trick
+ * `.screen` has always played for the wall, and it is why this is a dozen
+ * lines rather than a second stylesheet.
+ *
+ * Two tokens do not simply invert. `--accent` and `--live` were chosen to glow
+ * on near-black; the same green and orange on white are a pale wash, so the
+ * light palette takes the darker pair the projector already uses — and what is
+ * read on top of them flips from near-black to white.
+ *
+ * The projector is exempt, and gets that for free rather than by exception:
+ * `.screen` sets these tokens on its own element, and a declaration on the
+ * element beats one inherited from `:root` whichever came first in the file. A
+ * wall that changed colour because the laptop driving it was in light mode
+ * would be a hall's problem, not a preference honoured.
+ */
+@media (prefers-color-scheme: light) {
+  :root {
+    /* The same value as the light `theme-color` in routes/__root.tsx: on a
+       phone the browser's chrome and the top of the page are one surface, and
+       a seam across it is the kind of thing only a designer sees and everybody
+       feels. */
+    --bg: #f3f6f9;
+    --surface: #ffffff;
+    --surface-2: #e4ebf2;
+    --line: #d3dce5;
+    --line-strong: #9aa9b9;
+    --text: #0b0f14;
+    --muted: #55677a;
+    --accent: #15803d;
+    --live: #c2410c;
+    --on-accent: #ffffff;
+    --on-live: #ffffff;
+  }
 }
 
 * {
@@ -100,6 +149,10 @@ th,
   --muted: #56677a;
   --accent: #15803d;
   --live: #c2410c;
+  /* Set here rather than inherited, because :root's pair is written for
+     whichever ground the laptop is in and this one is neither. */
+  --on-accent: #ffffff;
+  --on-live: #ffffff;
 
   /* The accent, as something to read.
      `--accent` is a fill and may be anybody's — it is picked from a swatch for
@@ -154,6 +207,8 @@ th,
   --muted: #8496a8;
   --accent: #22c55e;
   --live: #f97316;
+  --on-accent: #06210f;
+  --on-live: #2a1000;
 
   /* No floor to hold here: on near-black the accent is already the bright
      thing in the frame, and capping it would only dim what it is for. */
@@ -280,7 +335,8 @@ th,
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .screen__body {
+  .screen__body,
+  .home .board__live-dot {
     animation: none;
   }
 }
@@ -942,7 +998,7 @@ th,
 
 .phone__tab.is-active {
   background: var(--accent);
-  color: #06210f;
+  color: var(--on-accent);
 }
 
 .phone__badge {
@@ -1161,6 +1217,89 @@ th,
 }
 
 /* ==========================================================================
+   The bar across the top
+   --------------------------------------------------------------------------
+   On the landing page, on all 123 marketing pages, on the 404 — and on none of
+   the app screens. Sized in rem like everything else somebody holds.
+
+   It does not stick. These pages are read top to bottom, and a bar pinned over
+   a phone's first four lines costs more than it returns; the reason it exists
+   is to be there when somebody reaches the end of a page they landed on cold.
+   ========================================================================== */
+
+.sitenav {
+  border-bottom: 1px solid var(--line);
+  background: var(--bg);
+}
+
+/* A grid rather than a flex row, for the middle track. The destinations have
+   to be allowed to become narrower than the words in them — that is what makes
+   them scroll rather than widen the page — and `minmax(0, 1fr)` says so where
+   a flex item's `min-width: 0` did not: a flexible item still reports its
+   content width as the container's minimum, and a 390px phone got a landing
+   page 676px wide that scrolled sideways as a whole. */
+.sitenav__inner {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 1rem;
+  width: 100%;
+  max-width: 56rem;
+  margin: 0 auto;
+  padding: 0.6rem 1.25rem;
+}
+
+.sitenav__brand {
+  color: var(--text);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+/* The destinations take the leftover width and scroll sideways inside it,
+   which is what makes this work on a 360px phone without a disclosure button:
+   the pages are prerendered so they can be read before the bundle arrives, and
+   a menu that needed the bundle to open would hand that back. Same reasoning,
+   and the same two properties, as `.phone__tabs`. */
+.sitenav__links {
+  display: flex;
+  gap: 0.15rem;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.sitenav__link {
+  padding: 0.45rem 0.6rem;
+  border-radius: 999px;
+  color: var(--muted);
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.sitenav__link:hover {
+  color: var(--text);
+}
+
+.sitenav__link.is-on {
+  background: var(--surface);
+  color: var(--text);
+}
+
+.sitenav__cta {
+  padding: 0.45rem 0.9rem;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--on-accent);
+  font-size: 0.9rem;
+  font-weight: 650;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+/* ==========================================================================
    Homepage
    ========================================================================== */
 
@@ -1176,7 +1315,9 @@ th,
   position: relative;
   display: grid;
   place-items: center;
-  padding: 6rem 2rem 5rem;
+  /* Less than it was above: the bar now occupies the top of the page, and the
+     old figure was chosen when the wordmark was the first thing on it. */
+  padding: 4rem 2rem 4rem;
   text-align: center;
   overflow: hidden;
 }
@@ -1197,6 +1338,31 @@ th,
   display: grid;
   gap: 1.25rem;
   max-width: 32rem;
+}
+
+/* A pill rather than the small caps the rest of the file uses for a label,
+   because it is carrying a live dot: the dot needs something to sit inside or
+   it reads as a bullet somebody forgot to remove. */
+.home__eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  justify-self: center;
+  margin: 0;
+  padding: 0.3rem 0.8rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.home__eyebrow-dot {
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 999px;
+  background: var(--live);
 }
 
 /* The wordmark is eleven characters against the six it replaced, and the hero
@@ -1224,6 +1390,170 @@ th,
   display: grid;
   gap: 0.5rem;
   margin-top: 0.5rem;
+}
+
+/* --- the scoreboard in the hero ------------------------------------------ */
+
+/*
+ * A match mid-third-set, at the size a hand holds it.
+ *
+ * Fixed markup, not the live card fed an invented fixture — see the note in
+ * screens/Landing.tsx — so this is the one place in the file where a panel is
+ * drawn twice. It is worth it: everything else a landing page could show is a
+ * picture of admin, and this is the thing somebody is actually in the hall for.
+ *
+ * Left-aligned inside a hero that centres everything else, because a score is
+ * read down a column. Two names that do not line up are two names somebody has
+ * to compare rather than glance at.
+ */
+.board {
+  display: grid;
+  gap: 0.4rem;
+  margin: 0.5rem 0 0;
+  padding: 0.9rem;
+  border: 1px solid var(--line);
+  border-radius: 1rem;
+  background: var(--surface);
+  text-align: left;
+}
+
+.board__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0 0.15rem 0.15rem;
+  color: var(--muted);
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+}
+
+.board__live {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: var(--live);
+}
+
+.board__live-dot {
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 999px;
+  background: var(--live);
+  animation: board-pulse 2.4s ease-in-out infinite;
+}
+
+@keyframes board-pulse {
+  50% {
+    opacity: 0.3;
+  }
+}
+
+.board__row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.55rem 0.7rem;
+  border-radius: 0.6rem;
+  background: var(--surface-2);
+}
+
+/* Ahead in the set being played. A tint rather than a bold weight, because on
+   the wall this is a fill and the point of the panel is to look like the wall. */
+.board__row.is-ahead {
+  background: color-mix(in srgb, var(--accent) 16%, var(--surface-2));
+}
+
+.board__team {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 650;
+}
+
+.board__sets {
+  display: flex;
+  gap: 0.4rem;
+  font-family: var(--numeric);
+  font-variant-numeric: tabular-nums;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.board__set {
+  min-width: 1.3rem;
+  text-align: right;
+}
+
+/* The number that is about to change. */
+.board__set--now {
+  color: var(--text);
+  font-weight: 700;
+}
+
+.board__score {
+  min-width: 1.1rem;
+  text-align: right;
+  font-family: var(--numeric);
+  font-variant-numeric: tabular-nums;
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+/* --- the four numbers ---------------------------------------------------- */
+
+/*
+ * What a hall asks before it commits a Saturday: how long to set up, what it
+ * costs, what it can run, how fast the wall catches up. In that order, and
+ * above everything the page has to say in prose.
+ */
+.home__stats {
+  display: grid;
+  /* Both of these keep the row from setting the width of the site.
+     A track minimum is a floor the whole page has to clear, and as a grid item
+     this row hands its own minimum up to `.home` — four 9rem columns made a
+     390px phone scroll sideways, and every section below it inherited the
+     676px that came out. `min-width: 0` stops the row from raising the floor,
+     and capping the track minimum at the row's own width stops the columns
+     from overflowing it once it has stopped: four across a laptop, two on a
+     phone, one on whatever is narrower than that. */
+  min-width: 0;
+  grid-template-columns: repeat(auto-fit, minmax(min(9rem, 100%), 1fr));
+  gap: 0.75rem;
+  width: 100%;
+  max-width: 56rem;
+  margin: 0 auto;
+  padding: 0 2rem 1rem;
+  list-style: none;
+}
+
+.home__stat {
+  display: grid;
+  gap: 0.2rem;
+  justify-items: center;
+  padding: 1rem 0.75rem;
+  border: 1px solid var(--line);
+  border-radius: 0.9rem;
+  background: var(--surface);
+  text-align: center;
+}
+
+.home__stat-value {
+  font-family: var(--numeric);
+  font-variant-numeric: tabular-nums;
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.home__stat-label {
+  color: var(--muted);
+  font-size: 0.8rem;
+  line-height: 1.35;
 }
 
 /* --- sections ------------------------------------------------------------ */
@@ -1284,7 +1614,7 @@ th,
   place-items: center;
   border-radius: 999px;
   background: var(--accent);
-  color: #06210f;
+  color: var(--on-accent);
   font-weight: 700;
   font-size: 1rem;
   justify-self: center;
@@ -1311,6 +1641,8 @@ th,
   gap: 1rem;
 }
 
+/* A whole card is the link, so nothing inside it carries a link's colour or
+   its underline — the heading is a heading and the card is the target. */
 .home__format {
   padding: 1.25rem;
   border: 1px solid var(--line);
@@ -1318,6 +1650,12 @@ th,
   background: var(--surface);
   display: grid;
   gap: 0.35rem;
+  color: inherit;
+  text-decoration: none;
+}
+
+.home__format:hover {
+  border-color: var(--line-strong);
 }
 
 .home__format h3 {
@@ -1331,6 +1669,54 @@ th,
   color: var(--muted);
   font-size: 0.85rem;
   line-height: 1.45;
+}
+
+/* The only part of the card that says it is one. Pushed to the bottom so the
+   four cards agree on where it is however long their prose runs. */
+.home__format-more {
+  align-self: end;
+  margin-top: 0.4rem;
+  color: var(--accent);
+  font-size: 0.8rem;
+  font-weight: 650;
+}
+
+/* --- the sports ---------------------------------------------------------- */
+
+.home__section--sports {
+  justify-items: center;
+}
+
+.home__sports {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Nobody searches for "round robin generator" when what they are running is a
+   padel afternoon, so each of these is that person's own page. Chips rather
+   than a list: nine of them are read as a set, and the set is the point. */
+.home__sport {
+  display: inline-flex;
+  align-items: center;
+  min-height: 40px;
+  padding: 0 0.9rem;
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.home__sport:hover {
+  border-color: var(--accent);
+  color: var(--accent);
 }
 
 /* --- token input --------------------------------------------------------- */
@@ -1534,7 +1920,7 @@ th,
 .wiz__chip.is-active {
   border-color: var(--accent);
   background: var(--accent);
-  color: #06210f;
+  color: var(--on-accent);
 }
 
 .wiz__chip:focus-visible {
@@ -1661,7 +2047,7 @@ th,
 .btn--primary {
   background: var(--accent);
   border-color: var(--accent);
-  color: #06210f;
+  color: var(--on-accent);
 }
 
 /* The second action in a pair: "cancel", "back", "not now". It steps back
@@ -2292,7 +2678,7 @@ th,
 
 .results__tab.is-active {
   background: var(--accent);
-  color: #06210f;
+  color: var(--on-accent);
 }
 
 .results__body {
@@ -2821,7 +3207,7 @@ th,
 .chip.is-on {
   border-color: var(--accent);
   background: var(--accent);
-  color: #06210f;
+  color: var(--on-accent);
 }
 
 .sheet__row {
@@ -2866,7 +3252,7 @@ th,
 .btn--live.is-on {
   background: var(--live);
   border-color: var(--live);
-  color: #2a1000;
+  color: var(--on-live);
 }
 
 .sheet__question {
@@ -3912,6 +4298,7 @@ th,
 
 @media print {
   /* Everything that is not the sheet. */
+  .sitenav,
   .doc__head,
   .doc__facts,
   .doc__cta,
