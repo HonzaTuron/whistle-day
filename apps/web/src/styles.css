@@ -108,8 +108,10 @@ th,
      the chroma the organiser chose and moves only what legibility depends on,
      which is what a mix towards ink cannot do: a mix still leaves white at
      2.8:1, whereas the cap puts the worst colour a picker can produce over
-     4.5:1 and leaves anything already dark enough completely alone. */
-  --accent-ink: oklch(from var(--accent) min(l, 0.5) c h);
+     4.5:1 and leaves anything already dark enough completely alone.
+     The mix is here as the floor for engines without relative colour, and the
+     cap replaces it below where there is one — see the @supports block. */
+  --accent-ink: color-mix(in srgb, var(--accent) 55%, #04121f);
   /* Behind a full-width qualified row, and behind a small winner box. The
      smaller area takes the stronger tint to read as the same emphasis. */
   --accent-wash: color-mix(in srgb, var(--accent) 20%, transparent);
@@ -158,6 +160,27 @@ th,
   --accent-ink: var(--accent);
   --accent-wash: color-mix(in srgb, var(--accent) 10%, transparent);
   --accent-wash-strong: color-mix(in srgb, var(--accent) 14%, transparent);
+}
+
+/*
+ * The cap, where the engine can do one.
+ *
+ * Relative colour is the better answer — it moves lightness and leaves the hue
+ * and the chroma the organiser picked — but it is not the safe one to state
+ * unguarded. A custom property that does not parse is invalid at computed
+ * value time, which is not a rule that gets skipped: `color` falls back to
+ * inherited and a `background` falls back to transparent, so the wall would
+ * lose the sweep on its rotation bar rather than merely printing it in the
+ * wrong green. Browsers have shipped this since 2024, and the engines that
+ * have not are exactly the ones nobody checks a projector against.
+ *
+ * So the mix above is the floor and this is the upgrade. The dark rule keeps
+ * its own `--accent-ink` on specificity, whichever of them applies.
+ */
+@supports (color: oklch(from red l c h)) {
+  .screen {
+    --accent-ink: oklch(from var(--accent) min(l, 0.5) c h);
+  }
 }
 
 .screen--message {
