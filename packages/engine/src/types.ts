@@ -474,7 +474,19 @@ export interface DisplaySponsor {
   tier?: string;
 }
 
+/**
+ * Which ground the wall is thrown on, and it is the room that decides.
+ *
+ * A projector cannot throw black, only decline to send light, so under a lit
+ * sports hall a dark screen arrives as whatever grey the room makes of it.
+ * Light is therefore the default and the absent value. Dark is for the hall
+ * that dimmed the lights for a final, where it is the kinder of the two.
+ */
+export type DisplayThemeMode = "light" | "dark";
+
 export interface DisplayTheme {
+  /** Absent means light. See {@link DisplayThemeMode}. */
+  mode?: DisplayThemeMode;
   accent?: string;
   logo?: string;
   /** Shown only while the tournament's owner has a subscription. */

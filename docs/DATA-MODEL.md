@@ -488,6 +488,12 @@ Three details that matter for a screen:
   `rotate_seconds`, `scope` (one stage, group or court) and `theme`.
   The organiser writes them from the results screen and the wall follows on
   the next nudge, which is what makes the wall the preview.
+- **`theme` is free-form json, and stays that way.** It carries `mode`
+  (`dark`, or absent for the light default a lit hall needs), `accent`, `logo`
+  and `sponsors`, and the server reads exactly one of them — `sponsors`,
+  because those are the ones somebody pays for. Everything else is handed to
+  the screen verbatim, which is what makes a key the browser understands a
+  change the backend never has to migrate for.
 - **A screen is told when to read.** Every write to anything a screen renders
   broadcasts a nudge on `tournament/{id}` over PocketBase's realtime stream —
   the fact of the change, never the change itself. Screens still hold a slow

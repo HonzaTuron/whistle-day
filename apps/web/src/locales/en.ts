@@ -562,6 +562,11 @@ export const en = {
   "screen.colour": "Colour",
   "screen.accent": "Accent colour",
   "screen.reset": "Reset",
+  "screen.ground": "Background",
+  "screen.groundLight": "Light",
+  "screen.groundDark": "Dark",
+  "screen.groundNote":
+    "A projector has no black — with the hall lights on, a dark screen goes grey and the text goes with it. Dark is for a room that has been dimmed.",
 
   "panel.now_playing": "Now playing",
   "panel.now_playing.hint": "The live matches.",

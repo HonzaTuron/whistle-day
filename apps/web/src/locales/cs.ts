@@ -582,6 +582,11 @@ export const cs: Record<keyof Catalog, Message> = {
   "screen.colour": "Barva",
   "screen.accent": "Doplňková barva",
   "screen.reset": "Výchozí",
+  "screen.ground": "Pozadí",
+  "screen.groundLight": "Světlé",
+  "screen.groundDark": "Tmavé",
+  "screen.groundNote":
+    "Projektor neumí černou — při rozsvícené hale zšedne tmavá obrazovka a text s ní. Tmavé je na sál, kde se zhaslo.",
 
   "panel.now_playing": "Právě se hraje",
   "panel.now_playing.hint": "Živé zápasy.",

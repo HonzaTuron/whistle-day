@@ -66,10 +66,15 @@ export function ProjectorScreen({ token }: { token: string }) {
 
   const panel = panels[Math.min(index, panels.length - 1)];
   const accent = payload.display.theme?.accent;
+  // Anything that is not an explicit "dark" is light, so a screen configured
+  // before the field existed — or through the API by something that has never
+  // heard of it — lands on the ground a lit hall can read.
+  const ground = payload.display.theme?.mode === "dark" ? "dark" : "light";
 
   return (
     <div
       className="screen"
+      data-theme={ground}
       style={accent ? ({ "--accent": accent } as React.CSSProperties) : undefined}
     >
       <header className="screen__header">

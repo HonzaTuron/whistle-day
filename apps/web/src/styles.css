@@ -76,10 +76,17 @@ th,
  *
  * The accent and the live orange are darker than the app's. Those values were
  * chosen to glow on near-black; on white the same greens and oranges are a
- * pale wash at five metres, which is the distance this file is written for. A
- * per-display `theme.accent` still wins — it is set inline — and an organiser
- * who picks a neon green for a wall will find out the same way they would have
- * on the dark one.
+ * pale wash at five metres, which is the distance this file is written for.
+ *
+ * A per-display `theme.accent` still wins, because it is set inline — which is
+ * why the darker default above is not on its own enough. The two grounds are
+ * not symmetric: a neon green an organiser picks reads at 8.4:1 on the dark
+ * palette and 1.95:1 on this one, so the ground that needs the picker policed
+ * is exactly the one that cannot rely on the default. Hence `--accent-ink`
+ * below, which is what every rule prints the accent with.
+ *
+ * Dark is still reachable, for the hall that has dimmed the lights for a
+ * final — `theme.mode`, and `data-theme` on the element.
  */
 .screen {
   /* The ground is a step down from the panels rather than the same white:
@@ -94,6 +101,20 @@ th,
   --accent: #15803d;
   --live: #c2410c;
 
+  /* The accent, as something to read.
+     `--accent` is a fill and may be anybody's — it is picked from a swatch for
+     what a club plays in, and an inline one overrides the default above. So
+     printing it needs a floor. Capping lightness in oklch keeps the hue and
+     the chroma the organiser chose and moves only what legibility depends on,
+     which is what a mix towards ink cannot do: a mix still leaves white at
+     2.8:1, whereas the cap puts the worst colour a picker can produce over
+     4.5:1 and leaves anything already dark enough completely alone. */
+  --accent-ink: oklch(from var(--accent) min(l, 0.5) c h);
+  /* Behind a full-width qualified row, and behind a small winner box. The
+     smaller area takes the stronger tint to read as the same emphasis. */
+  --accent-wash: color-mix(in srgb, var(--accent) 20%, transparent);
+  --accent-wash-strong: color-mix(in srgb, var(--accent) 30%, transparent);
+
   /* The body behind this is still the app's dark, so the wall paints its own
      ground rather than inheriting one. */
   background: var(--bg);
@@ -106,6 +127,37 @@ th,
      the ones anybody has calibrated. A margin the edge can eat. */
   padding: 3.5vmin 4vmin;
   gap: 2vmin;
+}
+
+/*
+ * The hall that turned the lights off.
+ *
+ * Everything above is written for a sports hall at two in the afternoon, which
+ * is where nearly every one of these days is played. A final under dimmed
+ * lights is the exception the reasoning does not cover: there the lamp is the
+ * only light in the room, and a white wall is the one thing nobody can look
+ * away from. So the app's own palette comes back, unchanged — this is the
+ * ground every screen had before there was a choice.
+ *
+ * It has to be asked for. A default nobody changes is the one that has to
+ * survive the common room, not the rare one.
+ */
+.screen[data-theme="dark"] {
+  --bg: #0b0f14;
+  --surface: #141b24;
+  --surface-2: #1c2733;
+  --line: #26313f;
+  --line-strong: #44586e;
+  --text: #f2f5f8;
+  --muted: #8496a8;
+  --accent: #22c55e;
+  --live: #f97316;
+
+  /* No floor to hold here: on near-black the accent is already the bright
+     thing in the frame, and capping it would only dim what it is for. */
+  --accent-ink: var(--accent);
+  --accent-wash: color-mix(in srgb, var(--accent) 10%, transparent);
+  --accent-wash-strong: color-mix(in srgb, var(--accent) 14%, transparent);
 }
 
 .screen--message {
@@ -242,7 +294,7 @@ th,
 }
 
 .dot:focus-visible {
-  outline: 0.3vmin solid var(--accent);
+  outline: 0.3vmin solid var(--accent-ink);
   outline-offset: 0.6vmin;
 }
 
@@ -264,7 +316,7 @@ th,
   position: absolute;
   inset: 0;
   border-radius: inherit;
-  background: var(--accent);
+  background: var(--accent-ink);
   transform-origin: left;
   animation: sweep var(--rotate, 15s) linear forwards;
 }
@@ -370,15 +422,15 @@ th,
 
 /* A qualifying place is the single most-asked question in the hall. */
 .table tbody tr.is-qualified .table__rank {
-  color: var(--accent);
+  color: var(--accent-ink);
 }
 
 .table tbody tr.is-qualified {
-  background: color-mix(in srgb, var(--accent) 10%, transparent);
+  background: var(--accent-wash);
 }
 
 .table tbody tr.is-qualified .table__points {
-  color: var(--accent);
+  color: var(--accent-ink);
 }
 
 /* --- now playing -------------------------------------------------------- */
@@ -555,7 +607,7 @@ th,
 
 .fixtures__team.is-winner {
   font-weight: 800;
-  color: var(--accent);
+  color: var(--accent-ink);
 }
 
 .fixtures__score {
@@ -664,12 +716,12 @@ th,
 }
 
 .bracket__side.is-winner {
-  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  background: var(--accent-wash-strong);
   font-weight: 750;
 }
 
 .bracket__side.is-winner .bracket__score {
-  color: var(--accent);
+  color: var(--accent-ink);
 }
 
 .bracket__side.is-loser {
@@ -719,11 +771,18 @@ th,
   max-width: 100%;
   max-height: 15vmin;
   object-fit: contain;
-  /* Sponsor logos are drawn for white paper, and this screen is not white.
-     The plate is the difference between a logo and a dark smudge. */
-  background: #fff;
   border-radius: var(--radius);
+  /* Kept in both grounds even though only one paints behind it: the box is
+     border-sized, so dropping the padding would draw a logo a quarter larger
+     on the light wall than the same logo on the dark one. */
   padding: 1.5vmin 2vmin;
+}
+
+/* Sponsor logos are drawn for white paper. The light wall is close enough to
+   hand them straight over; the dark one is where the plate is the difference
+   between a logo and a smudge. */
+.screen[data-theme="dark"] .branding__logo {
+  background: #fff;
 }
 
 .branding__name {
@@ -750,7 +809,7 @@ th,
   font-weight: 800;
   letter-spacing: -0.03em;
   line-height: 1;
-  color: var(--accent);
+  color: var(--accent-ink);
 }
 
 .branding__credit small {

@@ -633,7 +633,21 @@ by the door, not the main wall.
   rule under it, and every panel added later, is light without being told. The
   accent and the live orange are darker there than in the app: those values
   were picked to glow on near-black and are a pale wash on white at five
-  metres. A per-display `theme.accent` is set inline and still wins.
+  metres. Dark is still reachable through `theme.mode` for a hall that dimmed
+  the lights for a final, but it has to be asked for — the default is the one
+  that has to survive the common room, and that is a hall at two in the
+  afternoon.
+- **The accent is a fill; `--accent-ink` is what prints it.** A per-display
+  `theme.accent` is set inline, so it beats the darker default the light
+  ground declares — and the two grounds are not symmetric about that. A neon
+  green an organiser picks reads at 8.4:1 on the dark palette and 1.95:1 on
+  the light one, so the ground that cannot fall back on its default is exactly
+  the one that needed the picker policed. `--accent-ink` caps the colour's
+  lightness in oklch and keeps its hue and chroma, which is the part a mix
+  towards ink cannot do: a mix still leaves white at 2.8:1, whereas the cap
+  holds every colour a swatch can produce above 4.5:1. The dark ground sets it
+  back to the raw accent, because there the accent is already the bright thing
+  in the frame.
 - **Panels fill the frame, and the type follows how much there is.** Five
   matches at a fixed size left two thirds of the wall empty with the names no
   bigger than they are on a laptop. Rows and table now share the panel's

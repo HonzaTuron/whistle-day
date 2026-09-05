@@ -4,6 +4,7 @@ import type {
   DisplayMode,
   DisplayPanel,
   DisplayTheme,
+  DisplayThemeMode,
   Pool,
   Stage,
 } from "@whistleday/engine";
@@ -69,6 +70,20 @@ const MODE_PANEL: Partial<Record<DisplayMode, DisplayPanel>> = {
 
 const DWELLS = [8, 12, 15, 20, 30];
 
+/**
+ * What the wall draws its accent with when nobody has picked one — the
+ * `--accent` each ground sets in `styles.css`.
+ *
+ * Duplicated from the stylesheet because the swatch has to open on the colour
+ * that is actually on the wall. Showing the app's green over a light screen
+ * drawing the darker one makes the picker a liar, and the tap that "changes
+ * nothing" writes a colour that is genuinely worse.
+ */
+const GROUND_ACCENT: Record<DisplayThemeMode, string> = {
+  light: "#15803d",
+  dark: "#22c55e",
+};
+
 export function ScreenSheet({
   screen,
   stages,
@@ -90,6 +105,20 @@ export function ScreenSheet({
 
   const theme: DisplayTheme = screen.theme ?? {};
   const scope = screen.scope ?? {};
+
+  /** Spelt out, because `mode` in this file is the rotation pin. */
+  const themeMode: DisplayThemeMode = theme.mode === "dark" ? "dark" : "light";
+  const groundAccent = GROUND_ACCENT[themeMode];
+
+  /**
+   * Light stores nothing, the way the default rotation does: a default written
+   * out is a default that goes stale, and every screen set up before there was
+   * a choice is already storing it.
+   */
+  const setThemeMode = (next: DisplayThemeMode) => {
+    const { mode: _dropped, ...rest } = theme;
+    onChange({ theme: next === "dark" ? { ...rest, mode: next } : rest });
+  };
 
   /**
    * The rotation, in order.
@@ -300,17 +329,37 @@ export function ScreenSheet({
         </Group>
 
         <Group label={t("screen.colour")}>
+          {/*
+            Which ground is a question about the hall rather than about taste,
+            and worth saying so here: this is decided on a phone, indoors,
+            where dark looks better in the hand than it will on the wall.
+          */}
+          <div className="chips" role="group" aria-label={t("screen.ground")}>
+            <Filter
+              label={t("screen.groundLight")}
+              on={themeMode === "light"}
+              onClick={() => setThemeMode("light")}
+            />
+            <Filter
+              label={t("screen.groundDark")}
+              on={themeMode === "dark"}
+              onClick={() => setThemeMode("dark")}
+            />
+          </div>
+
+          <p className="sheet__hint">{t("screen.groundNote")}</p>
+
           <div className="accent">
             <input
               type="color"
               className="accent__pick"
-              value={theme.accent || "#22c55e"}
+              value={theme.accent || groundAccent}
               onChange={(event) =>
                 onChange({ theme: { ...theme, accent: event.target.value } })
               }
               aria-label={t("screen.accent")}
             />
-            <span className="accent__value">{theme.accent || "#22c55e"}</span>
+            <span className="accent__value">{theme.accent || groundAccent}</span>
             {theme.accent ? (
               <button
                 type="button"
