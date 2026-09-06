@@ -597,6 +597,34 @@ func findInvite(app core.App, token string) (*core.Record, error) {
 	return invite, nil
 }
 
+// IsOperator reports whether an account may operate a tournament: its owner,
+// or somebody the owner put in the crew.
+//
+// Exported and taking plain ids because two things ask it now — the routes
+// below, and the MCP tools, which have no `RequestEvent` to read an identity
+// off. One definition rather than two, because the second copy is how a tool
+// ends up quietly more permissive than the route beside it.
+func IsOperator(app core.App, userID, tournamentID string) (bool, error) {
+	if userID == "" || tournamentID == "" {
+		return false, nil
+	}
+
+	tournament, err := app.FindRecordById("tournaments", tournamentID)
+	if err != nil {
+		return false, err
+	}
+	if tournament.GetString("owner") == userID {
+		return true, nil
+	}
+
+	member, _ := app.FindFirstRecordByFilter(
+		"staff",
+		"tournament = {:tournament} && user = {:user}",
+		map[string]any{"tournament": tournamentID, "user": userID},
+	)
+	return member != nil, nil
+}
+
 // requireStaff mirrors the staffOnly collection rule for custom routes, which
 // are not covered by collection API rules.
 func requireStaff(e *core.RequestEvent, tournamentID string) error {
@@ -608,20 +636,11 @@ func requireStaff(e *core.RequestEvent, tournamentID string) error {
 		return nil
 	}
 
-	tournament, err := e.App.FindRecordById("tournaments", tournamentID)
+	allowed, err := IsOperator(e.App, auth.Id, tournamentID)
 	if err != nil {
 		return e.NotFoundError("tournament not found", err)
 	}
-	if tournament.GetString("owner") == auth.Id {
-		return nil
-	}
-
-	member, _ := e.App.FindFirstRecordByFilter(
-		"staff",
-		"tournament = {:tournament} && user = {:user}",
-		map[string]any{"tournament": tournamentID, "user": auth.Id},
-	)
-	if member == nil {
+	if !allowed {
 		return e.ForbiddenError("not a staff member of this tournament", nil)
 	}
 	return nil

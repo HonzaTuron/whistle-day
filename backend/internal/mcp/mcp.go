@@ -13,6 +13,7 @@ import (
 	"github.com/mark3labs/mcp-go/server"
 	"github.com/pocketbase/dbx"
 	"github.com/pocketbase/pocketbase/core"
+	"github.com/pocketbase/pocketbase/tools/security"
 
 	"whistleday/backend/internal/tournament"
 )
@@ -81,14 +82,36 @@ func (s *WhistleMCP) registerTools() {
 	s.mcp.AddTool(resolveStageTool(), s.resolveStage)
 }
 
+// argString reads a string argument without trusting the client to have sent
+// one. The unchecked assertion this replaces panicked on a missing argument,
+// and a panic in a tool handler takes the server down with it.
+func argString(req mcp.CallToolRequest, name string) string {
+	v, _ := req.GetArguments()[name].(string)
+	return v
+}
+
 func listTournamentsTool() mcp.Tool {
 	return mcp.NewTool("list_tournaments",
-		mcp.WithDescription("List all tournaments the caller has access to"),
+		mcp.WithDescription("List the tournaments this session can act on"),
+		withSession(),
 	)
 }
 
 func (s *WhistleMCP) listTournaments(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	records, err := s.app.FindRecordsByFilter("tournaments", "", "created", 0, 0, nil)
+	user, err := s.caller(req)
+	if err != nil {
+		return nil, err
+	}
+
+	// The same expression the collection rule uses: mine, or one I am crew on.
+	// It used to return every tournament on the server, which is what made
+	// "the caller has access to" in the old description untrue.
+	records, err := s.app.FindRecordsByFilter(
+		"tournaments",
+		"owner = {:u} || staff_via_tournament.user ?= {:u}",
+		"created", 0, 0,
+		dbx.Params{"u": user.Id},
+	)
 	if err != nil {
 		return nil, fmt.Errorf("list tournaments: %w", err)
 	}
@@ -99,11 +122,15 @@ func getTournamentTool() mcp.Tool {
 	return mcp.NewTool("get_tournament",
 		mcp.WithDescription("Get a tournament by ID"),
 		mcp.WithString("id", mcp.Required(), mcp.Description("Tournament ID")),
+		withSession(),
 	)
 }
 
 func (s *WhistleMCP) getTournament(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	id := req.GetArguments()["id"].(string)
+	id := argString(req, "id")
+	if _, err := s.operator(req, id); err != nil {
+		return nil, err
+	}
 	r, err := s.app.FindRecordById("tournaments", id)
 	if err != nil {
 		return nil, fmt.Errorf("tournament not found: %w", err)
@@ -118,11 +145,15 @@ func listStagesTool() mcp.Tool {
 	return mcp.NewTool("list_stages",
 		mcp.WithDescription("List stages in a tournament"),
 		mcp.WithString("tournament_id", mcp.Required(), mcp.Description("Tournament ID")),
+		withSession(),
 	)
 }
 
 func (s *WhistleMCP) listStages(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	tid := req.GetArguments()["tournament_id"].(string)
+	tid := argString(req, "tournament_id")
+	if _, err := s.operator(req, tid); err != nil {
+		return nil, err
+	}
 	records, err := s.app.FindRecordsByFilter(
 		"stages", "tournament = {:t}", "position", 0, 0,
 		dbx.Params{"t": tid},
@@ -137,11 +168,19 @@ func getStageTool() mcp.Tool {
 	return mcp.NewTool("get_stage",
 		mcp.WithDescription("Get a stage by ID with its pools"),
 		mcp.WithString("id", mcp.Required(), mcp.Description("Stage ID")),
+		withSession(),
 	)
 }
 
 func (s *WhistleMCP) getStage(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	id := req.GetArguments()["id"].(string)
+	id := argString(req, "id")
+	tid, err := s.tournamentOfStage(id)
+	if err != nil {
+		return nil, err
+	}
+	if _, err := s.operator(req, tid); err != nil {
+		return nil, err
+	}
 	r, err := s.app.FindRecordById("stages", id)
 	if err != nil {
 		return nil, fmt.Errorf("stage not found: %w", err)
@@ -156,11 +195,19 @@ func listPoolsTool() mcp.Tool {
 	return mcp.NewTool("list_pools",
 		mcp.WithDescription("List pools in a stage"),
 		mcp.WithString("stage_id", mcp.Required(), mcp.Description("Stage ID")),
+		withSession(),
 	)
 }
 
 func (s *WhistleMCP) listPools(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	sid := req.GetArguments()["stage_id"].(string)
+	sid := argString(req, "stage_id")
+	tid, err := s.tournamentOfStage(sid)
+	if err != nil {
+		return nil, err
+	}
+	if _, err := s.operator(req, tid); err != nil {
+		return nil, err
+	}
 	records, err := s.app.FindRecordsByFilter(
 		"pools", "stage = {:s}", "position", 0, 0,
 		dbx.Params{"s": sid},
@@ -178,11 +225,19 @@ func listFixturesTool() mcp.Tool {
 		mcp.WithString("pool_id", mcp.Description("Pool ID (optional)")),
 		mcp.WithNumber("round", mcp.Description("Round number (optional)")),
 		mcp.WithString("status", mcp.Description("Status filter: pending, ready, live, finished, walkover, bye (optional)")),
+		withSession(),
 	)
 }
 
 func (s *WhistleMCP) listFixtures(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	sid := req.GetArguments()["stage_id"].(string)
+	sid := argString(req, "stage_id")
+	tid, err := s.tournamentOfStage(sid)
+	if err != nil {
+		return nil, err
+	}
+	if _, err := s.operator(req, tid); err != nil {
+		return nil, err
+	}
 
 	filter := "stage = {:stage}"
 	params := dbx.Params{"stage": sid}
@@ -215,11 +270,19 @@ func getFixtureTool() mcp.Tool {
 	return mcp.NewTool("get_fixture",
 		mcp.WithDescription("Get a fixture by ID with games"),
 		mcp.WithString("id", mcp.Required(), mcp.Description("Fixture ID")),
+		withSession(),
 	)
 }
 
 func (s *WhistleMCP) getFixture(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	id := req.GetArguments()["id"].(string)
+	id := argString(req, "id")
+	tid, err := s.tournamentOfFixture(id)
+	if err != nil {
+		return nil, err
+	}
+	if _, err := s.operator(req, tid); err != nil {
+		return nil, err
+	}
 	r, err := s.app.FindRecordById("fixtures", id)
 	if err != nil {
 		return nil, fmt.Errorf("fixture not found: %w", err)
@@ -252,11 +315,15 @@ func listEntriesTool() mcp.Tool {
 	return mcp.NewTool("list_entries",
 		mcp.WithDescription("List entries (participants) in a tournament"),
 		mcp.WithString("tournament_id", mcp.Required(), mcp.Description("Tournament ID")),
+		withSession(),
 	)
 }
 
 func (s *WhistleMCP) listEntries(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	tid := req.GetArguments()["tournament_id"].(string)
+	tid := argString(req, "tournament_id")
+	if _, err := s.operator(req, tid); err != nil {
+		return nil, err
+	}
 	records, err := s.app.FindRecordsByFilter(
 		"entries", "tournament = {:t}", "seed", 0, 0,
 		dbx.Params{"t": tid},
@@ -271,11 +338,19 @@ func listStandingsTool() mcp.Tool {
 	return mcp.NewTool("list_standings",
 		mcp.WithDescription("List standings for a pool"),
 		mcp.WithString("pool_id", mcp.Required(), mcp.Description("Pool ID")),
+		withSession(),
 	)
 }
 
 func (s *WhistleMCP) listStandings(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	pid := req.GetArguments()["pool_id"].(string)
+	pid := argString(req, "pool_id")
+	tid, err := s.tournamentOfPool(pid)
+	if err != nil {
+		return nil, err
+	}
+	if _, err := s.operator(req, tid); err != nil {
+		return nil, err
+	}
 	records, err := s.app.FindRecordsByFilter(
 		"standings", "pool = {:p}", "position", 0, 0,
 		dbx.Params{"p": pid},
@@ -299,11 +374,19 @@ func getStageTableTool() mcp.Tool {
 				"finished — readable throughout, but nothing is seeded from it until then.",
 		),
 		mcp.WithString("stage_id", mcp.Required(), mcp.Description("Stage ID")),
+		withSession(),
 	)
 }
 
 func (s *WhistleMCP) getStageTable(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	sid := req.GetArguments()["stage_id"].(string)
+	sid := argString(req, "stage_id")
+	tid, err := s.tournamentOfStage(sid)
+	if err != nil {
+		return nil, err
+	}
+	if _, err := s.operator(req, tid); err != nil {
+		return nil, err
+	}
 	records, err := tournament.StageTable(s.app, sid)
 	if err != nil {
 		return nil, fmt.Errorf("get stage table: %w", err)
@@ -323,18 +406,26 @@ func updateFixtureTool() mcp.Tool {
 		mcp.WithNumber("away_score", mcp.Description("Away score")),
 		mcp.WithString("winner", mcp.Description("Winner entry ID (for walkover)")),
 		mcp.WithString("court", mcp.Description("Court ID (optional)")),
+		withSession(),
 	)
 }
 
 func (s *WhistleMCP) updateFixture(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	id := req.GetArguments()["id"].(string)
+	id := argString(req, "id")
+	tid, err := s.tournamentOfFixture(id)
+	if err != nil {
+		return nil, err
+	}
+	if _, err := s.operator(req, tid); err != nil {
+		return nil, err
+	}
 
 	r, err := s.app.FindRecordById("fixtures", id)
 	if err != nil {
 		return nil, fmt.Errorf("fixture not found: %w", err)
 	}
 
-	status := req.GetArguments()["status"].(string)
+	status := argString(req, "status")
 	r.Set("status", status)
 
 	if hs, ok := req.GetArguments()["home_score"].(float64); ok {
@@ -364,12 +455,21 @@ func generateStageTool() mcp.Tool {
 		mcp.WithDescription("Generate pools, slots and fixtures for a stage. Use dry_run=true to preview without saving."),
 		mcp.WithString("stage_id", mcp.Required(), mcp.Description("Stage ID")),
 		mcp.WithBoolean("dry_run", mcp.Description("Preview only, don't write anything")),
+		withSession(),
 	)
 }
 
 func (s *WhistleMCP) generateStage(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	sid := req.GetArguments()["stage_id"].(string)
+	sid := argString(req, "stage_id")
 	dryRun, _ := req.GetArguments()["dry_run"].(bool)
+
+	tid, err := s.tournamentOfStage(sid)
+	if err != nil {
+		return nil, err
+	}
+	if _, err := s.operator(req, tid); err != nil {
+		return nil, err
+	}
 
 	stage, err := s.app.FindRecordById("stages", sid)
 	if err != nil {
@@ -407,11 +507,19 @@ func resolveStageTool() mcp.Tool {
 	return mcp.NewTool("resolve_stage",
 		mcp.WithDescription("Re-resolve a stage's fixture propagation and standings. Use after correcting scores."),
 		mcp.WithString("stage_id", mcp.Required(), mcp.Description("Stage ID")),
+		withSession(),
 	)
 }
 
 func (s *WhistleMCP) resolveStage(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	sid := req.GetArguments()["stage_id"].(string)
+	sid := argString(req, "stage_id")
+	tid, err := s.tournamentOfStage(sid)
+	if err != nil {
+		return nil, err
+	}
+	if _, err := s.operator(req, tid); err != nil {
+		return nil, err
+	}
 	resolved, err := tournament.ResolveStage(s.app, sid)
 	if err != nil {
 		return nil, fmt.Errorf("resolve stage: %w", err)
@@ -424,7 +532,12 @@ func (s *WhistleMCP) resolveStage(ctx context.Context, req mcp.CallToolRequest) 
 
 func createTournamentTool() mcp.Tool {
 	return mcp.NewTool("create_tournament",
-		mcp.WithDescription("Create a new tournament draft. Owner is set to the internal system account."),
+		mcp.WithDescription(
+			"Create a tournament. The only tool that needs no session_token: it "+
+				"makes an account for this tournament and returns the session_token "+
+				"for it, which every other tool then requires. Keep that token — it "+
+				"is the only way back to this tournament, and it is not recoverable.",
+		),
 		mcp.WithString("name", mcp.Required(), mcp.Description("Tournament name")),
 	)
 }
@@ -458,11 +571,18 @@ func slugify(name string) string {
 }
 
 func (s *WhistleMCP) createTournament(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	name := req.GetArguments()["name"].(string)
+	name := argString(req, "name")
+	if name == "" {
+		return nil, fmt.Errorf("a tournament needs a name")
+	}
 
-	owner, err := s.ensureSystemUser()
+	// An account of its own rather than one shared system user. What that
+	// bought: every tournament the MCP made used to have the same owner, so
+	// any caller could edit any of them, and no human could ever be given one
+	// without being given all of them.
+	owner, session, err := s.newOrganiser()
 	if err != nil {
-		return nil, fmt.Errorf("system user: %w", err)
+		return nil, fmt.Errorf("could not make an account for this tournament: %w", err)
 	}
 
 	col, err := s.app.FindCollectionByNameOrId("tournaments")
@@ -487,32 +607,13 @@ func (s *WhistleMCP) createTournament(ctx context.Context, req mcp.CallToolReque
 		return nil, fmt.Errorf("create tournament: %w", err)
 	}
 
-	return resultJSON(recordToMap(r, "id", "name", "status", "created"))
-}
+	data := recordToMap(r, "id", "name", "status", "created")
+	data["session_token"] = session
+	data["owner"] = owner.Id
+	data["note"] = "Pass session_token to every other tool. " +
+		"Use create_handoff when a person should take this tournament over."
 
-func (s *WhistleMCP) ensureSystemUser() (*core.Record, error) {
-	users, err := s.app.FindRecordsByFilter("users", "email = {:email}", "", 1, 0,
-		dbx.Params{"email": "mcp@whistleday.local"})
-	if err != nil {
-		return nil, err
-	}
-	if len(users) > 0 {
-		return users[0], nil
-	}
-
-	col, err := s.app.FindCollectionByNameOrId("users")
-	if err != nil {
-		return nil, err
-	}
-	r := core.NewRecord(col)
-	r.Set("email", "mcp@whistleday.local")
-	r.Set("password", "mcp-system-account-2026")
-	r.Set("passwordConfirm", "mcp-system-account-2026")
-	r.Set("name", "MCP System")
-	if err := s.app.Save(r); err != nil {
-		return nil, err
-	}
-	return r, nil
+	return resultJSON(data)
 }
 
 func addEntryTool() mcp.Tool {
@@ -521,13 +622,18 @@ func addEntryTool() mcp.Tool {
 		mcp.WithString("tournament_id", mcp.Required(), mcp.Description("Tournament ID")),
 		mcp.WithString("name", mcp.Required(), mcp.Description("Team name")),
 		mcp.WithNumber("seed", mcp.Required(), mcp.Description("Seed (position)")),
+		withSession(),
 	)
 }
 
 func (s *WhistleMCP) addEntry(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	tid := req.GetArguments()["tournament_id"].(string)
-	name := req.GetArguments()["name"].(string)
-	seed := int(req.GetArguments()["seed"].(float64))
+	tid := argString(req, "tournament_id")
+	if _, err := s.operator(req, tid); err != nil {
+		return nil, err
+	}
+	name := argString(req, "name")
+	seedArg, _ := req.GetArguments()["seed"].(float64)
+	seed := int(seedArg)
 
 	col, err := s.app.FindCollectionByNameOrId("entries")
 	if err != nil {
@@ -555,14 +661,19 @@ func createStageTool() mcp.Tool {
 		mcp.WithString("format", mcp.Required(), mcp.Description("Format: round_robin, single_elim, double_elim, swiss")),
 		mcp.WithNumber("position", mcp.Required(), mcp.Description("Stage position (0-based)")),
 		mcp.WithString("config", mcp.Description("JSON config, e.g. {\"poolCount\":1}")),
+		withSession(),
 	)
 }
 
 func (s *WhistleMCP) createStage(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	tid := req.GetArguments()["tournament_id"].(string)
-	name := req.GetArguments()["name"].(string)
-	format := req.GetArguments()["format"].(string)
-	position := int(req.GetArguments()["position"].(float64))
+	tid := argString(req, "tournament_id")
+	if _, err := s.operator(req, tid); err != nil {
+		return nil, err
+	}
+	name := argString(req, "name")
+	format := argString(req, "format")
+	positionArg, _ := req.GetArguments()["position"].(float64)
+	position := int(positionArg)
 
 	var config any
 	if raw, ok := req.GetArguments()["config"].(string); ok && raw != "" {
@@ -599,25 +710,26 @@ func createDisplayTool() mcp.Tool {
 		mcp.WithString("tournament_id", mcp.Required(), mcp.Description("Tournament ID")),
 		mcp.WithString("name", mcp.Description("Display name (default: Main screen)")),
 		mcp.WithString("token", mcp.Description("URL token (default: auto-generated)")),
+		withSession(),
 	)
 }
 
 func (s *WhistleMCP) createDisplay(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	tid := req.GetArguments()["tournament_id"].(string)
+	tid := argString(req, "tournament_id")
+	if _, err := s.operator(req, tid); err != nil {
+		return nil, err
+	}
 	name := "Main screen"
-	if n, ok := req.GetArguments()["name"].(string); ok && n != "" {
+	if n := argString(req, "name"); n != "" {
 		name = n
 	}
-	token := ""
-	if t, ok := req.GetArguments()["token"].(string); ok && t != "" {
-		token = t
-	} else {
-		const alphabet = "abcdefghijkmnpqrstuvwxyz23456789"
-		b := make([]byte, 8)
-		for i := range b {
-			b[i] = alphabet[time.Now().UnixNano()%int64(len(alphabet))]
-		}
-		token = string(b)
+	token := argString(req, "token")
+	if token == "" {
+		// Was eight reads of the clock in a loop that runs in well under a
+		// nanosecond, so every character came out the same and a screen token
+		// — the only credential the projector endpoint has — was effectively
+		// one letter repeated.
+		token = security.RandomStringWithAlphabet(8, tokenAlphabet)
 	}
 
 	col, err := s.app.FindCollectionByNameOrId("displays")
@@ -637,12 +749,13 @@ func (s *WhistleMCP) createDisplay(ctx context.Context, req mcp.CallToolRequest)
 		return nil, fmt.Errorf("create display: %w", err)
 	}
 
+	base := strings.TrimSuffix(s.app.Settings().Meta.AppURL, "/")
 	return resultJSON(map[string]any{
 		"id":            r.Id,
 		"name":          name,
 		"token":         token,
-		"display_url":   fmt.Sprintf("http://127.0.0.1:8090/api/display/%s", token),
-		"projector_url": fmt.Sprintf("http://127.0.0.1:8090/display/%s", token),
+		"display_url":   base + "/api/display/" + token,
+		"projector_url": base + "/display/" + token,
 	})
 }
 
@@ -650,11 +763,15 @@ func publishTournamentTool() mcp.Tool {
 	return mcp.NewTool("publish_tournament",
 		mcp.WithDescription("Publish a tournament (set status to live) so the display works"),
 		mcp.WithString("tournament_id", mcp.Required(), mcp.Description("Tournament ID")),
+		withSession(),
 	)
 }
 
 func (s *WhistleMCP) publishTournament(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	tid := req.GetArguments()["tournament_id"].(string)
+	tid := argString(req, "tournament_id")
+	if _, err := s.operator(req, tid); err != nil {
+		return nil, err
+	}
 
 	r, err := s.app.FindRecordById("tournaments", tid)
 	if err != nil {
@@ -673,25 +790,14 @@ func (s *WhistleMCP) publishTournament(ctx context.Context, req mcp.CallToolRequ
 // Resources
 // ---------------------------------------------------------------------------
 
-func (s *WhistleMCP) registerResources() {
-	s.mcp.AddResource(
-		mcp.NewResource("tournaments://overview", "Tournaments Overview",
-			mcp.WithResourceDescription("Overview of all tournaments"),
-			mcp.WithMIMEType("application/json"),
-		),
-		func(ctx context.Context, req mcp.ReadResourceRequest) ([]mcp.ResourceContents, error) {
-			records, err := s.app.FindRecordsByFilter("tournaments", "", "created", 0, 0, nil)
-			if err != nil {
-				return nil, err
-			}
-			data := toMapSlice(records, "id", "name", "sport", "status")
-			raw, _ := json.Marshal(data)
-			return []mcp.ResourceContents{
-				mcp.TextResourceContents{URI: "tournaments://overview", Text: string(raw)},
-			}, nil
-		},
-	)
-}
+// There are none, deliberately.
+//
+// `tournaments://overview` used to list every tournament on the server. A
+// resource read carries no arguments, so there is nowhere for a session_token
+// to go and no way for the handler to know who is asking — which makes an
+// authorised version of that resource impossible rather than merely unwritten.
+// `list_tournaments` answers the same question for one caller, and does.
+func (s *WhistleMCP) registerResources() {}
 
 // ---------------------------------------------------------------------------
 // Helpers
