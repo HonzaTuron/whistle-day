@@ -1,0 +1,36 @@
+[Unit]
+Description=Whistle.day web (renders the app screens)
+Documentation=https://github.com/HonzaTuron/whistleday
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=whistleday
+Group=whistleday
+WorkingDirectory=/srv/whistleday
+
+# A single compiled binary with its own runtime inside it, so there is no Bun
+# and no node_modules on the server to keep in step with the build.
+#
+# It renders the app screens and nothing else: the marketing pages were
+# rendered at build time and Caddy serves them from disk without ever asking
+# this process.
+ExecStart=/srv/whistleday/whistleday-web
+Environment=PORT=3000
+Environment=NODE_ENV=production
+
+Restart=always
+RestartSec=2
+
+# It writes nothing at all — every read it does is from inside its own binary.
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+
+[Install]
+WantedBy=multi-user.target

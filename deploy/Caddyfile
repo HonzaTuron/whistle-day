@@ -1,0 +1,118 @@
+# Whistle.day, in front of two binaries.
+#
+# Three processes on one box, which is the shape SQLite picks for you: the API
+# is a single writer on a local disk, so there is no second machine to add.
+#
+#   caddy            :80/:443   TLS, static files, and the routing below
+#   pocketbase       :8090      the API, the realtime stream and the MCP server
+#   whistleday-web   :3000      renders the app screens; the marketing pages
+#                               were rendered at build time and never reach it
+#
+# ## Cloudflare
+#
+# The domain is on Cloudflare nameservers. Leave the record **DNS only** (grey
+# cloud) rather than proxied, for two reasons that both matter here. Caddy
+# needs to answer an ACME challenge on this host to get its own certificate,
+# and an orange-clouded record answers it somewhere else. And the projector
+# holds `/api/realtime` open for hours — Cloudflare's proxy will close a long
+# idle stream, and every close is a wall that goes stale until it reconnects.
+#
+# If it is ever proxied, set Cloudflare to Full (strict) so it trusts the
+# certificate Caddy holds, and expect the reconnects.
+{
+	# Where Let's Encrypt sends the "your certificate is about to expire and
+	# renewal is failing" mail. Worth having: the first anybody hears about a
+	# stuck renewal is otherwise a browser warning on a Saturday morning.
+	email turon.honza@gmail.com
+}
+
+whistle.day, www.whistle.day {
+	encode zstd gzip
+
+	# Redirect www to the apex, so a link shared either way lands on the
+	# canonical one the sitemap lists.
+	@www host www.whistle.day
+	redir @www https://whistle.day{uri} permanent
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		# Nothing here is ever meant to be framed, and a projector token in an
+		# iframe on somebody else's page is a tournament being passed off.
+		X-Frame-Options "DENY"
+		-Server
+	}
+
+	# ------------------------------------------------------------------
+	# The API, the realtime stream and the MCP server.
+	#
+	# `flush_interval -1` disables response buffering, which is not a tuning
+	# knob here but a correctness one: `/api/realtime` and `/api/mcp` are
+	# server-sent event streams, and a buffered stream is a projector that
+	# updates when the buffer fills rather than when the score changes.
+	# ------------------------------------------------------------------
+	handle /api/* {
+		reverse_proxy 127.0.0.1:8090 {
+			flush_interval -1
+		}
+	}
+
+	# The PocketBase dashboard. Superuser-only already, but it is the one
+	# address on this host where a stolen password is the whole database, so
+	# it is worth deciding rather than leaving open. Replace with your own
+	# address, or comment the block out to remove the dashboard from the
+	# internet entirely and reach it over an SSH tunnel instead.
+	handle /_/* {
+		@admin not remote_ip 127.0.0.1
+		respond @admin "Not found" 404
+		reverse_proxy 127.0.0.1:8090
+	}
+
+	# ------------------------------------------------------------------
+	# Everything else: a file if one was built, otherwise the renderer.
+	#
+	# The hundred and twenty-three marketing pages are prerendered to
+	# `<path>/index.html` at build time and are served from disk. The app
+	# screens — `/t`, `/display`, `/m`, `/join`, `/account`, `/new`, `/claim`
+	# — have no file and fall through to the server that renders them.
+	# ------------------------------------------------------------------
+	handle {
+		root * /srv/whistleday/client
+
+		@static file {
+			try_files {path} {path}/index.html
+		}
+
+		handle @static {
+			# Hashed filenames, so they can be cached until the heat death of
+			# the universe. A deploy writes new names rather than new bytes.
+			@immutable path /assets/*
+			header @immutable Cache-Control "public, max-age=31536000, immutable"
+
+			# The document is not hashed and a stale one is a page pointing at
+			# assets that no longer exist.
+			@html path *.html /
+			header @html Cache-Control "public, max-age=0, must-revalidate"
+
+			# A cached service worker is a device that never learns there was
+			# a deploy.
+			@sw path /sw.js /manifest.webmanifest
+			header @sw Cache-Control "no-cache"
+
+			rewrite {file_match.relative}
+			file_server
+		}
+
+		handle {
+			reverse_proxy 127.0.0.1:3000
+		}
+	}
+
+	log {
+		output file /var/log/caddy/whistleday.log {
+			roll_size 10MiB
+			roll_keep 5
+		}
+	}
+}

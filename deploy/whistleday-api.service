@@ -1,0 +1,41 @@
+[Unit]
+Description=Whistle.day API (PocketBase)
+Documentation=https://github.com/HonzaTuron/whistleday
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=whistleday
+Group=whistleday
+WorkingDirectory=/srv/whistleday
+
+# Bound to loopback on purpose: Caddy is the only thing that should be able to
+# reach this, and a PocketBase listening on 0.0.0.0 is one firewall rule away
+# from serving the API without TLS.
+ExecStart=/srv/whistleday/pocketbase serve --http=127.0.0.1:8090 --dir=/srv/whistleday/pb_data
+
+# Caddy forwards over loopback while keeping `Host: whistle.day`, which is
+# exactly what mcp-go's DNS rebinding protection refuses. Without this every
+# MCP request is a 403. See internal/mcp/mcp.go.
+Environment=WHISTLEDAY_MCP_BEHIND_PROXY=1
+
+# OAuth2 client ids and secrets, and anything else that must not be in git.
+# The dash means "start anyway if it is not there yet".
+EnvironmentFile=-/srv/whistleday/.env
+
+Restart=always
+RestartSec=2
+
+# The tournament is in here. Nothing else on the box needs to be writable.
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+ReadWritePaths=/srv/whistleday/pb_data
+
+[Install]
+WantedBy=multi-user.target
