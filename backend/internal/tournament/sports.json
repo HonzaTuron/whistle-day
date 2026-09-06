@@ -1,0 +1,79 @@
+[
+  {
+    "id": "volleyball",
+    "sport": "volleyball",
+    "scoring": {
+      "bestOf": 3,
+      "pointsWin": 2,
+      "pointsDraw": 0,
+      "pointsLoss": 0,
+      "drawsAllowed": false,
+      "walkoverScore": 2,
+      "tiebreakers": [
+        "points",
+        "head_to_head",
+        "score_diff",
+        "sub_diff",
+        "score_for",
+        "seed"
+      ]
+    }
+  },
+  {
+    "id": "football",
+    "sport": "football",
+    "scoring": {
+      "bestOf": 1,
+      "pointsWin": 3,
+      "pointsDraw": 1,
+      "pointsLoss": 0,
+      "drawsAllowed": true,
+      "walkoverScore": 3,
+      "tiebreakers": [
+        "points",
+        "head_to_head",
+        "score_diff",
+        "score_for",
+        "seed"
+      ]
+    }
+  },
+  {
+    "id": "basketball",
+    "sport": "basketball",
+    "scoring": {
+      "bestOf": 1,
+      "pointsWin": 2,
+      "pointsDraw": 0,
+      "pointsLoss": 1,
+      "drawsAllowed": false,
+      "walkoverScore": 20,
+      "tiebreakers": [
+        "points",
+        "head_to_head",
+        "score_diff",
+        "score_for",
+        "seed"
+      ]
+    }
+  },
+  {
+    "id": "other",
+    "sport": "",
+    "scoring": {
+      "bestOf": 1,
+      "pointsWin": 3,
+      "pointsDraw": 1,
+      "pointsLoss": 0,
+      "drawsAllowed": true,
+      "walkoverScore": 0,
+      "tiebreakers": [
+        "points",
+        "head_to_head",
+        "score_diff",
+        "score_for",
+        "seed"
+      ]
+    }
+  }
+]

@@ -997,6 +997,147 @@ func TestSlugifyUnique(t *testing.T) {
 	}
 }
 
+// What is being played decides how the day is scored, and an agent can now
+// say. Before this it could not, and every tournament it made came out with a
+// football table: draws allowed and worth a point, and a match treated as one
+// game rather than a best of three.
+func TestCreateTournamentTakesASport(t *testing.T) {
+	app := newTestApp(t)
+	defer app.Cleanup()
+	s := New(app)
+
+	create := func(t *testing.T, args map[string]any) map[string]any {
+		t.Helper()
+		r, e := s.createTournament(ctx, toolArgs("create_tournament", args))
+		if e != nil {
+			t.Fatalf("create: %v", e)
+		}
+		var out map[string]any
+		json.Unmarshal([]byte(r.Content[0].(mcp.TextContent).Text), &out)
+		return out
+	}
+
+	t.Run("a hall sport is scored as one", func(t *testing.T) {
+		made := create(t, map[string]any{"name": "Volleyball Cup", "sport": "volleyball"})
+		if made["sport"] != "volleyball" {
+			t.Fatalf("sport = %v", made["sport"])
+		}
+
+		record, err := app.FindRecordById("tournaments", made["id"].(string))
+		if err != nil {
+			t.Fatalf("reload: %v", err)
+		}
+		scoring := tournament.ScoringOf(record)
+
+		if scoring.BestOf != 3 {
+			t.Fatalf("bestOf = %d, want the sets a volleyball match is played to", scoring.BestOf)
+		}
+		if scoring.DrawsAllowedOr() {
+			t.Fatal("a level score is a result in a sport that has no draws")
+		}
+		if scoring.PointsWin != 2 {
+			t.Fatalf("pointsWin = %d, want volleyball's", scoring.PointsWin)
+		}
+	})
+
+	t.Run("football still gets football", func(t *testing.T) {
+		made := create(t, map[string]any{"name": "Football Cup", "sport": "football"})
+		record, _ := app.FindRecordById("tournaments", made["id"].(string))
+		scoring := tournament.ScoringOf(record)
+
+		if !scoring.DrawsAllowedOr() {
+			t.Fatal("football cannot end level, apparently")
+		}
+		if scoring.PointsWin != 3 {
+			t.Fatalf("pointsWin = %d", scoring.PointsWin)
+		}
+	})
+
+	t.Run("saying nothing gets the generic table, not a guess", func(t *testing.T) {
+		made := create(t, map[string]any{"name": "Something Cup"})
+		// `sport` is deliberately empty for the generic preset: the projector
+		// renders it, and "Other" under a tournament name reads as a mistake.
+		if made["sport"] != "" {
+			t.Fatalf("sport = %v, want it left blank", made["sport"])
+		}
+	})
+
+	t.Run("a sport nobody has heard of is refused", func(t *testing.T) {
+		_, err := s.createTournament(ctx, toolArgs("create_tournament",
+			map[string]any{"name": "Quidditch Cup", "sport": "quidditch"}))
+		if err == nil {
+			t.Fatal("an unknown sport was quietly given a football table")
+		}
+		if !strings.Contains(err.Error(), "volleyball") {
+			t.Fatalf("error = %v, want it to say what is on offer", err)
+		}
+	})
+}
+
+// A tournament with no courts can be played but not organised: the schedule
+// has nothing to put matches on and the projector nothing to group them by.
+func TestAddCourt(t *testing.T) {
+	app := newTestApp(t)
+	defer app.Cleanup()
+	s := New(app)
+
+	r, e := s.createTournament(ctx, toolArgs("create_tournament", map[string]any{"name": "Court Cup"}))
+	if e != nil {
+		t.Fatalf("create: %v", e)
+	}
+	var cup map[string]any
+	json.Unmarshal([]byte(r.Content[0].(mcp.TextContent).Text), &cup)
+	tok := cup["session_token"].(string)
+	id := cup["id"].(string)
+
+	t.Run("courts append rather than pile up at zero", func(t *testing.T) {
+		for _, name := range []string{"Court 1", "Court 2", "Court 3"} {
+			if _, err := s.addCourt(ctx, toolArgs("add_court", map[string]any{
+				"tournament_id": id, "name": name, "session_token": tok,
+			})); err != nil {
+				t.Fatalf("add %s: %v", name, err)
+			}
+		}
+
+		listed, err := s.listCourts(ctx, toolArgs("list_courts", map[string]any{
+			"tournament_id": id, "session_token": tok,
+		}))
+		if err != nil {
+			t.Fatalf("list: %v", err)
+		}
+		var courts []map[string]any
+		json.Unmarshal([]byte(listed.Content[0].(mcp.TextContent).Text), &courts)
+
+		if len(courts) != 3 {
+			t.Fatalf("got %d courts, want 3", len(courts))
+		}
+		for i, court := range courts {
+			if int(court["position"].(float64)) != i {
+				t.Fatalf("court %d is at position %v — three courts all at 0 is a "+
+					"screen whose order depends on which row was written first",
+					i, court["position"])
+			}
+		}
+	})
+
+	t.Run("a stranger cannot add one", func(t *testing.T) {
+		other := freshSession(t, s)
+		if _, err := s.addCourt(ctx, toolArgs("add_court", map[string]any{
+			"tournament_id": id, "name": "Theirs", "session_token": other,
+		})); err == nil {
+			t.Fatal("a court was added to somebody else's tournament")
+		}
+	})
+
+	t.Run("and a court needs a name", func(t *testing.T) {
+		if _, err := s.addCourt(ctx, toolArgs("add_court", map[string]any{
+			"tournament_id": id, "session_token": tok,
+		})); err == nil {
+			t.Fatal("a nameless court was accepted")
+		}
+	})
+}
+
 // An agent builds a tournament and hands it to a person.
 //
 // The end of the whole story: create_tournament makes an account nobody owns,

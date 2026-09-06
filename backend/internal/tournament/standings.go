@@ -58,6 +58,13 @@ var DefaultTiebreakers = []string{
 	"points", "head_to_head", "score_diff", "score_for", "sub_diff", "seed",
 }
 
+// ScoringOf reads how a tournament is scored, filling in what a record
+// written before a field existed left out.
+//
+// Exported for the MCP tools, which write scoring and have to be able to check
+// what they wrote without a second reading of the same JSON.
+func ScoringOf(tournament *core.Record) ScoringConfig { return scoringConfig(tournament) }
+
 func scoringConfig(tournament *core.Record) ScoringConfig {
 	cfg := ScoringConfig{}
 	if raw := tournament.GetString("scoring"); raw != "" && raw != "null" {

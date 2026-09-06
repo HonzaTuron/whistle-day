@@ -158,8 +158,15 @@ its final positions.
 ## An agent can run one too
 
 `/api/mcp` is an MCP server over Streamable HTTP — one endpoint, `POST` for a
-request, `GET` for the stream, `DELETE` to end a session. Nineteen tools: the
+request, `GET` for the stream, `DELETE` to end a session. Twenty-one tools: the
 same generate, resolve, score and publish the screens use.
+
+`create_tournament` asks what is being played, for the same reason the wizard
+does — three points for a win with a draw possible is right for football and
+wrong for every sport played in a hall. The presets are
+`backend/internal/tournament/sports.json`, which is also what the wizard's
+chips are checked against, so the two cannot drift into scoring the same
+volleyball day differently depending on who set it up.
 
 An agent is treated as an organiser who has not signed up, because that is
 what it is. `create_tournament` is the only tool that needs no credential; it

@@ -118,6 +118,94 @@ func (s *WhistleMCP) registerTools() {
 	s.mcp.AddTool(generateStageTool(), s.generateStage)
 	s.mcp.AddTool(resolveStageTool(), s.resolveStage)
 	s.mcp.AddTool(createHandoffTool(), s.createHandoff)
+	s.mcp.AddTool(addCourtTool(), s.addCourt)
+	s.mcp.AddTool(listCourtsTool(), s.listCourts)
+}
+
+func addCourtTool() mcp.Tool {
+	return mcp.NewTool("add_court",
+		mcp.WithDescription(
+			"Add a court, pitch or table. Courts are what the schedule puts "+
+				"matches on and what the projector groups them by, so a "+
+				"tournament with none can be played but not organised: "+
+				"update_fixture's court argument has nothing to point at.",
+		),
+		mcp.WithString("tournament_id", mcp.Required(), mcp.Description("Tournament ID")),
+		mcp.WithString("name", mcp.Required(), mcp.Description("Court name, e.g. 'Court 1'")),
+		mcp.WithNumber("position", mcp.Description("Order on the screen, 0-based (default: after the last one)")),
+		withSession(),
+	)
+}
+
+func (s *WhistleMCP) addCourt(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	tid := argString(req, "tournament_id")
+	if _, err := s.operator(req, tid); err != nil {
+		return nil, err
+	}
+
+	name := argString(req, "name")
+	if name == "" {
+		return nil, fmt.Errorf("a court needs a name")
+	}
+
+	// Appended by default. An agent adding four courts in a row should not
+	// have to count, and four courts all at position 0 is a screen whose
+	// order depends on which row was written first.
+	position, given := req.GetArguments()["position"].(float64)
+	if !given {
+		existing, err := s.app.FindRecordsByFilter(
+			"courts", "tournament = {:t}", "-position", 1, 0, dbx.Params{"t": tid},
+		)
+		if err != nil {
+			return nil, fmt.Errorf("could not read the courts: %w", err)
+		}
+		if len(existing) > 0 {
+			position = float64(existing[0].GetInt("position") + 1)
+		}
+	}
+
+	col, err := s.app.FindCollectionByNameOrId("courts")
+	if err != nil {
+		return nil, fmt.Errorf("find collection: %w", err)
+	}
+
+	r := core.NewRecord(col)
+	r.Set("tournament", tid)
+	r.Set("name", name)
+	r.Set("position", int(position))
+	r.Set("active", true)
+
+	if err := s.app.Save(r); err != nil {
+		return nil, fmt.Errorf("add court: %w", err)
+	}
+
+	return resultJSON(recordToMap(r, "id", "name", "position", "active"))
+}
+
+func listCourtsTool() mcp.Tool {
+	return mcp.NewTool("list_courts",
+		mcp.WithDescription(
+			"The courts a tournament is played on. Their ids are what "+
+				"update_fixture's court argument takes.",
+		),
+		mcp.WithString("tournament_id", mcp.Required(), mcp.Description("Tournament ID")),
+		withSession(),
+	)
+}
+
+func (s *WhistleMCP) listCourts(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	tid := argString(req, "tournament_id")
+	if _, err := s.operator(req, tid); err != nil {
+		return nil, err
+	}
+
+	records, err := s.app.FindRecordsByFilter(
+		"courts", "tournament = {:t}", "position", 0, 0, dbx.Params{"t": tid},
+	)
+	if err != nil {
+		return nil, fmt.Errorf("list courts: %w", err)
+	}
+	return resultJSON(toMapSlice(records, "id", "name", "position", "active"))
 }
 
 func createHandoffTool() mcp.Tool {
@@ -626,8 +714,21 @@ func createTournamentTool() mcp.Tool {
 				"is the only way back to this tournament, and it is not recoverable.",
 		),
 		mcp.WithString("name", mcp.Required(), mcp.Description("Tournament name")),
+		mcp.WithString("sport",
+			mcp.Description(
+				"What is being played: "+sportChoices()+". This decides the points, "+
+					"whether a draw is a result at all, and how many sets a match is "+
+					"played to — so getting it wrong scores the whole day wrong. "+
+					"Defaults to \"other\", which is a generic table rather than a guess.",
+			),
+		),
 	)
 }
+
+// sportChoices is built from the presets rather than typed out, so a sport
+// added to sports.json turns up in the tool's description without anybody
+// having to remember this line exists.
+func sportChoices() string { return tournament.SportIDs() }
 
 func slugify(name string) string {
 	base := strings.ToLower(name)
@@ -663,6 +764,19 @@ func (s *WhistleMCP) createTournament(ctx context.Context, req mcp.CallToolReque
 		return nil, fmt.Errorf("a tournament needs a name")
 	}
 
+	// Refused rather than quietly generic. An agent that asked for "padel" and
+	// was given a football table would produce a day scored wrong, and the
+	// first anybody would know is a standings screen crediting draws in a
+	// sport that has none.
+	sport := argString(req, "sport")
+	if sport != "" && !tournament.KnownSport(sport) {
+		return nil, fmt.Errorf("no sport %q — try one of: %s", sport, tournament.SportIDs())
+	}
+	if sport == "" {
+		sport = tournament.DefaultSport
+	}
+	preset := tournament.SportByID(sport)
+
 	// An account of its own rather than one shared system user. What that
 	// bought: every tournament the MCP made used to have the same owner, so
 	// any caller could edit any of them, and no human could ever be given one
@@ -682,19 +796,15 @@ func (s *WhistleMCP) createTournament(ctx context.Context, req mcp.CallToolReque
 	r.Set("slug", slugify(name))
 	r.Set("status", "draft")
 	r.Set("owner", owner.Id)
-	r.Set("scoring", map[string]any{
-		"bestOf":      1,
-		"pointsWin":   3,
-		"pointsDraw":  1,
-		"pointsLoss":  0,
-		"tiebreakers": []string{"points", "head_to_head", "score_diff", "score_for", "seed"},
-	})
+	r.Set("sport", preset.Sport)
+	r.Set("scoring", preset.Scoring)
 
 	if err := s.app.Save(r); err != nil {
 		return nil, fmt.Errorf("create tournament: %w", err)
 	}
 
-	data := recordToMap(r, "id", "name", "status", "created")
+	data := recordToMap(r, "id", "name", "sport", "status", "created")
+	data["scoring"] = preset.Scoring
 	data["session_token"] = session
 	data["owner"] = owner.Id
 	data["note"] = "Pass session_token to every other tool. " +
