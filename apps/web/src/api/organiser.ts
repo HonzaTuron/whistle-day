@@ -958,6 +958,46 @@ export async function resetInvite(
 export const previewInvite = (token: string) =>
   send<{ name: string; role: StaffRole }>(null, `/api/staff/invite/${token}`);
 
+// ---------------------------------------------------------------------------
+// being handed a tournament
+// ---------------------------------------------------------------------------
+
+/**
+ * What a handoff link is for, before anybody accepts it.
+ *
+ * Public, like the invite preview: the token is the credential, and a screen
+ * that could not name the tournament would be asking somebody to accept a
+ * blank cheque.
+ */
+export const previewHandoff = (token: string) =>
+  send<{ tournament: string }>(null, `/api/organiser/handoff/${token}`);
+
+/**
+ * Take the tournament.
+ *
+ * The account being claimed is not this device's — it belongs to whatever made
+ * the tournament, usually an agent — so there is no session to send and none
+ * comes back. The link is the authority, and the way in afterwards is the
+ * email and password just set, which is why this signs in rather than
+ * returning a token: `RefreshTokenKey` on the server has already invalidated
+ * everything that existed before this call.
+ */
+export async function claimHandoff(
+  token: string,
+  email: string,
+  password: string,
+): Promise<{ session: Session; tournament: Id }> {
+  const claimed = await send<{ email: string; tournament: Id }>(
+    null,
+    `/api/organiser/handoff/${token}/claim`,
+    { method: "POST", body: { email, password } },
+  );
+  return {
+    session: await signIn(email, password),
+    tournament: claimed.tournament,
+  };
+}
+
 export interface JoinResult {
   tournament: Id;
   name: string;

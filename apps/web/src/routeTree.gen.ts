@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as SplatRouteImport } from './routes/$'
 import { Route as AccountRouteImport } from './routes/account'
 import { Route as NewRouteImport } from './routes/new'
+import { Route as ClaimTokenRouteImport } from './routes/claim.$token'
 import { Route as DisplayTokenRouteImport } from './routes/display.$token'
 import { Route as JoinTokenRouteImport } from './routes/join.$token'
 import { Route as MTokenRouteImport } from './routes/m.$token'
@@ -36,6 +37,11 @@ const AccountRoute = AccountRouteImport.update({
 const NewRoute = NewRouteImport.update({
   id: '/new',
   path: '/new',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ClaimTokenRoute = ClaimTokenRouteImport.update({
+  id: '/claim/$token',
+  path: '/claim/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DisplayTokenRoute = DisplayTokenRouteImport.update({
@@ -64,6 +70,7 @@ export interface FileRoutesByFullPath {
   '/$': typeof SplatRoute
   '/account': typeof AccountRoute
   '/new': typeof NewRoute
+  '/claim/$token': typeof ClaimTokenRoute
   '/display/$token': typeof DisplayTokenRoute
   '/join/$token': typeof JoinTokenRoute
   '/m/$token': typeof MTokenRoute
@@ -74,6 +81,7 @@ export interface FileRoutesByTo {
   '/$': typeof SplatRoute
   '/account': typeof AccountRoute
   '/new': typeof NewRoute
+  '/claim/$token': typeof ClaimTokenRoute
   '/display/$token': typeof DisplayTokenRoute
   '/join/$token': typeof JoinTokenRoute
   '/m/$token': typeof MTokenRoute
@@ -85,6 +93,7 @@ export interface FileRoutesById {
   '/$': typeof SplatRoute
   '/account': typeof AccountRoute
   '/new': typeof NewRoute
+  '/claim/$token': typeof ClaimTokenRoute
   '/display/$token': typeof DisplayTokenRoute
   '/join/$token': typeof JoinTokenRoute
   '/m/$token': typeof MTokenRoute
@@ -97,6 +106,7 @@ export interface FileRouteTypes {
     | '/$'
     | '/account'
     | '/new'
+    | '/claim/$token'
     | '/display/$token'
     | '/join/$token'
     | '/m/$token'
@@ -107,6 +117,7 @@ export interface FileRouteTypes {
     | '/$'
     | '/account'
     | '/new'
+    | '/claim/$token'
     | '/display/$token'
     | '/join/$token'
     | '/m/$token'
@@ -117,6 +128,7 @@ export interface FileRouteTypes {
     | '/$'
     | '/account'
     | '/new'
+    | '/claim/$token'
     | '/display/$token'
     | '/join/$token'
     | '/m/$token'
@@ -128,6 +140,7 @@ export interface RootRouteChildren {
   SplatRoute: typeof SplatRoute
   AccountRoute: typeof AccountRoute
   NewRoute: typeof NewRoute
+  ClaimTokenRoute: typeof ClaimTokenRoute
   DisplayTokenRoute: typeof DisplayTokenRoute
   JoinTokenRoute: typeof JoinTokenRoute
   MTokenRoute: typeof MTokenRoute
@@ -162,6 +175,13 @@ declare module '@tanstack/react-router' {
       path: '/new'
       fullPath: '/new'
       preLoaderRoute: typeof NewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/claim/$token': {
+      id: '/claim/$token'
+      path: '/claim/$token'
+      fullPath: '/claim/$token'
+      preLoaderRoute: typeof ClaimTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/display/$token': {
@@ -200,6 +220,7 @@ const rootRouteChildren: RootRouteChildren = {
   SplatRoute: SplatRoute,
   AccountRoute: AccountRoute,
   NewRoute: NewRoute,
+  ClaimTokenRoute: ClaimTokenRoute,
   DisplayTokenRoute: DisplayTokenRoute,
   JoinTokenRoute: JoinTokenRoute,
   MTokenRoute: MTokenRoute,

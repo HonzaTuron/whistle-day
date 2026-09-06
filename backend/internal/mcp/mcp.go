@@ -80,6 +80,56 @@ func (s *WhistleMCP) registerTools() {
 	s.mcp.AddTool(updateFixtureTool(), s.updateFixture)
 	s.mcp.AddTool(generateStageTool(), s.generateStage)
 	s.mcp.AddTool(resolveStageTool(), s.resolveStage)
+	s.mcp.AddTool(createHandoffTool(), s.createHandoff)
+}
+
+func createHandoffTool() mcp.Tool {
+	return mcp.NewTool("create_handoff",
+		mcp.WithDescription(
+			"Make a link that hands this tournament to a person. They open it, "+
+				"set an email and a password, and the account this session has "+
+				"been acting as becomes theirs. Single use, and it expires. "+
+				"Afterwards this session_token stops working — which is the "+
+				"point, so hand it over when the tournament is ready rather than "+
+				"when you are still building it.",
+		),
+		mcp.WithString("tournament_id", mcp.Required(), mcp.Description("Tournament ID")),
+		withSession(),
+	)
+}
+
+func (s *WhistleMCP) createHandoff(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	tid := argString(req, "tournament_id")
+	user, err := s.operator(req, tid)
+	if err != nil {
+		return nil, err
+	}
+
+	record, err := s.app.FindRecordById("tournaments", tid)
+	if err != nil {
+		return nil, fmt.Errorf("no tournament %s", tid)
+	}
+	// Owner only, like the route. Being crew on a tournament is not being in a
+	// position to give it away.
+	if record.GetString("owner") != user.Id {
+		return nil, fmt.Errorf("only the owner can hand a tournament over")
+	}
+	if !tournament.IsDeviceAccount(user.Email()) {
+		return nil, fmt.Errorf(
+			"this account already belongs to somebody, so there is nothing to claim")
+	}
+
+	handoff, err := tournament.MintHandoff(s.app, user, record)
+	if err != nil {
+		return nil, fmt.Errorf("could not make a handoff link: %w", err)
+	}
+
+	return resultJSON(map[string]any{
+		"url":     tournament.HandoffURL(s.app, handoff.GetString("token")),
+		"expires": handoff.GetString("expires"),
+		"note": "Give this link to the person running the tournament. " +
+			"Once they open it, this session_token stops working.",
+	})
 }
 
 // argString reads a string argument without trusting the client to have sent

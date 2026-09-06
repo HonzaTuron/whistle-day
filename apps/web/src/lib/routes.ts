@@ -13,7 +13,7 @@
  * go. A route that drifted between those two would be either a live board in
  * a search index or a projector phoning a third party all afternoon.
  */
-export const APP_ROUTES = /^\/(t|display|m|join|account|new)(\/|$)/;
+export const APP_ROUTES = /^\/(t|display|m|join|account|new|claim)(\/|$)/;
 
 /**
  * The crawler hands paths in with their query string attached, and every

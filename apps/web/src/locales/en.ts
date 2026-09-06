@@ -184,6 +184,18 @@ export const en = {
     "Signing in as somebody else leaves anything set up on this device behind. It stays live on the wall; this browser just stops being the way in.",
   "account.claimRefused":
     "That address cannot be saved on this device. If it is already your account, sign in with it — anything set up here stays live and this browser stops being the way in.",
+  // Being handed a tournament somebody else set up.
+  "claim.title": "{tournament} is yours",
+  "claim.body":
+    "This tournament was set up on an account nobody owns yet. Put an email and a password on it and it is yours — the draw, the results and the screens, all of it.",
+  "claim.accept": "Take it",
+  "claim.once":
+    "The link works once. Whoever set the tournament up loses access the moment you do this.",
+  "claim.deadTitle": "This link is not valid any more",
+  "claim.deadBody":
+    "It has been used, or it expired, or it was never a link at all. Ask whoever sent it for another one.",
+  "claim.failed": "That did not work. Nothing has changed — try again.",
+
   "account.continueWith": "Continue with {provider}",
   "account.or": "or",
   "account.oauthFailed":

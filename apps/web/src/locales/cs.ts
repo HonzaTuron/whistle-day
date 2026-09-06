@@ -185,6 +185,17 @@ export const cs: Record<keyof Catalog, Message> = {
     "Přihlášením pod někým jiným tady necháte všechno, co je založené na tomhle zařízení. Na zdi to běží dál; tenhle prohlížeč jen přestane být cestou dovnitř.",
   "account.claimRefused":
     "Tuhle adresu na tomhle zařízení uložit nelze. Pokud je to už váš účet, přihlaste se jím — všechno založené tady běží dál a tenhle prohlížeč přestane být cestou dovnitř.",
+  "claim.title": "{tournament} je váš",
+  "claim.body":
+    "Tenhle turnaj je založený na účtu, který zatím nikomu nepatří. Dejte na něj e-mail a heslo a je váš — los, výsledky i obrazovky, všechno.",
+  "claim.accept": "Převzít",
+  "claim.once":
+    "Odkaz funguje jednou. Ten, kdo turnaj založil, k němu ztratí přístup ve chvíli, kdy to uděláte.",
+  "claim.deadTitle": "Tenhle odkaz už neplatí",
+  "claim.deadBody":
+    "Byl použitý, vypršel, nebo to odkaz nikdy nebyl. Řekněte si o nový tomu, kdo vám ho poslal.",
+  "claim.failed": "Nepovedlo se to. Nic se nezměnilo — zkuste to znovu.",
+
   "account.continueWith": "Pokračovat přes {provider}",
   "account.or": "nebo",
   "account.oauthFailed":

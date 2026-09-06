@@ -22,6 +22,7 @@ describe("isAppRoute", () => {
       "/join/wxyz",
       "/account",
       "/new",
+      "/claim/abcdef",
     ]) {
       expect(isAppRoute(path)).toBe(true);
     }

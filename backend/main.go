@@ -28,6 +28,7 @@ func main() {
 	tournament.RegisterRealtime(app)
 	tournament.RegisterSubscriptionGuard(app)
 	tournament.RegisterRoutes(app)
+	tournament.RegisterHandoffRoutes(app)
 	mcp.RegisterMCPServer(app)
 
 	if err := app.Start(); err != nil {

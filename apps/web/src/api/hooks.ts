@@ -32,6 +32,7 @@ import {
   resetInvite,
   removeStaff,
   previewInvite,
+  previewHandoff,
   joinWithInvite,
   claimAccount,
   signIn,
@@ -60,6 +61,7 @@ export const keys = {
   staff: (tournament: Id) => ["staff", tournament] as const,
   invite: (tournament: Id, role: StaffRole) => ["invite", tournament, role] as const,
   preview: (token: string) => ["preview", token] as const,
+  handoff: (token: string) => ["handoff", token] as const,
 };
 
 // ---------------------------------------------------------------------------
@@ -180,6 +182,21 @@ export function usePreviewInvite(token: string) {
     queryKey: keys.preview(token),
     queryFn: () => previewInvite(token),
     enabled: !!token,
+  });
+}
+
+/**
+ * What a handoff link is for.
+ *
+ * `retry: false` because the failure worth showing is "this link is not valid
+ * any more", and retrying a spent link three times only delays saying so.
+ */
+export function usePreviewHandoff(token: string) {
+  return useQuery({
+    queryKey: keys.handoff(token),
+    queryFn: () => previewHandoff(token),
+    enabled: !!token,
+    retry: false,
   });
 }
 

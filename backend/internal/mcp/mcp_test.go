@@ -997,6 +997,61 @@ func TestSlugifyUnique(t *testing.T) {
 	}
 }
 
+// An agent builds a tournament and hands it to a person.
+//
+// The end of the whole story: create_tournament makes an account nobody owns,
+// the agent runs everything on it, and this is how it stops being the agent's.
+func TestCreateHandoff(t *testing.T) {
+	app := newTestApp(t)
+	defer app.Cleanup()
+	s := New(app)
+
+	r, e := s.createTournament(ctx, toolArgs("create_tournament", map[string]any{"name": "Handoff Cup"}))
+	if e != nil {
+		t.Fatalf("create: %v", e)
+	}
+	var cup map[string]any
+	json.Unmarshal([]byte(r.Content[0].(mcp.TextContent).Text), &cup)
+	tok := cup["session_token"].(string)
+	id := cup["id"].(string)
+
+	t.Run("the owner gets a link", func(t *testing.T) {
+		r, e := s.createHandoff(ctx, toolArgs("create_handoff", map[string]any{
+			"tournament_id": id, "session_token": tok,
+		}))
+		if e != nil {
+			t.Fatalf("handoff: %v", e)
+		}
+		var out map[string]any
+		json.Unmarshal([]byte(r.Content[0].(mcp.TextContent).Text), &out)
+
+		url, _ := out["url"].(string)
+		if !strings.Contains(url, "/claim/") {
+			t.Fatalf("url = %q, want a /claim/ link", url)
+		}
+		if out["expires"] == "" {
+			t.Fatal("a link that grants an account has no expiry on it")
+		}
+	})
+
+	t.Run("a stranger does not", func(t *testing.T) {
+		other := freshSession(t, s)
+		if _, err := s.createHandoff(ctx, toolArgs("create_handoff", map[string]any{
+			"tournament_id": id, "session_token": other,
+		})); err == nil {
+			t.Fatal("a session that does not own the tournament was given it away")
+		}
+	})
+
+	t.Run("and neither does a caller with no session", func(t *testing.T) {
+		if _, err := s.createHandoff(ctx, toolArgs("create_handoff", map[string]any{
+			"tournament_id": id,
+		})); err == nil {
+			t.Fatal("an unidentified caller minted a handoff")
+		}
+	})
+}
+
 // freshSession mints an account and the token to act as it, for tests that
 // need somebody who is definitely not the owner of anything.
 func freshSession(t *testing.T, s *WhistleMCP) string {
