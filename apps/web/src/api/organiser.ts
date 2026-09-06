@@ -16,6 +16,7 @@ import type {
 } from "@whistleday/engine";
 import { tr } from "../lib/i18n";
 import { sportById, type SportId } from "../lib/scoring";
+import { call, pb } from "./client";
 
 /**
  * The organiser's side of the API — the half that writes.
@@ -50,64 +51,81 @@ export interface Session {
 // transport
 // ---------------------------------------------------------------------------
 
-export class ApiError extends Error {
-  readonly status: number;
-  constructor(message: string, status: number) {
-    super(message);
-    this.status = status;
-  }
-}
-
-interface PocketBaseError {
-  message?: string;
-  data?: Record<string, { message?: string } | undefined>;
-}
+export { ApiError } from "./client";
 
 /**
- * PocketBase reports validation failures per field. "Failed to create record."
- * tells an organiser nothing; "name: The value is required." at least points
- * at the box to fix.
+ * Point the SDK at a session and hand the client back.
+ *
+ * The session is passed to every function in this file rather than being read
+ * from ambient state, and that is worth keeping: it is what makes it obvious
+ * at the call site whose tournament is being written to. The SDK wants the
+ * token on its own store, so this is where the two meet.
  */
-function readError(status: number, body: string): ApiError {
-  let parsed: PocketBaseError;
-  try {
-    parsed = JSON.parse(body) as PocketBaseError;
-  } catch {
-    return new ApiError(body || tr("error.request", { status }), status);
-  }
-
-  const fields = Object.entries(parsed.data ?? {})
-    .map(([field, detail]) => (detail?.message ? `${field}: ${detail.message}` : field))
-    .join(", ");
-
-  return new ApiError(fields || parsed.message || tr("error.request", { status }), status);
+function as(session: Session | null) {
+  const client = pb();
+  if (session) client.authStore.save(session.token, null as never);
+  else client.authStore.clear();
+  return client;
 }
 
-async function api<T>(
-  path: string,
-  options: { method?: string; body?: unknown; token?: string } = {},
-): Promise<T> {
-  const response = await fetch(path, {
-    method: options.method ?? "GET",
-    headers: {
-      ...(options.body === undefined ? {} : { "content-type": "application/json" }),
-      ...(options.token ? { Authorization: options.token } : {}),
-    },
-    body: options.body === undefined ? undefined : JSON.stringify(options.body),
+const create = <T>(session: Session, collection: string, body: Record<string, unknown>) =>
+  call(() => as(session).collection(collection).create<T>(body));
+
+const update = <T>(session: Session, collection: string, id: Id, body: Record<string, unknown>) =>
+  call(() => as(session).collection(collection).update<T>(id, body));
+
+const remove = (session: Session, collection: string, id: Id) =>
+  call(async () => {
+    await as(session).collection(collection).delete(id);
+    return null;
   });
 
-  const text = await response.text();
-  if (!response.ok) throw readError(response.status, text);
-  return (text ? JSON.parse(text) : null) as T;
-}
+const one = <T>(session: Session, collection: string, id: Id) =>
+  call(() => as(session).collection(collection).getOne<T>(id));
 
 /**
- * Shared with `oauth.ts`, which finishes a sign-in as this device's account
- * and so needs both the authenticated call and the place a session is kept.
- * Exported under a name worth reading at the call site; `api` on its own says
- * nothing once it is in another file.
+ * Every record matching a filter.
+ *
+ * `getFullList` pages until it runs out, which is why no call here names a
+ * page size any more. The ones that used to were guesses — `perPage=200` for
+ * teams, `perPage=500` for fixtures — and a guess that is too small is a board
+ * missing the end of itself.
+ *
+ * Filters are built with `client.filter`, which escapes what it interpolates.
+ * The hand-rolled version had to encode `&&` itself, because two ampersands in
+ * a query string are read as a parameter separator and a two-condition filter
+ * arrived truncated at the first one. Single-condition filters survived it,
+ * which is exactly why it went unnoticed until an invite lookup needed three.
+ * That hazard is now somebody else's.
  */
-export { api as apiCall, writeSession };
+const list = <T>(
+  session: Session,
+  collection: string,
+  options: { filter?: string; sort?: string; expand?: string } = {},
+) => call(() => as(session).collection(collection).getFullList<T>(options));
+
+/**
+ * A custom route — the ones collection rules cannot express, like generating a
+ * stage or taking a team out. `session` is null for the public ones.
+ */
+const send = <T>(
+  session: Session | null,
+  path: string,
+  options: { method?: string; body?: unknown } = {},
+) =>
+  call(
+    () =>
+      as(session).send(path, {
+        method: options.method ?? "GET",
+        ...(options.body === undefined ? {} : { body: options.body }),
+      }) as Promise<T>,
+  );
+
+/** Escaped filter interpolation, for the call sites below. */
+const filter = (expression: string, params: Record<string, unknown>) =>
+  pb().filter(expression, params);
+
+export { writeSession };
 
 // ---------------------------------------------------------------------------
 // the anonymous organiser account
@@ -148,15 +166,16 @@ async function signUp(): Promise<Session> {
   const email = `organiser-${randomString(12)}@device.whistleday.local`;
   const password = randomString(24);
 
-  const user = await api<{ id: Id }>("/api/collections/users/records", {
-    method: "POST",
-    body: { email, password, passwordConfirm: password, name: "Organiser" },
-  });
-
-  const auth = await api<{ token: string }>(
-    "/api/collections/users/auth-with-password",
-    { method: "POST", body: { identity: email, password } },
+  const users = pb().collection("users");
+  const user = await call(() =>
+    users.create<{ id: Id }>({
+      email,
+      password,
+      passwordConfirm: password,
+      name: "Organiser",
+    }),
   );
+  const auth = await call(() => users.authWithPassword(email, password));
 
   return writeSession({ userId: user.id, email, password, token: auth.token });
 }
@@ -174,10 +193,7 @@ export async function ensureOrganiser(): Promise<Session> {
 
   if (stored?.token) {
     try {
-      const refreshed = await api<{ token: string }>(
-        "/api/collections/users/auth-refresh",
-        { method: "POST", token: stored.token },
-      );
+      const refreshed = await as(stored).collection("users").authRefresh();
       return writeSession({ ...stored, token: refreshed.token });
     } catch {
       // expired or revoked — fall through to the password
@@ -186,10 +202,9 @@ export async function ensureOrganiser(): Promise<Session> {
 
   if (stored?.email && stored.password) {
     try {
-      const auth = await api<{ token: string }>(
-        "/api/collections/users/auth-with-password",
-        { method: "POST", body: { identity: stored.email, password: stored.password } },
-      );
+      const auth = await pb()
+        .collection("users")
+        .authWithPassword(stored.email, stored.password);
       return writeSession({ ...stored, token: auth.token });
     } catch {
       // the account is gone (a reset database, most likely) — start over
@@ -248,13 +263,7 @@ export interface TournamentRecord {
  *
  * Every filter goes through here so the hazard cannot come back.
  */
-const where = (filter: string) => `filter=${encodeURIComponent(filter)}`;
-
-const records = <T>(session: Session, collection: string, query: string) =>
-  api<{ items: T[] }>(
-    `/api/collections/${collection}/records?${query}`,
-    { token: session.token },
-  ).then((page) => page.items);
+const records = list;
 
 /**
  * The session this device already has, if any — without making one.
@@ -283,9 +292,8 @@ export async function claimAccount(
   email: string,
   password: string,
 ): Promise<Session> {
-  await api<{ email: string }>("/api/organiser/claim", {
+  await send<{ email: string }>(session, "/api/organiser/claim", {
     method: "POST",
-    token: session.token,
     body: { email, password },
   });
   return signIn(email, password);
@@ -293,11 +301,15 @@ export async function claimAccount(
 
 /** Sign in on a device that has never seen this account. */
 export async function signIn(email: string, password: string): Promise<Session> {
-  const auth = await api<{ token: string; record: { id: Id } }>(
-    "/api/collections/users/auth-with-password",
-    { method: "POST", body: { identity: email, password } },
+  const auth = await call(() =>
+    pb().collection("users").authWithPassword(email, password),
   );
-  return writeSession({ userId: auth.record.id, email, password, token: auth.token });
+  return writeSession({
+    userId: auth.record.id,
+    email,
+    password,
+    token: auth.token,
+  });
 }
 
 /**
@@ -311,12 +323,12 @@ export async function signIn(email: string, password: string): Promise<Session> 
  * applies to every write below a tournament.
  */
 export const myTournaments = (session: Session) =>
-  records<TournamentRecord>(
-    session,
-    "tournaments",
-    `${where(`owner='${session.userId}' || staff_via_tournament.user?='${session.userId}'`)}` +
-      `&sort=-created&perPage=50`,
-  );
+  records<TournamentRecord>(session, "tournaments", {
+    filter: filter("owner = {:me} || staff_via_tournament.user ?= {:me}", {
+      me: session.userId,
+    }),
+    sort: "-created",
+  });
 
 /** A URL-safe slug, with a random tail because `tournaments.slug` is unique. */
 function slugify(name: string): string {
@@ -337,10 +349,7 @@ export async function createDraft(
   sport: SportId,
 ): Promise<TournamentRecord> {
   const picked = sportById(sport);
-  const tournament = await api<TournamentRecord>("/api/collections/tournaments/records", {
-    method: "POST",
-    token: session.token,
-    body: {
+  const tournament = await create<TournamentRecord>(session, "tournaments", {
       name,
       slug: slugify(name),
       status: "draft",
@@ -351,8 +360,7 @@ export async function createDraft(
       // the results screen, because a local league that plays for two points
       // is not a preset going wrong.
       scoring: picked.scoring,
-    },
-  });
+    });
 
   rememberDraft(tournament.id);
   return tournament;
@@ -374,11 +382,7 @@ export const updateScoring = (
   scoring: ScoringConfig,
   sport: string,
 ) =>
-  api<TournamentRecord>(`/api/collections/tournaments/records/${id}`, {
-    method: "PATCH",
-    token: session.token,
-    body: { scoring, sport },
-  });
+  update<TournamentRecord>(session, "tournaments", id, { scoring, sport });
 
 /**
  * The first screen, submitted a second time. It carries the sport as well as
@@ -393,30 +397,21 @@ export const renameDraft = (
   sport: string,
   scoring: ScoringConfig,
 ) =>
-  api<TournamentRecord>(`/api/collections/tournaments/records/${id}`, {
-    method: "PATCH",
-    token: session.token,
-    body: { name, sport, scoring },
-  });
+  update<TournamentRecord>(session, "tournaments", id, { name, sport, scoring });
 
 /** One tournament record, draft or running. */
 export const loadTournament = (session: Session, id: Id) =>
-  api<TournamentRecord>(`/api/collections/tournaments/records/${id}`, {
-    token: session.token,
-  });
+  one<TournamentRecord>(session, "tournaments", id);
 
 /** Cascade deletes take the entries, courts, stages and screens with it. */
 export const deleteDraft = (session: Session, id: Id) =>
-  api<null>(`/api/collections/tournaments/records/${id}`, {
-    method: "DELETE",
-    token: session.token,
-  });
+  remove(session, "tournaments", id);
 
 export const loadTeams = (session: Session, tournament: Id) =>
-  records<TeamRecord>(session, "entries", `${where(`tournament='${tournament}'`)}&sort=seed&perPage=200`);
+  records<TeamRecord>(session, "entries", { filter: filter("tournament = {:v}", { v: tournament }), sort: "seed" });
 
 export const loadCourts = (session: Session, tournament: Id) =>
-  records<CourtRecord>(session, "courts", `${where(`tournament='${tournament}'`)}&sort=position&perPage=100`);
+  records<CourtRecord>(session, "courts", { filter: filter("tournament = {:v}", { v: tournament }), sort: "position" });
 
 /**
  * `seed` is the position in the list, and the list is the order they were
@@ -429,43 +424,25 @@ export const addTeam = (session: Session, tournament: Id, team: {
   shortName: string;
   seed: number;
 }) =>
-  api<TeamRecord>("/api/collections/entries/records", {
-    method: "POST",
-    token: session.token,
-    body: {
+  create<TeamRecord>(session, "entries", {
       tournament,
       name: team.name,
       short_name: team.shortName,
       seed: team.seed,
       status: "active",
-    },
-  });
+    });
 
 export const removeTeam = (session: Session, id: Id) =>
-  api<null>(`/api/collections/entries/records/${id}`, {
-    method: "DELETE",
-    token: session.token,
-  });
+  remove(session, "entries", id);
 
 export const addCourt = (session: Session, tournament: Id, name: string, position: number) =>
-  api<CourtRecord>("/api/collections/courts/records", {
-    method: "POST",
-    token: session.token,
-    body: { tournament, name, position, active: true },
-  });
+  create<CourtRecord>(session, "courts", { tournament, name, position, active: true });
 
 export const renameCourt = (session: Session, id: Id, name: string) =>
-  api<CourtRecord>(`/api/collections/courts/records/${id}`, {
-    method: "PATCH",
-    token: session.token,
-    body: { name },
-  });
+  update<CourtRecord>(session, "courts", id, { name });
 
 export const removeCourt = (session: Session, id: Id) =>
-  api<null>(`/api/collections/courts/records/${id}`, {
-    method: "DELETE",
-    token: session.token,
-  });
+  remove(session, "courts", id);
 
 // ---------------------------------------------------------------------------
 // running a tournament
@@ -520,24 +497,23 @@ export async function loadBoard(session: Session, id: Id): Promise<Board> {
   const [tournament, entries, stages, pools, courts, fixtures, screens, crew] =
     await Promise.all([
     loadTournament(session, id),
-    records<Entry>(session, "entries", `${where(`tournament='${id}'`)}&sort=seed&perPage=200`),
-    records<Stage>(session, "stages", `${where(`tournament='${id}'`)}&sort=position&perPage=50`),
-    records<Pool>(session, "pools", `${where(`stage.tournament='${id}'`)}&sort=position&perPage=100`),
-    records<Court>(session, "courts", `${where(`tournament='${id}'`)}&sort=position&perPage=50`),
-    records<BoardFixture>(
-      session,
-      "fixtures",
-      `${where(`tournament='${id}'`)}&sort=round,position` +
-        `&expand=home_slot,away_slot&perPage=500`,
-    ),
+    records<Entry>(session, "entries", { filter: filter("tournament = {:v}", { v: id }), sort: "seed" }),
+    records<Stage>(session, "stages", { filter: filter("tournament = {:v}", { v: id }), sort: "position" }),
+    records<Pool>(session, "pools", { filter: filter("stage.tournament = {:v}", { v: id }), sort: "position" }),
+    records<Court>(session, "courts", { filter: filter("tournament = {:v}", { v: id }), sort: "position" }),
+    records<BoardFixture>(session, "fixtures", {
+      filter: filter("tournament = {:v}", { v: id }),
+      sort: "round,position",
+      expand: "home_slot,away_slot",
+    }),
     // Staff can read their own screens; the public still needs the token.
-    records<Display>(session, "displays", `${where(`tournament='${id}'`)}&perPage=5`),
+    records<Display>(session, "displays", { filter: filter("tournament = {:v}", { v: id }) }),
     // A crew can see itself. An empty list is the ordinary case — most
     // tournaments are run by the one phone that created them.
     records<StaffRecord>(
       session,
       "staff",
-      `${where(`tournament='${id}'`)}&sort=created&perPage=100`,
+      { filter: filter("tournament = {:v}", { v: id }), sort: "created" },
     ),
   ]);
 
@@ -564,11 +540,7 @@ export async function loadBoard(session: Session, id: Id): Promise<Board> {
  * the wall is the preview.
  */
 export const updateDisplay = (session: Session, id: Id, patch: Partial<Display>) =>
-  api<Display>(`/api/collections/displays/records/${id}`, {
-    method: "PATCH",
-    token: session.token,
-    body: patch,
-  });
+  update<Display>(session, "displays", id, patch);
 
 /**
  * Write a result and let the server do the rest.
@@ -594,16 +566,12 @@ export const saveResult = (
   awayScore: number,
   at: Date = new Date(),
 ) =>
-  api<Fixture>(`/api/collections/fixtures/records/${fixture}`, {
-    method: "PATCH",
-    token: session.token,
-    body: {
+  update<Fixture>(session, "fixtures", fixture, {
       status: "finished",
       home_score: homeScore,
       away_score: awayScore,
       finished_at: stamp(at),
-    },
-  });
+    });
 
 /** The points in one set. The sets themselves are ordered, and 1-based. */
 export interface SetScore {
@@ -613,7 +581,7 @@ export interface SetScore {
 
 /** The per-set points of one match, first set first. */
 export const loadGames = (session: Session, fixture: Id) =>
-  records<Game>(session, "games", `${where(`fixture='${fixture}'`)}&sort=number&perPage=50`);
+  records<Game>(session, "games", { filter: filter("fixture = {:v}", { v: fixture }), sort: "number" });
 
 /**
  * Write the points set by set.
@@ -658,31 +626,22 @@ export async function saveGames(
       continue;
     }
 
-    await api<Game>(
-      current
-        ? `/api/collections/games/records/${current.id}`
-        : "/api/collections/games/records",
-      {
-        method: current ? "PATCH" : "POST",
-        token: session.token,
-        body: {
-          fixture,
-          number,
-          home_score: set.home,
-          away_score: set.away,
-          finished,
-        },
-      },
-    );
+    const body = {
+      fixture,
+      number,
+      home_score: set.home,
+      away_score: set.away,
+      finished,
+    };
+    await (current
+      ? update<Game>(session, "games", current.id, body)
+      : create<Game>(session, "games", body));
   }
 
   // A match that went to three sets and is corrected to two leaves a third
   // row behind, and that row would still be counted in the tiebreak.
   for (const surplus of existing.filter((game) => game.number > sets.length)) {
-    await api<null>(`/api/collections/games/records/${surplus.id}`, {
-      method: "DELETE",
-      token: session.token,
-    });
+    await remove(session, "games", surplus.id);
   }
 }
 
@@ -697,7 +656,7 @@ export const loadHistory = (session: Session, fixture: Id) =>
   records<FixtureEvent>(
     session,
     "fixture_events",
-    `${where(`fixture='${fixture}'`)}&sort=created&perPage=50`,
+    { filter: filter("fixture = {:v}", { v: fixture }), sort: "created" },
   );
 
 /**
@@ -718,18 +677,14 @@ export const clearResult = (
   fixture: Id,
   status: "ready" | "pending",
 ) =>
-  api<Fixture>(`/api/collections/fixtures/records/${fixture}`, {
-    method: "PATCH",
-    token: session.token,
-    body: {
+  update<Fixture>(session, "fixtures", fixture, {
       status,
       home_score: 0,
       away_score: 0,
       winner: "",
       loser: "",
       finished_at: "",
-    },
-  });
+    });
 
 /** Where a fixture lands when its result is taken off. */
 export const statusAfterClearing = (fixture: BoardFixture): "ready" | "pending" =>
@@ -750,17 +705,13 @@ export const saveWalkover = (
   winner: Id,
   at: Date = new Date(),
 ) =>
-  api<Fixture>(`/api/collections/fixtures/records/${fixture}`, {
-    method: "PATCH",
-    token: session.token,
-    body: {
+  update<Fixture>(session, "fixtures", fixture, {
       status: "walkover",
       winner,
       home_score: 0,
       away_score: 0,
       finished_at: stamp(at),
-    },
-  });
+    });
 
 /**
  * Where and when. Both are written the moment they are tapped rather than with
@@ -772,16 +723,12 @@ export const setSchedule = (
   fixture: Id,
   schedule: { court?: Id | null; scheduled_at?: string },
 ) =>
-  api<Fixture>(`/api/collections/fixtures/records/${fixture}`, {
-    method: "PATCH",
-    token: session.token,
-    body: {
+  update<Fixture>(session, "fixtures", fixture, {
       ...(schedule.court === undefined ? {} : { court: schedule.court ?? "" }),
       ...(schedule.scheduled_at === undefined
         ? {}
         : { scheduled_at: schedule.scheduled_at }),
-    },
-  });
+    });
 
 /**
  * On or off court. `live` is what the projector's "Now playing" panel reads —
@@ -794,13 +741,9 @@ export const setLive = (
   live: boolean,
   at: Date = new Date(),
 ) =>
-  api<Fixture>(`/api/collections/fixtures/records/${fixture}`, {
-    method: "PATCH",
-    token: session.token,
-    body: live
+  update<Fixture>(session, "fixtures", fixture, live
       ? { status: "live", started_at: stamp(at) }
-      : { status: "ready", started_at: "" },
-  });
+      : { status: "ready", started_at: "" });
 
 /**
  * The tournament this device is running, kept so the landing page can offer to
@@ -858,9 +801,10 @@ export const withdrawEntry = (
   policy: "forfeit" | "void",
   status: EntryExit = "withdrawn",
 ) =>
-  api<{ entry: Id; status: string; policy: string }>(
+  send<{ entry: Id; status: string; policy: string }>(
+    session,
     `/api/entries/${entry}/withdraw`,
-    { method: "POST", token: session.token, body: { policy, status } },
+    { method: "POST", body: { policy, status } },
   );
 
 /**
@@ -893,9 +837,8 @@ export interface Admission {
  * a queue for ten minutes is a round paired without them.
  */
 export const admitEntry = (session: Session, entry: Id) =>
-  api<{ entry: Id; stages: Admission[] }>(`/api/entries/${entry}/admit`, {
+  send<{ entry: Id; stages: Admission[] }>(session, `/api/entries/${entry}/admit`, {
     method: "POST",
-    token: session.token,
   });
 
 /**
@@ -906,9 +849,8 @@ export const admitEntry = (session: Session, entry: Id) =>
  * an hour beforehand survives this untouched.
  */
 export const reinstateEntry = (session: Session, entry: Id) =>
-  api<{ entry: Id; status: string }>(`/api/entries/${entry}/reinstate`, {
+  send<{ entry: Id; status: string }>(session, `/api/entries/${entry}/reinstate`, {
     method: "POST",
-    token: session.token,
   });
 
 // ---------------------------------------------------------------------------
@@ -936,7 +878,7 @@ export const loadStaff = (session: Session, tournament: Id) =>
   records<StaffRecord>(
     session,
     "staff",
-    `${where(`tournament='${tournament}'`)}&sort=created&perPage=100`,
+    { filter: filter("tournament = {:v}", { v: tournament }), sort: "created" },
   );
 
 /**
@@ -947,10 +889,7 @@ export const loadStaff = (session: Session, tournament: Id) =>
  * Withdrawing the *link* is a different question — see `resetInvite`.
  */
 export const removeStaff = (session: Session, id: Id) =>
-  api<null>(`/api/collections/staff/records/${id}`, {
-    method: "DELETE",
-    token: session.token,
-  });
+  remove(session, "staff", id);
 
 /**
  * The live join link for one role, made on first ask.
@@ -971,15 +910,16 @@ export async function ensureInvite(
   const existing = await records<Invite>(
     session,
     "invites",
-    `${where(`tournament='${tournament}' && role='${role}' && active=true`)}&perPage=1`,
+    {
+      filter: filter("tournament = {:t} && role = {:r} && active = true", {
+        t: tournament,
+        r: role,
+      }),
+    },
   );
   if (existing[0]) return existing[0];
 
-  return api<Invite>("/api/collections/invites/records", {
-    method: "POST",
-    token: session.token,
-    body: { tournament, token: randomString(22), role, active: true },
-  });
+  return create<Invite>(session, "invites", { tournament, token: randomString(22), role, active: true });
 }
 
 /**
@@ -999,15 +939,16 @@ export async function resetInvite(
   const live = await records<Invite>(
     session,
     "invites",
-    `${where(`tournament='${tournament}' && role='${role}' && active=true`)}&perPage=20`,
+    {
+      filter: filter("tournament = {:t} && role = {:r} && active = true", {
+        t: tournament,
+        r: role,
+      }),
+    },
   );
 
   for (const invite of live) {
-    await api<Invite>(`/api/collections/invites/records/${invite.id}`, {
-      method: "PATCH",
-      token: session.token,
-      body: { active: false },
-    });
+    await update<Invite>(session, "invites", invite.id, { active: false });
   }
 
   return ensureInvite(session, tournament, role);
@@ -1015,7 +956,7 @@ export async function resetInvite(
 
 /** What a join code is for, read before anyone signs up to anything. */
 export const previewInvite = (token: string) =>
-  api<{ name: string; role: StaffRole }>(`/api/staff/invite/${token}`);
+  send<{ name: string; role: StaffRole }>(null, `/api/staff/invite/${token}`);
 
 export interface JoinResult {
   tournament: Id;
@@ -1032,9 +973,8 @@ export interface JoinResult {
  * already have. Both are one request from here.
  */
 export const joinWithInvite = (session: Session, token: string, name: string) =>
-  api<JoinResult>("/api/staff/join", {
+  send<JoinResult>(session, "/api/staff/join", {
     method: "POST",
-    token: session.token,
     body: { token, name },
   });
 

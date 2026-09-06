@@ -1,4 +1,5 @@
-import { apiCall, writeSession, type Session } from "./organiser";
+import { call, pb, useToken } from "./client";
+import { writeSession, type Session } from "./organiser";
 
 /**
  * Continuing with Google or Facebook.
@@ -20,26 +21,28 @@ import { apiCall, writeSession, type Session } from "./organiser";
  *   3. an account whose email matches the one the provider returned;
  *   4. a new account.
  *
- * Step 2 is the one that matters. Sending this device's token along with the
- * exchange turns "sign in with Google" into "claim this account with Google",
- * and the tournament stays where it is. Forgetting the token is not an error
- * anybody would see in testing — it works, it signs you in, and the tournament
+ * Step 2 is the one that matters, and with the SDK it is not a header we set
+ * by hand — it is whatever is on `pb.authStore` when the exchange is made. So
+ * this device's token goes on the store first, and "sign in with Google"
+ * becomes "claim this account with Google". Forgetting it is not an error
+ * anybody would see in testing: it works, it signs you in, and the tournament
  * is quietly gone.
  *
  * Step 3 cannot collide here: a device account's address ends in
  * `@device.whistleday.local` and no Google account will ever present one.
  *
- * ## The redirect comes back to /account
+ * ## Why the redirect flow and not the popup
  *
- * Rather than a route of its own, because the flow starts there, ends there,
- * and the screen it returns to is the one that has to change. `/account` is
- * already `noindex` and already an app route, so nothing has to learn about a
- * new address.
+ * The SDK's `authWithOAuth2` opens a popup and does all of this in one call,
+ * which is lovely on a laptop. This runs on a phone in a sports hall, where
+ * popups are blocked often enough that the nice version is the unreliable one.
+ * So it is the redirect: leave, come back to `/account`, exchange the code.
  *
- * What has to survive the round trip is the provider's name, its `state` and
- * its PKCE verifier. They go in `sessionStorage` rather than `localStorage`:
- * they are worthless a minute later and there is no reason for them to outlive
- * the tab.
+ * `/account` rather than a route of its own, because the flow starts there,
+ * ends there, and that is the screen that has to change. What has to survive
+ * the round trip — the provider, its `state` and the PKCE verifier — goes in
+ * `sessionStorage`, because it is worthless a minute later and has no reason
+ * to outlive the tab.
  */
 
 const PENDING_KEY = "whistleday.oauth.pending";
@@ -50,13 +53,6 @@ export interface OAuthProvider {
   state: string;
   codeVerifier: string;
   authURL: string;
-}
-
-interface AuthMethods {
-  oauth2?: {
-    enabled?: boolean;
-    providers?: OAuthProvider[];
-  };
 }
 
 interface Pending {
@@ -78,11 +74,9 @@ const redirectURL = () => `${window.location.origin}/account`;
  */
 export async function availableProviders(): Promise<OAuthProvider[]> {
   try {
-    const methods = await apiCall<AuthMethods>(
-      "/api/collections/users/auth-methods",
-    );
+    const methods = await pb().collection("users").listAuthMethods();
     if (!methods.oauth2?.enabled) return [];
-    return methods.oauth2.providers ?? [];
+    return (methods.oauth2.providers ?? []) as OAuthProvider[];
   } catch {
     // A sign-in screen that cannot reach the server has bigger problems than
     // a missing button, and the form below says so when it is submitted.
@@ -114,58 +108,45 @@ export function isOAuthReturn(): boolean {
 }
 
 /**
- * Finish the exchange, as this device if it has an account already.
+ * Finish the exchange, as this device's account if it has one.
  *
- * `session` is the device account, and passing it is what makes this a claim
- * rather than a signup — see the note at the top. It is optional because
- * somebody signing in on a second device has no local account to keep, and
- * that case must also work.
+ * `session` is optional because somebody signing in on a second device has no
+ * local account to keep, and that case must work too.
  */
 export async function completeOAuth(session: Session | null): Promise<Session> {
   const raw = sessionStorage.getItem(PENDING_KEY);
   sessionStorage.removeItem(PENDING_KEY);
-  clearReturnParams();
 
   const params = new URLSearchParams(window.location.search);
-  if (params.get("error")) {
-    throw new Error(params.get("error") ?? "oauth");
-  }
-
   const code = params.get("code");
   const state = params.get("state");
-  if (!raw || !code || !state) {
-    throw new Error("oauth");
-  }
+  const failed = params.get("error");
+  clearReturnParams();
+
+  if (failed) throw new Error(failed);
+  if (!raw || !code || !state) throw new Error("oauth");
 
   const pending = JSON.parse(raw) as Pending;
-  // The state is the only thing standing between this and somebody else's
-  // authorisation code being redeemed by this tab.
-  if (pending.state !== state) {
-    throw new Error("oauth");
-  }
+  // The SDK checks this for its popup flow and cannot for this one, so it is
+  // checked here. It is the only thing standing between this tab and somebody
+  // else's authorisation code being redeemed in it.
+  if (pending.state !== state) throw new Error("oauth");
 
-  const auth = await apiCall<{ token: string; record: { id: string; email: string } }>(
-    "/api/collections/users/auth-with-oauth2",
-    {
-      method: "POST",
-      // The device account, so PocketBase links rather than creates.
-      ...(session ? { token: session.token } : {}),
-      body: {
-        provider: pending.name,
-        code,
-        codeVerifier: pending.codeVerifier,
-        redirectURL: redirectURL(),
-      },
-    },
+  // Before the exchange, not after: this is what turns a sign-in into a claim.
+  if (session) useToken(session.token);
+
+  const auth = await call(() =>
+    pb()
+      .collection("users")
+      .authWithOAuth2Code(pending.name, code, pending.codeVerifier, redirectURL()),
   );
 
   return writeSession({
     userId: auth.record.id,
-    email: auth.record.email,
-    // There is no password on an account reached this way. The stored one
-    // would be the device account's, which still works and is still this
-    // person's — but writing it back here would be claiming to know a
-    // credential for an identity that does not have one.
+    email: auth.record.email as string,
+    // There is no password on an account reached this way. The stored one is
+    // the device account's, and it still works — it is the same account — but
+    // there is nothing new to learn here, so whatever was known is kept.
     password: session?.password ?? "",
     token: auth.token,
   });
