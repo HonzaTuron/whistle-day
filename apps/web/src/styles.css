@@ -118,6 +118,25 @@
 }
 
 @media (prefers-color-scheme: light) {
+  /*
+   * The floor the light palette needs and the dark one does not.
+   *
+   * `var(--accent)` above is a floor only in the sense that it is what these
+   * rules printed before: fine on near-black, where a pick bright enough to
+   * have been chosen as an accent is bright enough to read, and 2.1:1 on white
+   * for exactly the same pick. The swatch opens on that green, so it is the
+   * likely accent rather than an unlucky one — and an engine without relative
+   * colour was printing a qualified rank in it.
+   *
+   * So this ground gets a mix as well as a cap, the way the wall does. Only
+   * this one: mixing on near-black would pale the accent for every engine that
+   * skips the block below, to protect a dark pick that is the rarer half of a
+   * problem the cap already handles wherever it runs.
+   */
+  .phone {
+    --accent-ink: color-mix(in srgb, var(--accent) 55%, #04121f);
+  }
+
   @supports (color: oklch(from red l c h)) {
     .phone {
       /* And on white it is the bright pick that disappears — the same cap,
