@@ -4,10 +4,12 @@ import {
   HeadContent,
   Outlet,
   Scripts,
+  useRouterState,
 } from "@tanstack/react-router";
 import { useEffect, useState, type ReactNode } from "react";
 import { SiteNav } from "../components/marketing/SiteNav";
 import { I18nProvider, detectLocale, useI18n } from "../lib/i18n";
+import { isAppRoute } from "../lib/routes";
 import "../styles.css";
 
 /**
@@ -96,6 +98,7 @@ function RootDocument({ children }: Readonly<{ children: ReactNode }>) {
       <body>
         <LocaleCorrection />
         {children}
+        <Analytics />
         <ServiceWorker />
         <Scripts />
       </body>
@@ -122,6 +125,41 @@ function LocaleCorrection() {
   }, [locale, setLocale]);
 
   return null;
+}
+
+/**
+ * Which marketing pages are worth building more of.
+ *
+ * The one question the content strategy actually needs answered — of a hundred
+ * and twenty-three search intents, which ones bring anybody — and Search
+ * Console answers most of it for nothing. This adds the half Search Console
+ * cannot see: what a visitor did after landing, and where they came from.
+ *
+ * On the marketing pages only, and the gate is the same `isAppRoute` the
+ * prerender filter uses. A projector is unattended for eight hours on a hall's
+ * wifi, and a phone on `/m/:token` is the highest-traffic screen there is —
+ * neither has a question this could answer, and both would be paying for it in
+ * the bandwidth the result queue needs to drain. `/new` is left out too: the
+ * wizard's drop-off is a real question, but it is not this tool's, and putting
+ * a script on the one screen an organiser is mid-task on to find out is the
+ * wrong trade.
+ *
+ * Plausible rather than something with autocapture: no cookies, so no consent
+ * banner in front of a landing page whose whole job is to convert, and about a
+ * kilobyte on pages that have an LCP budget. Nothing here identifies anybody,
+ * which is what keeps §4 of the launch checklist short.
+ */
+function Analytics() {
+  const pathname = useRouterState({
+    select: (state) => state.location.pathname,
+  });
+
+  if (!import.meta.env.PROD) return null;
+  if (isAppRoute(pathname)) return null;
+
+  return (
+    <script defer data-domain="whistle.day" src="https://plausible.io/js/script.js" />
+  );
 }
 
 /**

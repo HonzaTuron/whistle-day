@@ -90,7 +90,7 @@ bun run check   # typecheck + go vet/test + smoke
 | Command | What it covers |
 |---|---|
 | `bun run typecheck` | TypeScript 7 |
-| `bun run web:test` | 32 tests: the offline queue's collapse and overlay rules, and what a match format lets a score end on |
+| `bun run web:test` | 37 tests: the offline queue's collapse and overlay rules, what a match format lets a score end on, and which addresses count as a screen |
 | `bun run pb:test` | `go vet` + 161 unit tests: generators, pairing, tiebreaks, outcomes, late entries |
 | `bun run smoke` | 215 assertions against a real PocketBase on a temp data dir |
 
@@ -100,6 +100,17 @@ over the REST API, and asserts that the tables, the bracket and the projector
 payload all come out right. It then plays a double elimination and a Swiss
 stage out to the end, which is the only way to find out whether a bracket
 deadlocks or a round ever fails to draw itself.
+
+```bash
+bun run stats                 # backend/pb_data/data.db
+bun run stats -- /path/to/data.db
+```
+
+Not a check — the operating numbers, read out of the database read-only. How
+far tournaments got, what people run, field and day sizes, screens, crew,
+accounts still living in one browser, and how often a result had to be
+corrected. Point it at a copy rather than at a server that is running a
+tournament.
 
 ## How a tournament runs
 
@@ -314,6 +325,24 @@ its final positions.
   when a team is already down for another match at the same time; nothing stops
   them going ahead, because reshuffling a schedule passes through states that
   are briefly wrong on purpose.
+- **Nothing is counted on a screen.** Analytics run on the marketing pages and
+  stop there — Plausible, cookieless, about a kilobyte, so no consent banner in
+  front of a landing page and nothing to slow an LCP budget down. A projector
+  is unattended for eight hours and a phone on `/m/:token` is the busiest
+  screen there is; neither has a question a page-view tool could answer, and
+  both would pay for it in the bandwidth the result queue needs to drain. The
+  gate is `isAppRoute` in `apps/web/src/lib/routes.ts`, which is the same one
+  the prerender filter uses, so a screen cannot become countable without also
+  becoming crawlable — and a test says so.
+- **What the product does is counted from the database, not from beacons.**
+  How far a tournament got, which formats get drawn, how big a field is, how
+  long a day runs, how many organisers never claimed an email: all of it is
+  already in the schema as domain data, and `bun run stats` reads it back out
+  of a copy of `data.db`, read-only. Re-recording it into an event pipeline
+  would add a consent question to facts the service already has to store, and
+  put analytics writes behind the one SQLite writer that is busy propagating a
+  result. The one thing it cannot see is what happened before the first write —
+  the wizard's own drop-off, which lives in a browser.
 
 ## Generation lives on the server
 

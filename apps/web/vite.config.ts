@@ -4,29 +4,21 @@ import { defineConfig } from "vite";
 import { VitePWA } from "vite-plugin-pwa";
 import { serviceWorker } from "./build/service-worker";
 import { MARKETING_PATHS } from "./src/content/index.ts";
+import { isAppRoute } from "./src/lib/routes.ts";
 
 /**
  * The marketing pages are prerendered; the app screens are not.
  *
- * Everything under `/t`, `/display`, `/m`, `/join`, `/account` and `/new` is
- * one organiser's live data behind a token, so there is nothing to prerender
- * and nothing that should be in an index. Everything else is static per URL —
- * the content of a 12-team round robin page does not depend on the request —
- * so it is built to HTML once and served as a file.
+ * What counts as an app screen is `src/lib/routes.ts`, shared with the
+ * document so that the prerender filter and the analytics gate cannot drift
+ * apart. Everything else is static per URL — the content of a 12-team round
+ * robin page does not depend on the request — so it is built to HTML once and
+ * served as a file.
  *
  * The path list comes from `src/content`, which is also what the router serves
  * from. That import is the point: a page cannot exist without being
  * prerendered, and the sitemap cannot list a page that does not exist.
  */
-const APP_ROUTES = /^\/(t|display|m|join|account|new)(\/|$)/;
-
-/**
- * The crawler hands paths in with their query string attached, and every
- * marketing page's call to action points at `/new?preset=…&teams=…`. Matching
- * the pattern above against the raw string would let all of those through, so
- * the query is cut off before the test.
- */
-const isAppRoute = (path: string) => APP_ROUTES.test(path.split("?")[0]);
 
 export default defineConfig({
   plugins: [

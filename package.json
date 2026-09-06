@@ -21,7 +21,8 @@
     "smoke": "bun run pb:build && bun run scripts/smoke.ts",
     "dev": "bun run pb:serve",
     "web": "cd apps/web && bun run dev",
-    "seed": "bun run scripts/seed-demo.ts"
+    "seed": "bun run scripts/seed-demo.ts",
+    "stats": "bun run scripts/stats.ts"
   },
   "devDependencies": {
     "typescript": "^7.0.2",
