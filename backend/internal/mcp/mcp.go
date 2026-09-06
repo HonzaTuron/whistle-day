@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os"
 	"regexp"
 	"strings"
 	"time"
@@ -19,10 +20,21 @@ import (
 )
 
 type WhistleMCP struct {
-	app core.App
-	mcp *server.MCPServer
-	sse *server.SSEServer
+	app  core.App
+	mcp  *server.MCPServer
+	http *server.StreamableHTTPServer
 }
+
+// MCPEndpoint is the whole transport: one address, GET, POST and DELETE.
+//
+// The HTTP+SSE transport this replaces needed two — a long-lived GET on
+// `/api/mcp/sse` that the server wrote replies down, and a POST on
+// `/api/mcp/message` that carried the requests. It is deprecated, and the
+// split was awkward here for a reason worth keeping in mind: headers arrived
+// once, when the stream opened, so anything a client learned afterwards had
+// no way onto a later request. Streamable HTTP gives every call its own
+// headers.
+const MCPEndpoint = "/api/mcp"
 
 func New(app core.App) *WhistleMCP {
 	s := &WhistleMCP{app: app}
@@ -40,21 +52,46 @@ func New(app core.App) *WhistleMCP {
 	s.registerTools()
 	s.registerResources()
 
-	s.sse = server.NewSSEServer(s.mcp,
-		server.WithSSEEndpoint("/api/mcp/sse"),
-		server.WithMessageEndpoint("/api/mcp/message"),
-		server.WithKeepAlive(true),
+	s.http = server.NewStreamableHTTPServer(s.mcp,
+		server.WithEndpointPath(MCPEndpoint),
+		// A long poll through a proxy is a connection something will decide to
+		// close; the heartbeat is what stops it being closed as idle.
+		server.WithHeartbeatInterval(30*time.Second),
+		server.WithDisableLocalhostProtection(behindProxy()),
 	)
 
 	return s
 }
 
-func (s *WhistleMCP) SSEHandler() http.Handler {
-	return s.sse.SSEHandler()
+// Handler serves the endpoint. One handler for every method it answers.
+func (s *WhistleMCP) Handler() http.Handler {
+	return s.http
 }
 
-func (s *WhistleMCP) MessageHandler() http.Handler {
-	return s.sse.MessageHandler()
+// behindProxy reports whether something else is terminating requests for us.
+//
+// mcp-go refuses a request whose connection arrived on loopback while its Host
+// header says otherwise, which is DNS rebinding protection: without it a
+// malicious page could point its own domain at 127.0.0.1 and drive a local MCP
+// server through somebody's browser. That is a real attack and the default is
+// right.
+//
+// It is also exactly what a reverse proxy on the same host looks like. Caddy
+// listens on 443, forwards to PocketBase on 127.0.0.1 and preserves
+// `Host: whistle.day`, and every MCP request comes back 403. The library
+// suggests rewriting Host to localhost at the proxy instead; that would fix
+// this and quietly break every absolute URL PocketBase builds from it,
+// including the handoff links.
+//
+// So it is a deliberate switch rather than a guess. Unset, the protection
+// stays on, which is what a checkout of this repo and a laptop want.
+func behindProxy() bool {
+	switch strings.ToLower(os.Getenv("WHISTLEDAY_MCP_BEHIND_PROXY")) {
+	case "1", "true", "yes":
+		return true
+	default:
+		return false
+	}
 }
 
 // ---------------------------------------------------------------------------
@@ -894,15 +931,17 @@ func RegisterMCPServer(app core.App) {
 	mcpServer := New(app)
 
 	app.OnServe().BindFunc(func(se *core.ServeEvent) error {
-		se.Router.GET("/api/mcp/sse", func(e *core.RequestEvent) error {
-			mcpServer.SSEHandler().ServeHTTP(e.Response, e.Request)
+		// One endpoint, three methods: POST carries a request, GET opens the
+		// stream a client listens on, DELETE ends a session. The transport
+		// decides which is which; there is nothing to route here.
+		serve := func(e *core.RequestEvent) error {
+			mcpServer.Handler().ServeHTTP(e.Response, e.Request)
 			return nil
-		})
+		}
 
-		se.Router.POST("/api/mcp/message", func(e *core.RequestEvent) error {
-			mcpServer.MessageHandler().ServeHTTP(e.Response, e.Request)
-			return nil
-		})
+		se.Router.POST(MCPEndpoint, serve)
+		se.Router.GET(MCPEndpoint, serve)
+		se.Router.DELETE(MCPEndpoint, serve)
 
 		return se.Next()
 	})

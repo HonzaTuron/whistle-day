@@ -155,6 +155,33 @@ its final positions.
 | `GET /api/display/{token}` | The whole projector screen in one response. Public — the token is the only credential. Read it with `If-None-Match`; an unchanged tournament answers 304. |
 | `GET /api/realtime` | PocketBase's stream. A screen subscribes to `tournament/{id}` and is told when to re-read the line above — the nudge carries no data of its own. |
 
+## An agent can run one too
+
+`/api/mcp` is an MCP server over Streamable HTTP — one endpoint, `POST` for a
+request, `GET` for the stream, `DELETE` to end a session. Nineteen tools: the
+same generate, resolve, score and publish the screens use.
+
+An agent is treated as an organiser who has not signed up, because that is
+what it is. `create_tournament` is the only tool that needs no credential; it
+makes an account for that tournament and hands back a `session_token`, and
+every other tool requires it. What that account may touch is decided by
+`tournament.IsOperator`, the same function the REST routes use.
+
+The token travels as a tool argument rather than an `Authorization` header,
+which looks wrong and is not: the agent has no token when it opens the
+connection, and the header a client is configured with cannot change because a
+tool returned one. It also means what leaks, if the model's transcript leaks,
+is one tournament — that is what an account per tournament is for.
+
+`create_handoff` ends it. The link goes to whoever is actually running the day,
+they set an email and a password at `/claim/{token}`, and the account becomes
+theirs — after which the agent's `session_token` stops working, which is the
+point.
+
+| | |
+|---|---|
+| `WHISTLEDAY_MCP_BEHIND_PROXY` | Set when a reverse proxy on the same host forwards to PocketBase over loopback while keeping the original `Host`. Without it mcp-go's DNS rebinding protection sees a loopback connection claiming to be `whistle.day` and answers 403. Leave it unset locally, where the protection is the one that matters. |
+
 ## Behaviour worth knowing about
 
 - **English and Czech, and the wall can be aimed at one of them.** Every screen
