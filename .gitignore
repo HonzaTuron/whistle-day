@@ -15,6 +15,7 @@ backend/pocketbase
 # IDE
 .idea/
 .vscode/
+.claude/
 
 # Vite
 apps/web/dist/
