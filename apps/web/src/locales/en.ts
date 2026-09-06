@@ -184,6 +184,10 @@ export const en = {
     "Signing in as somebody else leaves anything set up on this device behind. It stays live on the wall; this browser just stops being the way in.",
   "account.claimRefused":
     "That address cannot be saved on this device. If it is already your account, sign in with it — anything set up here stays live and this browser stops being the way in.",
+  "account.continueWith": "Continue with {provider}",
+  "account.or": "or",
+  "account.oauthFailed":
+    "That did not finish. Nothing has changed — anything set up on this device is still here, and you can try again or use an email and a password.",
 
   // A tournament's own state, as the account list shows it.
   "status.draft": "draft",

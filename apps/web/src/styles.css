@@ -3443,6 +3443,31 @@ th,
   line-height: 1.5;
 }
 
+.account__providers {
+  display: grid;
+  gap: 0.5rem;
+}
+
+/* A rule with the word sitting in it, so the two ways in read as alternatives
+   rather than as a list. */
+.account__or {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 0.25rem 0 0;
+  color: var(--muted);
+  font-size: 0.75rem;
+  text-transform: lowercase;
+}
+
+.account__or::before,
+.account__or::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--line);
+}
+
 .account__owned {
   display: grid;
   gap: 0.75rem;

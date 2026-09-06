@@ -101,6 +101,14 @@ async function api<T>(
   return (text ? JSON.parse(text) : null) as T;
 }
 
+/**
+ * Shared with `oauth.ts`, which finishes a sign-in as this device's account
+ * and so needs both the authenticated call and the place a session is kept.
+ * Exported under a name worth reading at the call site; `api` on its own says
+ * nothing once it is in another file.
+ */
+export { api as apiCall, writeSession };
+
 // ---------------------------------------------------------------------------
 // the anonymous organiser account
 // ---------------------------------------------------------------------------

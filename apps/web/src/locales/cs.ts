@@ -185,6 +185,10 @@ export const cs: Record<keyof Catalog, Message> = {
     "Přihlášením pod někým jiným tady necháte všechno, co je založené na tomhle zařízení. Na zdi to běží dál; tenhle prohlížeč jen přestane být cestou dovnitř.",
   "account.claimRefused":
     "Tuhle adresu na tomhle zařízení uložit nelze. Pokud je to už váš účet, přihlaste se jím — všechno založené tady běží dál a tenhle prohlížeč přestane být cestou dovnitř.",
+  "account.continueWith": "Pokračovat přes {provider}",
+  "account.or": "nebo",
+  "account.oauthFailed":
+    "Nedokončilo se to. Nic se nezměnilo — všechno založené na tomhle zařízení tu pořád je a můžete to zkusit znovu nebo použít e-mail a heslo.",
 
   "status.draft": "rozpracovaný",
   "status.live": "běží",

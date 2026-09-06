@@ -14,6 +14,13 @@ import {
   type Session,
   type TournamentRecord,
 } from "../api/organiser";
+import {
+  availableProviders,
+  completeOAuth,
+  isOAuthReturn,
+  startOAuth,
+  type OAuthProvider,
+} from "../api/oauth";
 
 type Mode = "claim" | "signin";
 
@@ -37,6 +44,8 @@ export function Account() {
   const [owned, setOwned] = useState<TournamentRecord[] | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [providers, setProviders] = useState<OAuthProvider[]>([]);
+  const [returning] = useState(isOAuthReturn);
 
   const active = useRef<Promise<Session> | null>(null);
 
@@ -47,6 +56,34 @@ export function Account() {
       .then(setSession)
       .catch(() => setError(t("error.unreachable")));
   }, []);
+
+  useEffect(() => {
+    void availableProviders().then(setProviders);
+  }, []);
+
+  /**
+   * Coming back from Google or Facebook.
+   *
+   * It waits for the stored session to have been read, because handing that
+   * session to `completeOAuth` is the difference between claiming this
+   * device's account and quietly starting a new one beside it — see the note
+   * in `api/oauth.ts`. `storedSession()` rather than `session` so a device
+   * that has one but has not finished revalidating it is not treated as a
+   * device that has none.
+   */
+  useEffect(() => {
+    if (!returning) return;
+    if (storedSession() && !session) return;
+
+    setBusy(true);
+    void completeOAuth(session)
+      .then((next) => {
+        active.current = Promise.resolve(next);
+        setSession(next);
+      })
+      .catch(() => setError(t("account.oauthFailed")))
+      .finally(() => setBusy(false));
+  }, [returning, session]);
 
   const claimed = session !== null && !isDeviceAccount(session);
   const canClaim = session !== null && !claimed;
@@ -149,6 +186,31 @@ export function Account() {
             void submit();
           }}
         >
+          {/*
+            Above the form, because it is the shorter way through and the one
+            most people will take. Whichever mode the form is in, this button
+            does the same thing — keep this device's tournament if there is one
+            to keep, sign in if there is not — so it is not repeated per mode.
+          */}
+          {providers.length > 0 ? (
+            <div className="account__providers">
+              {providers.map((provider) => (
+                <button
+                  key={provider.name}
+                  type="button"
+                  className="btn btn--quiet btn--block"
+                  disabled={busy}
+                  onClick={() => startOAuth(provider)}
+                >
+                  {t("account.continueWith", {
+                    provider: provider.displayName || provider.name,
+                  })}
+                </button>
+              ))}
+              <p className="account__or">{t("account.or")}</p>
+            </div>
+          ) : null}
+
           <label>
             <span>{t("account.email")}</span>
             <input
