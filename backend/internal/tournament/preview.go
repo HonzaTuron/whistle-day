@@ -68,15 +68,32 @@ func PreviewPlan(req PreviewRequest) (*StagePlan, error) {
 	// written and never resolved — what a preview renders is the label, which
 	// for a direct slot is the name.
 	ids := make([]string, len(names))
+	nameByEntry := make(map[string]string, len(names))
 	for i := range names {
-		ids[i] = "preview" + strconv.Itoa(i+1)
+		id := "preview" + strconv.Itoa(i+1)
+		ids[i] = id
+		nameByEntry[id] = names[i]
+	}
+
+	applyDirectLabels := func(plan *StagePlan) {
+		for i := range plan.Slots {
+			if plan.Slots[i].SourceType == "direct" {
+				if n, ok := nameByEntry[plan.Slots[i].Entry]; ok && n != "" {
+					plan.Slots[i] = plan.Slots[i].with(directLabel(n))
+				}
+			}
+		}
 	}
 
 	switch req.Format {
 	case "round_robin":
-		return PlanRoundRobin(ids, req.Config), nil
+		plan := PlanRoundRobin(ids, req.Config)
+		applyDirectLabels(plan)
+		return plan, nil
 	case "swiss":
-		return PlanSwiss(ids, req.Config), nil
+		plan := PlanSwiss(ids, req.Config)
+		applyDirectLabels(plan)
+		return plan, nil
 	case "single_elim", "double_elim":
 		seeds := make([]bracketSeed, len(ids))
 		for i, id := range ids {

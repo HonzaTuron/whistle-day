@@ -51,6 +51,27 @@ func TestPreviewUsesTheNamesItIsGiven(t *testing.T) {
 	}
 }
 
+func TestPreviewRoundRobinUsesTheNamesItIsGiven(t *testing.T) {
+	plan, err := PreviewPlan(PreviewRequest{
+		Format: "round_robin",
+		Names:  []string{"Arsenal", "Chelsea", "Liverpool", "Man City"},
+	})
+	if err != nil {
+		t.Fatalf("preview failed: %v", err)
+	}
+	assertPlanIsConsistent(t, plan)
+
+	found := false
+	for _, slot := range plan.Slots {
+		if slot.Label == "Liverpool" {
+			found = true
+		}
+	}
+	if !found {
+		t.Error("a named round robin should put its names on the direct slots")
+	}
+}
+
 // playableFixtures counts the matches somebody actually turns up for.
 //
 // A bracket holds a power of two, so a field of 12 is drawn into 16 and the
