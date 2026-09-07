@@ -135,10 +135,23 @@ fi
 # ---------------------------------------------------------------------------
 say "Shipping"
 # ---------------------------------------------------------------------------
-ssh "$USER_@$HOST" 'rm -rf /srv/whistleday/staging && mkdir -p /srv/whistleday/staging'
-rsync -az --delete release/ "$USER_@$HOST:/srv/whistleday/staging/"
-scp -q deploy/release.sh "$USER_@$HOST:/srv/whistleday/release.sh"
-ssh "$USER_@$HOST" 'chmod +x /srv/whistleday/release.sh && /srv/whistleday/release.sh'
+# Set WHISTLEDAY_LOCAL=1 when this is running on the server itself, which is
+# worth supporting rather than pretending: reaching a box over SSH from the box
+# means a key, a network round trip and a login, all to move a file across the
+# same disk.
+if [[ ${WHISTLEDAY_LOCAL:-} == 1 ]]; then
+	echo "  local — this machine is the server"
+	rm -rf /srv/whistleday/staging
+	mkdir -p /srv/whistleday/staging
+	cp -r release/. /srv/whistleday/staging/
+	install -m 0755 deploy/release.sh /srv/whistleday/release.sh
+	/srv/whistleday/release.sh
+else
+	ssh "$USER_@$HOST" 'rm -rf /srv/whistleday/staging && mkdir -p /srv/whistleday/staging'
+	rsync -az --delete release/ "$USER_@$HOST:/srv/whistleday/staging/"
+	scp -q deploy/release.sh "$USER_@$HOST:/srv/whistleday/release.sh"
+	ssh "$USER_@$HOST" 'chmod +x /srv/whistleday/release.sh && /srv/whistleday/release.sh'
+fi
 
 # ---------------------------------------------------------------------------
 say "Checking the real thing, from outside"

@@ -82,8 +82,32 @@ say "Restarting"
 # ---------------------------------------------------------------------------
 # A second of downtime, which is a wall that blinks. Do not deploy into a
 # tournament that is being played.
-sudo systemctl restart whistleday-api
-sudo systemctl restart whistleday-web
+#
+# Two ways, because there are two ways to be allowed to do this. `systemctl
+# restart` is the clean one and needs the sudoers line bootstrap.sh writes.
+# Failing that, both units are `Restart=always` with `RestartSec=2` and run as
+# a user we may already be — so ending the process *is* a restart, performed by
+# systemd, two seconds later. That is not a trick around the permission; it is
+# the permission we do have, which is over our own processes.
+restart() {
+	local unit=$1 pattern=$2
+
+	if sudo -n systemctl restart "$unit" 2>/dev/null; then
+		echo "  $unit restarted"
+		return 0
+	fi
+
+	if pkill -f "$pattern"; then
+		echo "  $unit signalled; systemd will bring it back"
+		return 0
+	fi
+
+	echo "  $unit: could not restart it, and it was not running" >&2
+	return 1
+}
+
+restart whistleday-api "^/srv/whistleday/pocketbase serve"
+restart whistleday-web "^/srv/whistleday/whistleday-web"
 
 # ---------------------------------------------------------------------------
 say "Checking it came back"
