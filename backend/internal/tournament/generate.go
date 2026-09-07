@@ -172,6 +172,8 @@ type StageConfig struct {
 	AdvancePerPool int  `json:"advancePerPool"`
 	Legs           int  `json:"legs"`
 	ThirdPlace     bool `json:"thirdPlace"`
+	// single_elim: a plate bracket among the first-round losers.
+	Consolation bool `json:"consolation"`
 	// swiss. Zero means "work it out from the number of entries".
 	Rounds   int         `json:"rounds"`
 	SeedFrom *SeedSource `json:"seedFrom"`
@@ -420,7 +422,80 @@ func PlanSingleElimination(seeds []bracketSeed, cfg StageConfig) *StagePlan {
 		})
 	}
 
+	// --- optional consolation bracket ---
+	//
+	// A plate for the teams knocked out in round one: a single elimination
+	// among the first-round losers, played down to a plate winner. It sits in
+	// its own pool, so it grows no table and feeds no playoff — it is there so
+	// a team that drew the top seed first up still gets a tournament.
+	//
+	// Its slots and fixtures are keyed "cslot:" / "cfixture:" so they cannot
+	// collide with the main draw's, and its codes are prefixed "P" so a plate
+	// semi-final "PSF1" is never confused with "SF1" across the hall.
+	if cfg.Consolation && size >= 4 {
+		const plateKey = "pool:consolation"
+		plan.Pools = append(plan.Pools, PoolDraft{
+			Key: plateKey, Name: "Consolation", NameKind: "consolation",
+			Position: 1, Kind: "consolation", AdvanceCount: 1,
+		})
+
+		firstRound := size / 2
+		for i := 0; i < firstRound; i++ {
+			plan.Slots = append(plan.Slots, SlotDraft{
+				Key:              fmt.Sprintf("cslot:0:%d", i),
+				PoolKey:          plateKey,
+				Round:            0,
+				Position:         i,
+				SourceType:       "fixture_loser",
+				SourceFixtureKey: fmt.Sprintf("fixture:0:%d", i),
+			}.with(loserOf(fixtureCode(firstRound, i))))
+		}
+
+		appendPlateTree(plan, plateKey, firstRound)
+	}
+
 	return plan
+}
+
+// appendPlateTree adds the fixtures and winner slots for a consolation bracket
+// whose round-0 slots (keyed "cslot:0:i") already exist. It is the same
+// halving loop as the main draw, with keys and codes carrying their own
+// namespace so a stage can hold both brackets at once.
+func appendPlateTree(plan *StagePlan, poolKey string, entrants int) {
+	round := 0
+	slotsInRound := entrants
+
+	for slotsInRound > 1 {
+		fixturesInRound := slotsInRound / 2
+
+		for i := 0; i < fixturesInRound; i++ {
+			code := "P" + fixtureCode(fixturesInRound, i)
+			fixtureKey := fmt.Sprintf("cfixture:%d:%d", round, i)
+
+			plan.Fixtures = append(plan.Fixtures, FixtureDraft{
+				Key:         fixtureKey,
+				PoolKey:     poolKey,
+				Round:       round,
+				Position:    i,
+				Code:        code,
+				HomeSlotKey: fmt.Sprintf("cslot:%d:%d", round, i*2),
+				AwaySlotKey: fmt.Sprintf("cslot:%d:%d", round, i*2+1),
+				Status:      "pending",
+			})
+
+			plan.Slots = append(plan.Slots, SlotDraft{
+				Key:              fmt.Sprintf("cslot:%d:%d", round+1, i),
+				PoolKey:          poolKey,
+				Round:            round + 1,
+				Position:         i,
+				SourceType:       "fixture_winner",
+				SourceFixtureKey: fixtureKey,
+			}.with(winnerOf(code)))
+		}
+
+		round++
+		slotsInRound = fixturesInRound
+	}
 }
 
 // ---------------------------------------------------------------------------

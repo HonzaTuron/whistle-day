@@ -16,7 +16,13 @@ import type { MessageKey, Translate } from "./i18n";
  * The stage records these describe are written at launch, in `api/launch.ts`.
  */
 
-export type PresetId = "knockout" | "double" | "groups" | "swiss" | "everyone";
+export type PresetId =
+  | "knockout"
+  | "double"
+  | "groups"
+  | "swiss"
+  | "everyone"
+  | "everyoneTwice";
 
 export interface StageSpec {
   /** The English name, still stored, and the kind that lets it be said again. */
@@ -213,6 +219,26 @@ export const PRESETS: Preset[] = [
     matches: combinations,
     stages: () => [
       { name: "Group", nameKind: "group", format: "round_robin", config: { poolCount: 1 } },
+    ],
+  },
+  {
+    id: "everyoneTwice",
+    title: "preset.everyoneTwice.title",
+    tag: "preset.everyoneTwice.tag",
+    blurb: "preset.everyoneTwice.blurb",
+    minTeams: 3,
+    // Every pair meets twice — once each way. The generator swaps home and
+    // away on the return leg; here it is just double the matches.
+    shape: (t, teams) =>
+      t("preset.everyoneTwice.shape", { teams, count: (teams - 1) * 2 }),
+    matches: (teams) => combinations(teams) * 2,
+    stages: () => [
+      {
+        name: "Group",
+        nameKind: "group",
+        format: "round_robin",
+        config: { poolCount: 1, legs: 2 },
+      },
     ],
   },
 ];

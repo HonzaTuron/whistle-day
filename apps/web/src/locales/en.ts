@@ -350,6 +350,15 @@ export const en = {
     other: "one group of {teams}, {count} matches each, the table decides",
   },
 
+  "preset.everyoneTwice.title": "Everyone plays everyone twice",
+  "preset.everyoneTwice.tag": "Home and away",
+  "preset.everyoneTwice.blurb":
+    "The same single table, played twice through — every pair meets once each way. The fairest result a day can give, when there is time for it.",
+  "preset.everyoneTwice.shape": {
+    one: "one group of {teams}, {count} match each, home and away",
+    other: "one group of {teams}, {count} matches each, home and away",
+  },
+
   // How far a knockout reaches, said as the round it starts at.
   "round.final": "a final",
   "round.semis": "semi-finals",
@@ -725,6 +734,7 @@ export const en = {
   "pool.winners": "Winners",
   "pool.losers": "Losers",
   "pool.final": "Final",
+  "pool.consolation": "Consolation",
   "pool.swiss": "Swiss",
 
   // Stage names the wizard writes.

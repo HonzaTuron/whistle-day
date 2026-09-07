@@ -203,6 +203,88 @@ func TestPlanSingleEliminationThirdPlace(t *testing.T) {
 	assertPlanIsConsistent(t, plan)
 }
 
+func TestPlanSingleEliminationConsolation(t *testing.T) {
+	plan := PlanSingleElimination(directSeeds(8), StageConfig{Consolation: true})
+	assertPlanIsConsistent(t, plan)
+
+	var plate *PoolDraft
+	for i := range plan.Pools {
+		if plan.Pools[i].Kind == "consolation" {
+			plate = &plan.Pools[i]
+		}
+	}
+	if plate == nil {
+		t.Fatal("no consolation pool generated")
+	}
+
+	// The main draw is 8 → 7 fixtures. The plate catches the 4 first-round
+	// losers → 3 more.
+	if len(plan.Fixtures) != 10 {
+		t.Errorf("fixtures = %d, want 10 (7 main + 3 plate)", len(plan.Fixtures))
+	}
+
+	inPlate := 0
+	firstRoundLosers := 0
+	for _, s := range plan.Slots {
+		if s.PoolKey != plate.Key {
+			continue
+		}
+		inPlate++
+		if s.SourceType == "fixture_loser" {
+			firstRoundLosers++
+			if s.SourceFixtureKey != "fixture:0:0" &&
+				s.SourceFixtureKey != "fixture:0:1" &&
+				s.SourceFixtureKey != "fixture:0:2" &&
+				s.SourceFixtureKey != "fixture:0:3" {
+				t.Errorf("plate slot sources %q, want a main round-0 fixture", s.SourceFixtureKey)
+			}
+		}
+	}
+	if firstRoundLosers != 4 {
+		t.Errorf("plate first-round loser slots = %d, want 4", firstRoundLosers)
+	}
+
+	for _, f := range plan.Fixtures {
+		if f.PoolKey == plate.Key && (f.Code == "" || f.Code[0] != 'P') {
+			t.Errorf("plate fixture code %q is not prefixed", f.Code)
+		}
+	}
+}
+
+func TestPlanSingleEliminationConsolationNeedsFourTeams(t *testing.T) {
+	// Two teams is one match and one loser — nothing to catch.
+	plan := PlanSingleElimination(directSeeds(2), StageConfig{Consolation: true})
+	for _, p := range plan.Pools {
+		if p.Kind == "consolation" {
+			t.Error("a two-team bracket produced a consolation pool")
+		}
+	}
+	assertPlanIsConsistent(t, plan)
+}
+
+func TestPlanSingleEliminationConsolationEmptyIsProjectable(t *testing.T) {
+	// Drawn before the feeding stage has finished: an eight-slot bracket with
+	// nobody in it yet, every plate slot unresolved, still internally
+	// consistent.
+	plan := PlanSingleElimination(make([]bracketSeed, 8), StageConfig{Consolation: true})
+
+	hasPlate := false
+	for _, p := range plan.Pools {
+		if p.Kind == "consolation" {
+			hasPlate = true
+		}
+	}
+	if !hasPlate {
+		t.Fatal("no consolation pool generated")
+	}
+	for _, s := range plan.Slots {
+		if s.Entry != "" {
+			t.Errorf("slot %q holds an entry but nothing was seeded", s.Key)
+		}
+	}
+	assertPlanIsConsistent(t, plan)
+}
+
 func TestQualifierSeedingAvoidsSamePoolMeetings(t *testing.T) {
 	// Two pools, top two advance: A1 B1 A2 B2 in that order. The bracket must
 	// pair A1 with B2 and B1 with A2 — never two teams from the same pool.

@@ -191,6 +191,29 @@ export function factsFor(preset: PresetId, teams: number): Fact[] {
         time,
       ];
 
+    case "everyoneTwice":
+      return [
+        {
+          label: "Matches",
+          value: String(combinations(teams) * 2),
+          note: "Every pair meets twice, once each way.",
+        },
+        {
+          label: "Matches each",
+          value: String(matchesEach(teams) * 2),
+          note: "The same for everybody, home and away.",
+        },
+        {
+          label: "Rounds",
+          value: String(roundRobinRounds(teams) * 2),
+          note:
+            teams % 2 === 0
+              ? "Everybody plays in every round."
+              : "An odd field means one team sits out each round.",
+        },
+        time,
+      ];
+
     case "swiss": {
       const rounds = swissRounds(teams);
       return [

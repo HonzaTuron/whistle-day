@@ -359,6 +359,16 @@ export const cs: Record<keyof Catalog, Message> = {
     other: "jedna skupina po {teams}, {count} zápasů na tým, rozhoduje tabulka",
   },
 
+  "preset.everyoneTwice.title": "Každý s každým dvakrát",
+  "preset.everyoneTwice.tag": "Doma i venku",
+  "preset.everyoneTwice.blurb":
+    "Stejná jedna tabulka, odehraná dvakrát — každá dvojice se potká jednou doma a jednou venku. Nejspravedlivější výsledek, když na něj je čas.",
+  "preset.everyoneTwice.shape": {
+    one: "jedna skupina po {teams}, {count} zápas na tým, doma i venku",
+    few: "jedna skupina po {teams}, {count} zápasy na tým, doma i venku",
+    other: "jedna skupina po {teams}, {count} zápasů na tým, doma i venku",
+  },
+
   "round.final": "finále",
   "round.semis": "semifinále",
   "round.quarters": "čtvrtfinále",
@@ -746,6 +756,7 @@ export const cs: Record<keyof Catalog, Message> = {
   "pool.winners": "Vítězové",
   "pool.losers": "Poražení",
   "pool.final": "Finále",
+  "pool.consolation": "Útěcha",
   "pool.swiss": "Švýcarský systém",
 
   "stage.groups": "Skupiny",

@@ -35,6 +35,7 @@ const KEYS: Record<LabelKind, MessageKey> = {
   winners: "pool.winners",
   losers: "pool.losers",
   final: "pool.final",
+  consolation: "pool.consolation",
   swiss: "pool.swiss",
   groups: "stage.groups",
   group: "stage.group",

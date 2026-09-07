@@ -14,6 +14,7 @@ export const FORMAT_OF: Record<PresetId, StageFormat> = {
   knockout: "single_elim",
   double: "double_elim",
   everyone: "round_robin",
+  everyoneTwice: "round_robin",
   // The stage worth printing is the one everybody plays. The playoff on top of
   // it is drawn from tables that do not exist until the day is half over, so
   // there is no sheet for it — which is also why there are no printable pages

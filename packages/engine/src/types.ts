@@ -223,6 +223,7 @@ export type LabelKind =
   | "winners"
   | "losers"
   | "final"
+  | "consolation"
   | "swiss"
   // stage names the wizard chose
   | "groups"
