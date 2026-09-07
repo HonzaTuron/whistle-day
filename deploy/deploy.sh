@@ -21,11 +21,19 @@ cd "$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 #
 #   WHISTLEDAY_HOST=whistle.day
 #   WHISTLEDAY_DEPLOY_USER=deploy
+# The environment wins over the file, so `WHISTLEDAY_HOST=somewhere-else bun
+# run deploy` means what it says. Sourcing `.env` over the top would silently
+# send it to production instead, which is a bad way to find out.
+FROM_ENV_HOST=${WHISTLEDAY_HOST:-}
+FROM_ENV_USER=${WHISTLEDAY_DEPLOY_USER:-}
+FROM_ENV_BRANCH=${WHISTLEDAY_BRANCH:-}
+
 # shellcheck source=/dev/null  # it is a local secrets file; there is nothing to follow
 [[ -f .env ]] && set -a && . ./.env && set +a
-HOST=${WHISTLEDAY_HOST:-}
-USER_=${WHISTLEDAY_DEPLOY_USER:-deploy}
-BRANCH=${WHISTLEDAY_BRANCH:-master}
+
+HOST=${FROM_ENV_HOST:-${WHISTLEDAY_HOST:-}}
+USER_=${FROM_ENV_USER:-${WHISTLEDAY_DEPLOY_USER:-deploy}}
+BRANCH=${FROM_ENV_BRANCH:-${WHISTLEDAY_BRANCH:-master}}
 SKIP_CHECK=${SKIP_CHECK:-}
 
 say() { printf '\n\033[1m%s\033[0m\n' "$*"; }
