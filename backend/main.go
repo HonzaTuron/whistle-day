@@ -29,6 +29,7 @@ func main() {
 	tournament.RegisterSubscriptionGuard(app)
 	tournament.RegisterRoutes(app)
 	tournament.RegisterHandoffRoutes(app)
+	tournament.RegisterSweep(app)
 	mcp.RegisterMCPServer(app)
 
 	if err := app.Start(); err != nil {

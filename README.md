@@ -359,6 +359,27 @@ point.
   when a team is already down for another match at the same time; nothing stops
   them going ahead, because reshuffling a schedule passes through states that
   are briefly wrong on purpose.
+- **A hall is one IP address, so the rate limits are shaped around that.** Two
+  hundred phones behind one NAT make the usual advice — a blanket cap on
+  `/api/` — exactly wrong: PocketBase's own default of 300 per 10 seconds is
+  generous until it is the whole venue's budget, and the first thing to break
+  is the phone the referee is holding. So the projector endpoint, the realtime
+  stream and the collection API have no rule at all, and the four that do
+  guard places a stranger can make this server work or store something:
+  `*:auth`, `/api/preview`, `/api/mcp` and creating a user. Seeded by a
+  migration so a rebuilt `pb_data` comes back with them, and editable in the
+  dashboard afterwards — changing a limit during an incident should not need a
+  deploy.
+- **Abandoned drafts are swept, and almost nothing counts as abandoned.**
+  `create_tournament` needs no credential, so anything that can reach
+  `/api/mcp` leaves a tournament behind, and a thousand of those turn `bun run
+  stats` from a measurement into noise. The daily sweep is deliberately timid,
+  because the dangerous mistake is close by: *unclaimed* is not abandoned —
+  every tournament the wizard makes is owned by an unclaimed device account,
+  and one set up on a phone in October and run in November looks exactly like
+  an agent's leftovers. So it takes all four: still a draft, no fixtures at
+  all, an owner that never claimed an email, and thirty days. A tournament
+  with a draw in it is somebody's work and stays, whatever its age.
 - **Nothing is counted on a screen.** Analytics run on the marketing pages and
   stop there — Plausible, cookieless, about a kilobyte, so no consent banner in
   front of a landing page and nothing to slow an LCP budget down. A projector
