@@ -4,13 +4,15 @@
 #
 #   bun run deploy
 #
-# There is no key to production in GitHub and nothing deploys on a push. The
-# gate still runs on every push in CI, and it runs again here, because the
-# thing worth protecting is not the convenience — it is that a release is a
-# commit somebody else can check out, not whatever happens to be in this
-# working tree.
+# Straight from this machine to the server. GitHub is not in the path: no key
+# to production lives there, nothing deploys on a push, and a laptop that can
+# reach the box but not github.com can still put a fix on it. CI runs the same
+# gate on every push, which is worth having for the clean room and is not a
+# dependency of releasing.
 #
-# Which is why the first two checks are about git rather than about the code.
+# The one hard rule is that a release must be a commit. Everything else here —
+# whether it is pushed, whether a tournament is being played — is said out loud
+# and left to the person running it.
 set -euo pipefail
 
 cd "$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -34,23 +36,36 @@ die() { printf '\n\033[31m%s\033[0m\n\n' "$*" >&2; exit 1; }
 # ---------------------------------------------------------------------------
 say "Is this a release, or is it your desk?"
 # ---------------------------------------------------------------------------
+# The one hard rule, and it has nothing to do with any remote: what is running
+# has to be a commit. Otherwise the only record of what is on the server is a
+# working tree that has since moved on, and the question "what is actually
+# deployed" has no answer — including for you, in a hall, on a Saturday.
 [[ -z $(git status --porcelain) ]] ||
-	die "The working tree is dirty. A release has to be a commit, or nobody can
-tell later what was deployed — including you, in a hall, on a Saturday."
-
-git fetch --quiet origin "$BRANCH"
+	die "The working tree is dirty. Commit first — a release has to be something
+you can check out again."
 
 HEAD_SHA=$(git rev-parse HEAD)
-REMOTE_SHA=$(git rev-parse "origin/$BRANCH")
-
-[[ $HEAD_SHA == "$REMOTE_SHA" ]] ||
-	die "HEAD is not origin/$BRANCH.
-  here:   $(git log --oneline -1 HEAD)
-  remote: $(git log --oneline -1 "origin/$BRANCH")
-Push first. Deploying something that is not on the branch means the next
-person to look cannot reproduce what is running."
-
 echo "  $(git log --oneline -1 HEAD)"
+
+# Whether it is also on a remote is worth knowing and is not worth refusing
+# over. GitHub is not in the path of a deploy — this goes straight from here to
+# the server — and a laptop that can reach the box but not github.com should
+# still be able to put a fix on it.
+#
+# So: fetch if we can, say so if the commit is only here, and carry on. What
+# the old refusal was really protecting is handled below instead, by writing
+# the sha onto the server itself.
+PUSHED=no
+if git fetch --quiet origin "$BRANCH" 2>/dev/null; then
+	if [[ $HEAD_SHA == "$(git rev-parse "origin/$BRANCH" 2>/dev/null)" ]]; then
+		PUSHED=yes
+	else
+		echo "  note: this commit is not on origin/$BRANCH. Deploying it anyway;"
+		echo "        it exists only on this machine until you push."
+	fi
+else
+	echo "  note: no remote reachable, so it is unknown whether this is pushed."
+fi
 
 # ---------------------------------------------------------------------------
 if [[ -n $SKIP_CHECK ]]; then
@@ -79,6 +94,22 @@ rm -rf release && mkdir -p release
 bun build --compile --target=bun-linux-x64 \
 	apps/web/dist/server/server.js --outfile release/whistleday-web
 cp -r apps/web/dist/client release/client
+
+# What is running, written down where it is running.
+#
+# This is what the old "must be pushed to origin" refusal was really for: so
+# that the thing on the server could be identified later. A remote is one way
+# to answer that and not the only one — the sha on the box answers it directly,
+# and says whether it was ever pushed, which is the bit worth knowing when it
+# turns out you need this commit back.
+cat > release/RELEASE <<EOF
+commit=$HEAD_SHA
+subject=$(git log -1 --format=%s)
+branch=$BRANCH
+pushed=$PUSHED
+deployed=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+by=$(git config user.email 2>/dev/null || whoami)
+EOF
 
 du -sh release/* | sed 's/^/  /'
 

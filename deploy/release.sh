@@ -69,6 +69,14 @@ rm -rf "$ROOT/client.previous"
 [[ -d $ROOT/client ]] && mv "$ROOT/client" "$ROOT/client.previous"
 mv "$STAGE/client" "$ROOT/client"
 
+# What is running, so `cat /srv/whistleday/RELEASE` answers it without needing
+# a remote, a laptop or a memory.
+if [[ -f $STAGE/RELEASE ]]; then
+	[[ -f $ROOT/RELEASE ]] && cp -f "$ROOT/RELEASE" "$ROOT/RELEASE.previous"
+	mv -f "$STAGE/RELEASE" "$ROOT/RELEASE"
+	sed 's/^/  /' "$ROOT/RELEASE"
+fi
+
 # ---------------------------------------------------------------------------
 say "Restarting"
 # ---------------------------------------------------------------------------
