@@ -1,8 +1,9 @@
 import type { FixtureDraft, SlotDraft, StagePlan } from "@whistleday/engine";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { usePreview, type PreviewRequest } from "../../api/preview";
 import { roundTitle } from "../../lib/bracket";
 import { useT } from "../../lib/i18n";
+import { parsePastedTeams } from "../../lib/teams";
 
 /**
  * A blank sheet, drawn by the server, for printing and filling in by hand.
@@ -24,72 +25,242 @@ export function PrintableSheet({
   request: PreviewRequest;
   teams: number;
 }) {
+  const [teamCount, setTeamCount] = useState(teams);
   const [names, setNames] = useState<string[]>([]);
-  const filled = names.filter((name) => name.trim().length > 0).length;
+  const [showPaste, setShowPaste] = useState(false);
+  const [bulkText, setBulkText] = useState("");
+  const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
-  // Only send names once there are enough to draw with; a half-typed list
-  // would redraw the bracket on every keystroke against a shrinking field.
-  const withNames = useMemo<PreviewRequest>(
+  useEffect(() => {
+    setTeamCount(teams);
+    setNames([]);
+  }, [teams]);
+
+  const filledCount = names
+    .slice(0, teamCount)
+    .filter((name) => name?.trim().length > 0).length;
+
+  const effectiveNames = useMemo(
     () =>
-      filled === teams
-        ? { ...request, names: names.map((n) => n.trim()) }
-        : request,
-    [request, names, filled, teams],
+      Array.from(
+        { length: teamCount },
+        (_, i) => (names[i]?.trim() || `Team ${i + 1}`).slice(0, 40),
+      ),
+    [teamCount, names],
   );
+
+  const withNames = useMemo<PreviewRequest>(() => {
+    if (filledCount === 0) {
+      return {
+        ...request,
+        teams: teamCount,
+      };
+    }
+    return {
+      ...request,
+      teams: teamCount,
+      names: effectiveNames,
+    };
+  }, [request, teamCount, effectiveNames, filledCount]);
 
   const state = usePreview(withNames);
 
+  const handleNameChange = (index: number, value: string) => {
+    setNames((current) => {
+      const next = [...current];
+      next[index] = value;
+      return next;
+    });
+  };
+
+  const handlePaste = (
+    event: React.ClipboardEvent<HTMLInputElement>,
+    index: number,
+  ) => {
+    const text = event.clipboardData.getData("text");
+    const parsed = parsePastedTeams(text);
+    if (parsed.length > 1) {
+      event.preventDefault();
+      setNames((current) => {
+        const next = [...current];
+        for (let i = 0; i < parsed.length && index + i < 128; i++) {
+          next[index + i] = parsed[i].slice(0, 40);
+        }
+        return next;
+      });
+      setTeamCount((current) =>
+        Math.min(128, Math.max(current, index + parsed.length)),
+      );
+    }
+  };
+
+  const handleKeyDown = (
+    event: React.KeyboardEvent<HTMLInputElement>,
+    index: number,
+  ) => {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      if (index === teamCount - 1 && teamCount < 128) {
+        const nextCount = teamCount + 1;
+        setTeamCount(nextCount);
+        setTimeout(() => {
+          inputRefs.current[nextCount - 1]?.focus();
+        }, 0);
+      } else if (index < teamCount - 1) {
+        inputRefs.current[index + 1]?.focus();
+      }
+    }
+  };
+
+  const addTeam = () => {
+    if (teamCount >= 128) return;
+    const nextCount = teamCount + 1;
+    setTeamCount(nextCount);
+    setTimeout(() => {
+      inputRefs.current[nextCount - 1]?.focus();
+    }, 0);
+  };
+
+  const removeTeam = (index: number) => {
+    if (teamCount <= 2) return;
+    setNames((current) => {
+      const next = [...current];
+      next.splice(index, 1);
+      return next;
+    });
+    setTeamCount((current) => Math.max(2, current - 1));
+  };
+
+  const applyBulkText = () => {
+    const parsed = parsePastedTeams(bulkText);
+    if (parsed.length > 0) {
+      setNames(parsed.slice(0, 128).map((s) => s.slice(0, 40)));
+      setTeamCount(Math.min(128, Math.max(2, parsed.length)));
+      setBulkText("");
+      setShowPaste(false);
+    }
+  };
+
   return (
-    <div className="sheet">
-      <div className="sheet__controls">
+    <div className="print-sheet">
+      <div className="print-sheet__controls">
         <h2 className="doc__heading">Put your own teams on it</h2>
         <p className="doc__para">
           Optional — the sheet prints with numbered places if you leave this
-          empty. Nothing is sent anywhere until you ask for the draw, and
-          nothing is saved.
+          empty. You can paste a list of clubs into any box, add more teams, or
+          type them in.
         </p>
-        <ol className="sheet__names">
-          {Array.from({ length: teams }, (_, i) => (
-            <li key={i}>
+
+        <ol className="print-sheet__names">
+          {Array.from({ length: teamCount }, (_, i) => (
+            <li key={i} className="print-sheet__name-item">
               <input
-                className="wiz__input sheet__name"
+                ref={(el) => {
+                  inputRefs.current[i] = el;
+                }}
+                className="wiz__input print-sheet__name"
                 value={names[i] ?? ""}
-                onChange={(event) =>
-                  setNames((current) => {
-                    const next = [...current];
-                    next.length = teams;
-                    next[i] = event.target.value;
-                    return next;
-                  })
-                }
+                onChange={(event) => handleNameChange(i, event.target.value)}
+                onPaste={(event) => handlePaste(event, i)}
+                onKeyDown={(event) => handleKeyDown(event, i)}
                 placeholder={`Team ${i + 1}`}
                 aria-label={`Team ${i + 1}`}
                 maxLength={40}
                 autoComplete="off"
               />
+              {teamCount > 2 && (
+                <button
+                  type="button"
+                  className="print-sheet__name-remove"
+                  onClick={() => removeTeam(i)}
+                  aria-label={`Remove Team ${i + 1}`}
+                  title={`Remove Team ${i + 1}`}
+                >
+                  &times;
+                </button>
+              )}
             </li>
           ))}
         </ol>
+
+        <div className="print-sheet__actions">
+          <button
+            type="button"
+            className="btn btn--quiet btn--small"
+            onClick={addTeam}
+            disabled={teamCount >= 128}
+          >
+            + Add team
+          </button>
+          <button
+            type="button"
+            className="btn btn--quiet btn--small"
+            onClick={() => setShowPaste((prev) => !prev)}
+          >
+            {showPaste ? "Hide paste box" : "Paste list of teams"}
+          </button>
+          {filledCount > 0 && (
+            <button
+              type="button"
+              className="btn btn--quiet btn--small"
+              onClick={() => setNames([])}
+            >
+              Clear names
+            </button>
+          )}
+        </div>
+
+        {showPaste && (
+          <div className="print-sheet__paste-box">
+            <textarea
+              className="wiz__input"
+              rows={4}
+              placeholder="Paste team or club names here (one per line, or comma-separated)…"
+              value={bulkText}
+              onChange={(e) => setBulkText(e.target.value)}
+            />
+            <div className="print-sheet__paste-actions">
+              <button
+                type="button"
+                className="btn btn--primary btn--small"
+                onClick={applyBulkText}
+                disabled={bulkText.trim().length === 0}
+              >
+                Apply teams
+              </button>
+              <button
+                type="button"
+                className="btn btn--quiet btn--small"
+                onClick={() => setShowPaste(false)}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
+
         <button
           type="button"
           className="btn btn--primary btn--block"
           onClick={() => window.print()}
           disabled={state.status !== "ready"}
         >
-          Print this sheet
+          Print this sheet ({teamCount} teams)
         </button>
       </div>
 
       {state.status === "loading" && (
-        <p className="doc__para sheet__status">Drawing it…</p>
+        <p className="doc__para print-sheet__status">Drawing it…</p>
       )}
       {state.status === "failed" && (
-        <p className="doc__para sheet__status">
+        <p className="doc__para print-sheet__status">
           The draw could not be fetched ({state.message}). The numbers above are
           still right — they are worked out here rather than asked for.
         </p>
       )}
-      {state.status === "ready" && <Plan plan={state.plan} />}
+      {state.status === "ready" && (
+        <Plan plan={state.plan} effectiveNames={effectiveNames} />
+      )}
     </div>
   );
 }
@@ -99,21 +270,34 @@ export function PrintableSheet({
  * comes from the plan rather than from the page: a pool named "A" is a group
  * whatever format asked for it.
  */
-function Plan({ plan }: { plan: StagePlan }) {
+function Plan({
+  plan,
+  effectiveNames,
+}: {
+  plan: StagePlan;
+  effectiveNames: string[];
+}) {
   const slots = useMemo(
     () => new Map(plan.slots.map((slot) => [slot.key, slot])),
     [plan],
   );
 
   return (
-    <div className="sheet__paper">
+    <div className="print-sheet__paper">
       {plan.pools.map((pool) => {
         const fixtures = plan.fixtures.filter((f) => f.pool_key === pool.key);
         if (fixtures.length === 0) return null;
         return (
-          <section className="sheet__pool" key={pool.key}>
-            <h3 className="sheet__pool-name">{pool.name}</h3>
-            <Rounds fixtures={fixtures} slots={slots} bracket={pool.kind !== "group"} />
+          <section className="print-sheet__pool" key={pool.key}>
+            {plan.pools.length > 1 && (
+              <h3 className="print-sheet__pool-name">{pool.name}</h3>
+            )}
+            <Rounds
+              fixtures={fixtures}
+              slots={slots}
+              bracket={pool.kind !== "group"}
+              effectiveNames={effectiveNames}
+            />
           </section>
         );
       })}
@@ -125,21 +309,16 @@ function Rounds({
   fixtures,
   slots,
   bracket,
+  effectiveNames,
 }: {
   fixtures: FixtureDraft[];
   slots: Map<string, SlotDraft>;
   bracket: boolean;
+  effectiveNames: string[];
 }) {
   const t = useT();
 
   const rounds = useMemo(() => {
-    // A bracket holds a power of two, so a field of 12 is drawn into 16 and
-    // the four spare positions become bye slots. The fixtures against them are
-    // still written — they settle themselves as soon as the other side is
-    // known — and their status is "pending" like any other, so they have to be
-    // found through the slot rather than through the fixture. Printing them
-    // would put four "Team 5 vs Bye" lines on a sheet somebody has to cross
-    // out before the first match.
     const isBye = (key: string) => slots.get(key)?.source_type === "bye";
 
     const byRound = new Map<number, FixtureDraft[]>();
@@ -152,31 +331,68 @@ function Rounds({
     return [...byRound.entries()].sort(([a], [b]) => a - b);
   }, [fixtures, slots]);
 
-  const side = (key: string) => slots.get(key)?.label ?? "TBD";
+  const side = (key: string) => {
+    const slot = slots.get(key);
+    if (!slot) return "TBD";
+
+    // 1. If slot has entry ID matching preview{N}
+    const previewMatch = slot.entry?.match(/^preview(\d+)$/);
+    if (previewMatch) {
+      const idx = parseInt(previewMatch[1], 10) - 1;
+      if (effectiveNames[idx]) {
+        return effectiveNames[idx];
+      }
+    }
+
+    // 2. If slot has source_position (1-indexed) and is direct
+    if (slot.source_type === "direct" && slot.source_position > 0) {
+      const idx = slot.source_position - 1;
+      if (effectiveNames[idx]) {
+        return effectiveNames[idx];
+      }
+    }
+
+    // 3. If slot label is pool seed like "A1", "A2"
+    const poolSeedMatch = slot.label?.match(/^[A-Z](\d+)$/);
+    if (poolSeedMatch) {
+      const idx = parseInt(poolSeedMatch[1], 10) - 1;
+      if (effectiveNames[idx]) {
+        return effectiveNames[idx];
+      }
+    }
+
+    return slot.label ?? "TBD";
+  };
 
   return (
     <>
       {rounds.map(([round, list], index) => (
-        <div className="sheet__round" key={round}>
-          <h4 className="sheet__round-name">
+        <div className="print-sheet__round" key={round}>
+          <h4 className="print-sheet__round-name">
             {bracket
               ? roundTitle(t, rounds.length - index)
               : `Round ${round + 1}`}
           </h4>
-          <table className="sheet__table">
+          <table className="print-sheet__table">
+            <colgroup>
+              <col className="print-sheet__col-code" />
+              <col className="print-sheet__col-team" />
+              <col className="print-sheet__col-score" />
+              <col className="print-sheet__col-score" />
+              <col className="print-sheet__col-team" />
+              <col className="print-sheet__col-spacer" />
+            </colgroup>
             <tbody>
               {list.map((fixture) => (
                 <tr key={fixture.key}>
-                  <td className="sheet__code">{fixture.code}</td>
-                  <td className="sheet__team">{side(fixture.home_slot_key)}</td>
-                  {/* Ruled boxes rather than a 0–0: this is printed to be
-                      written on, and a printed score is one somebody has to
-                      cross out. */}
-                  <td className="sheet__score" />
-                  <td className="sheet__score" />
-                  <td className="sheet__team sheet__team--away">
+                  <td className="print-sheet__code">{fixture.code}</td>
+                  <td className="print-sheet__team">{side(fixture.home_slot_key)}</td>
+                  <td className="print-sheet__score" />
+                  <td className="print-sheet__score" />
+                  <td className="print-sheet__team print-sheet__team--away">
                     {side(fixture.away_slot_key)}
                   </td>
+                  <td className="print-sheet__spacer" aria-hidden="true" />
                 </tr>
               ))}
             </tbody>

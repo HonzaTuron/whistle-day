@@ -170,6 +170,17 @@ and their status is `pending` like any other, so the sheet finds them through
 the slot's `source_type` rather than the fixture's status. Filtering on the
 fixture would print four "Team 5 vs Bye" lines somebody has to cross out.
 
+The field size a printable page is named for is where its list starts, not
+what it is stuck at. Teams can be added, removed, or pasted in — one per line,
+or tab, comma or semicolon separated, which is what comes off a clipboard when
+somebody selects a column of clubs in a spreadsheet — and the sheet redraws for
+whatever the list ends up being, up to the 128 the endpoint will draw.
+
+Names typed here are sent to `POST /api/preview`, because the draw is the
+server's to make and a sheet drawn in the browser is the bug above. The
+endpoint owns no records and writes nothing, so this is a request rather than
+a save, but it is still a request: the names leave the page.
+
 ## Data
 
 Everything comes from `GET /api/display/:token` — one request, no auth. See

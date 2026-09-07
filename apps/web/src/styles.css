@@ -4298,12 +4298,12 @@ th,
    filled in.
    ========================================================================== */
 
-.sheet {
+.print-sheet {
   display: grid;
   gap: 1.5rem;
 }
 
-.sheet__controls {
+.print-sheet__controls {
   display: grid;
   gap: 0.75rem;
   padding: 1.5rem;
@@ -4312,7 +4312,7 @@ th,
   background: var(--surface);
 }
 
-.sheet__names {
+.print-sheet__names {
   margin: 0;
   padding: 0;
   list-style: none;
@@ -4321,15 +4321,65 @@ th,
   gap: 0.5rem;
 }
 
-.sheet__name {
+.print-sheet__name {
   width: 100%;
 }
 
-.sheet__status {
+.print-sheet__name-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.print-sheet__name-item .print-sheet__name {
+  padding-right: 1.75rem;
+}
+
+.print-sheet__name-remove {
+  position: absolute;
+  right: 0.35rem;
+  top: 50%;
+  transform: translateY(-50%);
+  background: transparent;
+  border: 0;
+  color: var(--muted);
+  font-size: 1.25rem;
+  line-height: 1;
+  padding: 0.2rem;
+  cursor: pointer;
+  border-radius: 0.25rem;
+}
+
+.print-sheet__name-remove:hover {
+  color: var(--text);
+}
+
+.print-sheet__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.print-sheet__paste-box {
+  display: grid;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: 0.5rem;
+}
+
+.print-sheet__paste-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.print-sheet__status {
   color: var(--muted);
 }
 
-.sheet__paper {
+.print-sheet__paper {
   display: grid;
   gap: 2rem;
   padding: 1.5rem;
@@ -4338,57 +4388,75 @@ th,
   background: var(--surface);
 }
 
-.sheet__pool {
+.print-sheet__pool {
   display: grid;
   gap: 1rem;
 }
 
-.sheet__pool-name,
-.sheet__round-name {
+.print-sheet__pool-name,
+.print-sheet__round-name {
   margin: 0;
   font-size: 1rem;
   font-weight: 700;
 }
 
-.sheet__round-name {
+.print-sheet__round-name {
   color: var(--muted);
   font-size: 0.85rem;
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
 
-.sheet__round {
+.print-sheet__round {
   display: grid;
   gap: 0.5rem;
 }
 
-.sheet__table {
+.print-sheet__table {
   width: 100%;
   border-collapse: collapse;
+  table-layout: fixed;
 }
 
-/* Fixed widths, because each row is its own grid: content-sized columns put
-   every row's score box wherever that row's names happened to end. Same
-   reasoning as the projector's court schedule. */
-.sheet__code {
+.print-sheet__col-code,
+.print-sheet__col-spacer {
+  width: 3.5rem;
+}
+
+.print-sheet__col-score {
+  width: 2.5rem;
+}
+
+/* Fixed widths on code and scores ensure the score cells are exactly centered
+   between the two teams, with symmetric spacing on both edges. */
+.print-sheet__code {
   width: 3.5rem;
   font-family: var(--numeric);
   font-size: 0.85rem;
   color: var(--muted);
 }
 
-.sheet__team {
+.print-sheet__team {
   padding: 0.4rem 0.5rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.sheet__team--away {
+.print-sheet__team--away {
   text-align: right;
 }
 
-.sheet__score {
+.print-sheet__score {
   width: 2.5rem;
   height: 2rem;
   border: 1px solid var(--line);
+  text-align: center;
+  vertical-align: middle;
+}
+
+.print-sheet__spacer {
+  width: 3.5rem;
 }
 
 @media print {
@@ -4400,8 +4468,8 @@ th,
   .doc__section,
   .doc__related,
   .doc__foot,
-  .sheet__controls,
-  .sheet__status {
+  .print-sheet__controls,
+  .print-sheet__status {
     display: none !important;
   }
 
@@ -4409,7 +4477,7 @@ th,
      and a dark background is a cartridge. */
   :root,
   body,
-  .sheet__paper {
+  .print-sheet__paper {
     background: #fff !important;
     color: #000 !important;
   }
@@ -4420,25 +4488,25 @@ th,
     gap: 0;
   }
 
-  .sheet__paper {
+  .print-sheet__paper {
     border: 0;
     padding: 0;
     gap: 1.5rem;
   }
 
-  .sheet__code,
-  .sheet__round-name {
+  .print-sheet__code,
+  .print-sheet__round-name {
     color: #444 !important;
   }
 
-  .sheet__score {
+  .print-sheet__score {
     border-color: #000 !important;
   }
 
   /* A round that breaks across two pages is a round somebody has to turn over
      mid-match to finish writing. */
-  .sheet__round,
-  .sheet__pool {
+  .print-sheet__round,
+  .print-sheet__pool {
     break-inside: avoid;
   }
 

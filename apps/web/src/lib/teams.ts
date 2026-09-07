@@ -39,6 +39,26 @@ export const isDuplicateName = (name: string, existing: { name: string }[]) =>
   existing.some((team) => team.name.trim().toLowerCase() === name.trim().toLowerCase());
 
 /**
+ * Split pasted text into a list of team names.
+ * Supports newlines, tabs, commas, and semicolons, trimming quotes and whitespace.
+ */
+export function parsePastedTeams(raw: string): string[] {
+  let items: string[];
+  if (raw.includes("\n")) {
+    items = raw.split(/\r?\n/);
+  } else if (raw.includes("\t")) {
+    items = raw.split("\t");
+  } else if (raw.includes(",") || raw.includes(";")) {
+    items = raw.split(/[,;]/);
+  } else {
+    items = [raw];
+  }
+  return items
+    .map((s) => s.trim().replace(/^["']|["']$/g, ""))
+    .filter((s) => s.length > 0);
+}
+
+/**
  * Whether a team is still taking part.
  *
  * Withdrawn and disqualified differ in why, and in nothing this screen does
