@@ -20,3 +20,7 @@ backend/pocketbase
 # Vite
 apps/web/dist/
 apps/web/.vite/
+
+# Built by `bun run deploy`: two binaries and a copy of dist/client.
+# 100MB+ of build output, and none of it is source.
+release/
