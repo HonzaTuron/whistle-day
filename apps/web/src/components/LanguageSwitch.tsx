@@ -1,17 +1,16 @@
-import { LOCALES, LOCALE_NAMES, useI18n } from "../lib/i18n";
+import { LOCALE_FLAG, LOCALE_NAMES, LOCALE_SHORT, LOCALES, useI18n } from "../lib/i18n";
 
 /**
- * Two words and a choice between them.
+ * The language toggle, as a flag and a two-letter tag per language.
  *
- * Not a dropdown, because with two languages a dropdown is a click to find out
- * what the options are. Not a flag either: a flag is a country, and the people
- * in a hall in Brno reading this in English are not English.
+ * It lives in the app's own chrome (see `AppChrome`), where it is a control
+ * rather than a line of prose — so a flag reads faster than a word, and 🇬🇧/🇨🇿
+ * is legible at arm's length in a hall. The written-out name is still there for
+ * a screen reader and as the button's `title`, because a flag names a country
+ * and the reader wants a language.
  *
- * It appears where somebody is already stopped and reading — the landing page,
- * the account screen, the bottom of the spectators' phone view. It is
- * deliberately absent from the organiser's board and from the projector, which
- * are screens somebody is working from; a projector is aimed with `?lang=` on
- * the link instead, once, by whoever set it up.
+ * Not a dropdown: with two languages a dropdown is one click spent finding out
+ * what the two options are.
  */
 export function LanguageSwitch({ className = "" }: { className?: string }) {
   const { locale, setLocale, t } = useI18n();
@@ -31,9 +30,16 @@ export function LanguageSwitch({ className = "" }: { className?: string }) {
           // The language's own name, in that language: somebody looking for
           // Czech is looking for "Čeština", not for "Czech".
           lang={option}
+          title={LOCALE_NAMES[option]}
           onClick={() => setLocale(option)}
         >
-          {LOCALE_NAMES[option]}
+          <span className="langswitch__flag" aria-hidden="true">
+            {LOCALE_FLAG[option]}
+          </span>
+          <span className="langswitch__code" aria-hidden="true">
+            {LOCALE_SHORT[option]}
+          </span>
+          <span className="sr-only">{LOCALE_NAMES[option]}</span>
         </button>
       ))}
     </div>

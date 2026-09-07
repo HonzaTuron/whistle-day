@@ -1117,15 +1117,6 @@ th,
   font-size: 0.9rem;
 }
 
-/* Below the last section rather than pinned: the tabs are the phone's
-   navigation and the only thing worth keeping under a thumb. Somebody
-   changing the language has stopped scrolling to do it. */
-.phone__footer {
-  padding: 0 0.75rem 2rem;
-  display: flex;
-  justify-content: center;
-}
-
 .cards {
   list-style: none;
   margin: 0;
@@ -4068,8 +4059,11 @@ th,
 }
 
 .langswitch__option {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
   min-height: 2rem;
-  padding: 0 0.85rem;
+  padding: 0 0.7rem;
   border: 0;
   border-radius: 999px;
   background: none;
@@ -4085,12 +4079,52 @@ th,
   color: var(--text);
 }
 
-/* The account screen is a grid, and a grid item stretches unless told not to —
-   which would draw this as a full-width bar and make it read as the last field
-   of the form rather than as what is left underneath it. */
-.langswitch--footer {
-  justify-self: center;
-  margin-top: 0.5rem;
+.langswitch__flag {
+  font-size: 0.95rem;
+  line-height: 1;
+}
+
+.langswitch__code {
+  letter-spacing: 0.02em;
+}
+
+/* ==========================================================================
+   App chrome — the language switch and the build, in the top corner of the
+   app screens. Fixed, because the wizard, the board and the phone view keep
+   three different headers and none has a seat for it; small, because it is
+   not what anybody opened the screen for.
+   ========================================================================== */
+
+.appchrome {
+  position: fixed;
+  z-index: 15;
+  top: calc(env(safe-area-inset-top) + 0.4rem);
+  right: calc(env(safe-area-inset-right) + 0.5rem);
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+/* Legible over whatever the screen puts behind it — a light form, the dark
+   board — so its own solid ground and a hairline rather than the bare pill. */
+.langswitch--app {
+  background: var(--surface);
+  box-shadow: 0 1px 6px color-mix(in srgb, #000 18%, transparent);
+}
+
+.langswitch--app .langswitch__option {
+  min-height: 1.8rem;
+  padding: 0 0.6rem;
+  font-size: 0.75rem;
+}
+
+.appchrome__build {
+  font-size: 0.7rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+  opacity: 0.7;
+  user-select: all;
 }
 
 /* ==========================================================================

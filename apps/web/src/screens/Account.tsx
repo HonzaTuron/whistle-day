@@ -1,6 +1,5 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
-import { LanguageSwitch } from "../components/LanguageSwitch";
 import { useT, type MessageKey } from "../lib/i18n";
 import {
   ApiError,
@@ -270,8 +269,6 @@ export function Account() {
           ) : null}
         </form>
       )}
-
-      <LanguageSwitch className="langswitch--footer" />
     </div>
   );
 }

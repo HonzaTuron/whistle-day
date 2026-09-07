@@ -3,6 +3,8 @@ import {
   createElement,
   useCallback,
   useContext,
+  useEffect,
+  useLayoutEffect,
   useMemo,
   useState,
   type ReactNode,
@@ -28,10 +30,30 @@ import { cs } from "../locales/cs";
 export const LOCALES = ["en", "cs"] as const;
 export type Locale = (typeof LOCALES)[number];
 
-/** What a language calls itself, for the switcher. */
+/** What a language calls itself, for the switcher's label and its `title`. */
 export const LOCALE_NAMES: Record<Locale, string> = {
   en: "English",
   cs: "Čeština",
+};
+
+/** The two-letter tag shown beside the flag in the compact app switch. */
+export const LOCALE_SHORT: Record<Locale, string> = {
+  en: "EN",
+  cs: "CZ",
+};
+
+/**
+ * A flag for the app switch, as a country even though a language is not one:
+ * the switch lives in the app's own chrome now, where it is a control and not
+ * prose, and a 🇬🇧/🇨🇿 pair is read at a glance across a hall. The marketing
+ * pages still carry no switch — they follow the system language instead.
+ *
+ * Emoji rather than an SVG set: the platform already has these, they inherit
+ * the button's size, and there is no asset to ship or a licence to keep.
+ */
+export const LOCALE_FLAG: Record<Locale, string> = {
+  en: "🇬🇧",
+  cs: "🇨🇿",
 };
 
 /**
@@ -212,6 +234,14 @@ interface I18n {
 }
 
 /**
+ * `useLayoutEffect` on the client, `useEffect` on the server — the second is a
+ * no-op there and does not warn, the first would. The locale correction below
+ * has to run before the browser paints, so a plain effect is not enough.
+ */
+const useIsomorphicLayoutEffect =
+  typeof window === "undefined" ? useEffect : useLayoutEffect;
+
+/**
  * English until a provider says otherwise, so a component rendered in a test
  * without one still produces sentences rather than keys.
  */
@@ -236,6 +266,19 @@ export function I18nProvider({
     // voice from, and what hyphenation and quotation marks follow.
     document.documentElement.lang = next;
     setLocaleState(next);
+  }, []);
+
+  // The server has no browser to ask, so it renders English and the real
+  // language is applied here — before the first paint, so a Czech phone opening
+  // the homepage never flashes English on the way to it. The homepage carries
+  // no switch of its own and leans entirely on this; `?lang=` and a remembered
+  // choice still win inside `detectLocale`.
+  // Runs once, on arrival, and then never again: after this, `locale` is
+  // whatever `detectLocale` would return, and a re-run keyed on it could only
+  // fight a switch the reader just made.
+  useIsomorphicLayoutEffect(() => {
+    const detected = detectLocale();
+    if (detected !== locale) setLocale(detected);
   }, []);
 
   const value = useMemo<I18n>(

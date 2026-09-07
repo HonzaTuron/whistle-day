@@ -6,9 +6,10 @@ import {
   Scripts,
   useRouterState,
 } from "@tanstack/react-router";
-import { useEffect, useState, type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { SiteNav } from "../components/marketing/SiteNav";
-import { I18nProvider, detectLocale, useI18n } from "../lib/i18n";
+import { AppChrome } from "../components/AppChrome";
+import { I18nProvider } from "../lib/i18n";
 import { isAppRoute } from "../lib/routes";
 import "../styles.css";
 
@@ -96,35 +97,14 @@ function RootDocument({ children }: Readonly<{ children: ReactNode }>) {
         <HeadContent />
       </head>
       <body>
-        <LocaleCorrection />
         {children}
+        <AppChrome />
         <Analytics />
         <ServiceWorker />
         <Scripts />
       </body>
     </html>
   );
-}
-
-/**
- * The server renders English because a request cannot be asked what a phone
- * has in its localStorage, so the real answer is applied once on arrival.
- *
- * Deliberately an effect rather than a `useState` initialiser: detecting
- * during the first client render would produce a tree that disagrees with the
- * HTML it is hydrating into, which React resolves by throwing the server's
- * markup away. Correcting on the second render costs a frame and keeps the
- * hydration clean.
- */
-function LocaleCorrection() {
-  const { locale, setLocale } = useI18n();
-
-  useEffect(() => {
-    const detected = detectLocale();
-    if (detected !== locale) setLocale(detected);
-  }, [locale, setLocale]);
-
-  return null;
 }
 
 /**

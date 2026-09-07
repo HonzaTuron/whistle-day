@@ -1,7 +1,6 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { rememberedTournament } from "../api/organiser";
-import { LanguageSwitch } from "../components/LanguageSwitch";
 import { SiteNav } from "../components/marketing/SiteNav";
 import { pageBySlug } from "../content";
 import { useT, type MessageKey } from "../lib/i18n";
@@ -223,7 +222,6 @@ export function Landing() {
 
       <footer className="home__footer">
         <p>{t("landing.footer")}</p>
-        <LanguageSwitch />
       </footer>
     </div>
   );

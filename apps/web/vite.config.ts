@@ -1,3 +1,4 @@
+import { execSync } from "node:child_process";
 import react from "@vitejs/plugin-react";
 import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 import { defineConfig } from "vite";
@@ -5,6 +6,23 @@ import { VitePWA } from "vite-plugin-pwa";
 import { serviceWorker } from "./build/service-worker";
 import { MARKETING_PATHS } from "./src/content/index.ts";
 import { isAppRoute } from "./src/lib/routes.ts";
+
+/**
+ * The commit this bundle was built from, shown in the corner of the app so a
+ * bug report can be pinned to a build. The deploy runs the web build from the
+ * repo with `.git` present, and so do CI and a dev machine; anywhere it is not
+ * — a tarball, a sandbox — the string is "dev" and the corner just says so.
+ */
+const BUILD_SHA = (() => {
+  if (process.env.WHISTLEDAY_BUILD_SHA) return process.env.WHISTLEDAY_BUILD_SHA;
+  try {
+    return execSync("git rev-parse --short HEAD", { stdio: ["ignore", "pipe", "ignore"] })
+      .toString()
+      .trim();
+  } catch {
+    return "dev";
+  }
+})();
 
 /**
  * The marketing pages are prerendered; the app screens are not.
@@ -21,6 +39,9 @@ import { isAppRoute } from "./src/lib/routes.ts";
  */
 
 export default defineConfig({
+  define: {
+    __BUILD_SHA__: JSON.stringify(BUILD_SHA),
+  },
   plugins: [
     tanstackStart({
       prerender: {

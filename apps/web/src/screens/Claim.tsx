@@ -1,6 +1,5 @@
 import { useNavigate } from "@tanstack/react-router";
 import { useRef, useState } from "react";
-import { LanguageSwitch } from "../components/LanguageSwitch";
 import { usePreviewHandoff } from "../api/hooks";
 import { claimHandoff, rememberTournament } from "../api/organiser";
 import { useT } from "../lib/i18n";
@@ -72,7 +71,6 @@ export function Claim({ token }: { token: string }) {
           <h1>{t("claim.deadTitle")}</h1>
           <p>{t("claim.deadBody")}</p>
         </header>
-        <LanguageSwitch className="langswitch--footer" />
       </div>
     );
   }
@@ -139,8 +137,6 @@ export function Claim({ token }: { token: string }) {
 
         <p className="account__hint">{t("claim.once")}</p>
       </form>
-
-      <LanguageSwitch className="langswitch--footer" />
     </div>
   );
 }

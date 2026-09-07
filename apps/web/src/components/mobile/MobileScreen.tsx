@@ -3,7 +3,6 @@ import { useDisplayPayload } from "../../api/display";
 import { bracketStages, tablePools } from "../../lib/format";
 import { useT } from "../../lib/i18n";
 import { renderLabel } from "../../lib/labels";
-import { LanguageSwitch } from "../LanguageSwitch";
 import { MobileBracket } from "./MobileBracket";
 import { MobileFixtures } from "./MobileFixtures";
 import { MobileTable } from "./MobileTable";
@@ -121,10 +120,6 @@ export function MobileScreen({ token }: { token: string }) {
           </Section>
         )}
       </main>
-
-      <footer className="phone__footer">
-        <LanguageSwitch />
-      </footer>
     </div>
   );
 }
