@@ -22,7 +22,8 @@
     "dev": "bun run pb:serve",
     "web": "cd apps/web && bun run dev",
     "seed": "bun run scripts/seed-demo.ts",
-    "stats": "bun run scripts/stats.ts"
+    "stats": "bun run scripts/stats.ts",
+    "deploy": "bash deploy/deploy.sh"
   },
   "devDependencies": {
     "typescript": "^7.0.2",

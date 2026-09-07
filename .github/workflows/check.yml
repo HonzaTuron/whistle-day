@@ -1,0 +1,52 @@
+name: check
+
+# The gate, on a machine that is not the one it was written on.
+#
+# It holds no credentials and deploys nothing — deploying is `bun run deploy`
+# from a laptop, so there is no key to production in GitHub for a workflow or
+# an action it pulls in to reach.
+#
+# What this is worth is the clean room: `bun run check` passing with somebody's
+# own toolchain, their node_modules and their environment is weaker evidence
+# than it passing on a machine that has none of those.
+on:
+  push:
+    branches: [master]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: .bun-version
+
+      - uses: actions/setup-go@v5
+        with:
+          # The floor is PocketBase's, not ours: v0.40 moved to
+          # encoding/json/v2, which needs 1.27.
+          go-version-file: backend/go.mod
+          cache-dependency-path: backend/go.sum
+
+      - run: bun install --frozen-lockfile
+
+      # typecheck, the web tests, go vet, the Go tests, and the smoke suite
+      # against a real PocketBase on a temp data dir.
+      - run: bun run check
+
+      # The deploy cross-compiles both binaries for the server. If that is
+      # going to break it should break here, on a push, rather than in front
+      # of somebody who is trying to release.
+      - name: The release build still builds
+        run: |
+          (cd backend && CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o /tmp/pocketbase .)
+          (cd apps/web && bun run build)
+          bun build --compile --target=bun-linux-x64 \
+            apps/web/dist/server/server.js --outfile /tmp/whistleday-web
+          ls -lh /tmp/pocketbase /tmp/whistleday-web

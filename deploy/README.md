@@ -44,18 +44,18 @@ hcloud server ip whistleday
 scp -r deploy root@<host>:/tmp/
 ssh root@<host> 'bash /tmp/deploy/bootstrap.sh'
 
-# 4. A key for CI, which is not your key.
-ssh-keygen -t ed25519 -f ~/.ssh/whistleday-deploy -C 'github-actions' -N ''
+# 4. A key for deploying, kept apart from the one you log in with.
+ssh-keygen -t ed25519 -f ~/.ssh/whistleday-deploy -C "whistleday deploy" -N ""
 ssh-copy-id -i ~/.ssh/whistleday-deploy.pub deploy@<host>
 
-# 5. Hand it to GitHub.
-gh secret set DEPLOY_HOST        --body '<host>'
-gh secret set DEPLOY_USER        --body 'deploy'
-gh secret set DEPLOY_SSH_KEY     < ~/.ssh/whistleday-deploy
-gh secret set DEPLOY_KNOWN_HOSTS --body "$(ssh-keyscan -H <host> 2>/dev/null)"
+# 5. Tell the repo where the server is. Gitignored; nothing goes to GitHub.
+cat >> .env <<EOF
+WHISTLEDAY_HOST=whistle.day
+WHISTLEDAY_DEPLOY_USER=deploy
+EOF
 
-# 6. Deploy. Push to master, or run it by hand:
-gh workflow run deploy.yml && gh run watch
+# 6. Deploy.
+bun run deploy
 
 # 7. Now that the binaries are on the box, a superuser:
 ssh deploy@<host> "sudo -u whistleday /srv/whistleday/pocketbase superuser \
@@ -86,9 +86,9 @@ again after editing the Caddyfile is safe:
   optional, because `release.sh` backs up with SQLite's own `.backup` rather
   than `cp`, and a copied file can land mid-write on a running server;
 - makes **two** accounts. `whistleday` is the service account: no shell,
-  owns the database, nothing logs in as it. `deploy` is what CI logs in as,
-  kept separate so a leaked deploy key is a way to push a release rather than
-  a way to be the process holding the database open;
+  owns the database, nothing logs in as it. `deploy` is what a deploy logs in
+  as, kept separate so a leaked deploy key is a way to push a release rather
+  than a way to be the process holding the database open;
 - installs both unit files and the Caddyfile, and validates the Caddyfile
   before reloading — a typo there takes the site down, and `caddy validate`
   catches it while the old config is still serving;
@@ -125,26 +125,41 @@ in: `ssh -L 8090:127.0.0.1:8090 deploy@<host>`, then `http://127.0.0.1:8090/_/`.
   until this is done it is an email and a password and nothing else.
 - A superuser that is not `admin@whistleday.local` / `whistledayadmin1`.
 
-## Once, in GitHub
+## Once, on your laptop
 
-Four secrets, used by `.github/workflows/deploy.yml`:
+A `.env` at the repo root, which is gitignored:
 
-| | |
-|---|---|
-| `DEPLOY_HOST` | the server |
-| `DEPLOY_USER` | the deploy user |
-| `DEPLOY_SSH_KEY` | its private key |
-| `DEPLOY_KNOWN_HOSTS` | `ssh-keyscan <host>`, pinned rather than trusted blindly |
+```bash
+WHISTLEDAY_HOST=whistle.day
+WHISTLEDAY_DEPLOY_USER=deploy
+```
+
+Nothing goes in GitHub. There is no key to production in a secret store, and
+no workflow — or third-party action a workflow pulls in — that could reach the
+server with one. What CI does hold is nothing at all: `check.yml` runs the
+gate on every push and deploys nothing.
+
+That split keeps the half that was actually worth having. The value of CI here
+was never the automatic deploy, it was the clean room — `bun run check`
+passing with your own toolchain, your `node_modules` and your environment is
+weaker evidence than it passing on a machine that has none of them.
 
 ## Every deploy
 
-Push to `master`. The workflow runs `bun run check` first — typecheck, the web
-tests, `go vet`, the Go tests and the smoke suite against a real PocketBase —
-so nothing reaches the server that has not played a whole group stage, a
-double elimination and a Swiss out to the end.
+```bash
+bun run deploy
+```
 
-Then it builds both binaries, ships them to `staging/`, and runs `release.sh`,
-which does the four things that have to happen in this order:
+It refuses before it does anything if the working tree is dirty, or if `HEAD`
+is not `origin/master`. Both are about the same thing: a release has to be a
+commit somebody can check out later, not whatever happened to be on a laptop
+at the time. Then it runs the gate again, cross-compiles both binaries —
+`CGO_ENABLED=0` and `bun build --compile`, so this works from macOS as well as
+Linux — and asks whether anything is being played right now before it
+restarts anything.
+
+Then it ships to `staging/` and runs `release.sh` on the server, which does
+the four things that have to happen in this order:
 
 1. **back up the database**, before a migration can touch it;
 2. **migrate**, with the new binary, while the old one is still serving;
