@@ -21,32 +21,84 @@ Both services are single binaries with nothing beside them — the Go build is
 is `bun build --compile`, which puts its own runtime inside the file. There is
 no Bun, no Node and no `node_modules` on the server to drift from the build.
 
-## Once, on the server
+## Run these
+
+Start to finish, from a laptop with the repo checked out. `<host>` is the
+server's IP until DNS has propagated.
 
 ```bash
-# A user that owns nothing else.
-sudo useradd --system --home /srv/whistleday --shell /usr/sbin/nologin whistleday
-sudo mkdir -p /srv/whistleday/{pb_data,backups,client}
-sudo chown -R whistleday:whistleday /srv/whistleday
+# 1. The box. Ubuntu 24.04, in Nuremberg or Falkenstein — the audience is in
+#    Central Europe and so should the box be. CX22 is 2 vCPU and 4 GB, which
+#    is enormous headroom: this measures 30 MB idle and 73 MB under fifty
+#    concurrent projector clients.
+hcloud server create --name whistleday --type cx22 \
+  --image ubuntu-24.04 --location nbg1 --ssh-key <your-key>
+hcloud server ip whistleday
 
-# The backup in release.sh is SQLite's own, not `cp`.
-sudo apt install -y sqlite3 caddy
+# 2. DNS, at Cloudflare. Both records DNS only — grey cloud, not proxied.
+#    A   whistle.day       <ip>
+#    A   www.whistle.day   <ip>
 
-sudo cp deploy/whistleday-api.service deploy/whistleday-web.service /etc/systemd/system/
-sudo cp deploy/Caddyfile /etc/caddy/Caddyfile
-sudo mkdir -p /var/log/caddy && sudo chown caddy:caddy /var/log/caddy
+# 3. Set the box up. Installs Caddy, makes the users, directories, services
+#    and firewall. Safe to re-run.
+scp -r deploy root@<host>:/tmp/
+ssh root@<host> 'bash /tmp/deploy/bootstrap.sh'
 
-sudo systemctl daemon-reload
-sudo systemctl enable --now whistleday-api whistleday-web
-sudo systemctl reload caddy
+# 4. A key for CI, which is not your key.
+ssh-keygen -t ed25519 -f ~/.ssh/whistleday-deploy -C 'github-actions' -N ''
+ssh-copy-id -i ~/.ssh/whistleday-deploy.pub deploy@<host>
+
+# 5. Hand it to GitHub.
+gh secret set DEPLOY_HOST        --body '<host>'
+gh secret set DEPLOY_USER        --body 'deploy'
+gh secret set DEPLOY_SSH_KEY     < ~/.ssh/whistleday-deploy
+gh secret set DEPLOY_KNOWN_HOSTS --body "$(ssh-keyscan -H <host> 2>/dev/null)"
+
+# 6. Deploy. Push to master, or run it by hand:
+gh workflow run deploy.yml && gh run watch
+
+# 7. Now that the binaries are on the box, a superuser:
+ssh deploy@<host> "sudo -u whistleday /srv/whistleday/pocketbase superuser \
+  upsert you@example.com 'a-real-password' --dir=/srv/whistleday/pb_data"
+
+# 8. And the dashboard, over a tunnel — it is not on the internet.
+ssh -L 8090:127.0.0.1:8090 deploy@<host>
+#    then http://127.0.0.1:8090/_/ and set, in this order of importance:
+#      - Application URL      https://whistle.day   (handoff links use it)
+#      - OAuth2 on `users`    Google + Facebook, redirect
+#                             https://whistle.day/account
 ```
 
-The deploy user needs to restart the two services and nothing else:
+Then check it from outside, which is the only version of "it works" that counts:
 
+```bash
+curl -sS -o /dev/null -w '%{http_code}\n' https://whistle.day/
+curl -sS -o /dev/null -w '%{http_code}\n' https://whistle.day/8-team-single-elimination-bracket
+curl -sS -o /dev/null -w '%{http_code}\n' https://whistle.day/api/health
 ```
-# /etc/sudoers.d/whistleday-deploy
-deploy ALL=(root) NOPASSWD: /usr/bin/systemctl restart whistleday-api, /usr/bin/systemctl restart whistleday-web
-```
+
+## What step 3 actually does
+
+`bootstrap.sh`, so it is one command rather than twenty, and so running it
+again after editing the Caddyfile is safe:
+
+- installs Caddy from its own repository, plus `sqlite3` — which is not
+  optional, because `release.sh` backs up with SQLite's own `.backup` rather
+  than `cp`, and a copied file can land mid-write on a running server;
+- makes **two** accounts. `whistleday` is the service account: no shell,
+  owns the database, nothing logs in as it. `deploy` is what CI logs in as,
+  kept separate so a leaked deploy key is a way to push a release rather than
+  a way to be the process holding the database open;
+- installs both unit files and the Caddyfile, and validates the Caddyfile
+  before reloading — a typo there takes the site down, and `caddy validate`
+  catches it while the old config is still serving;
+- grants `deploy` passwordless sudo for **exactly two commands**, restarting
+  the two services, and nothing else;
+- enables the services without starting them, because their binaries arrive
+  with the first deploy and a unit restart-looping against a missing file
+  fills the journal with nothing worth reading;
+- opens 22, 80 and 443. Not 8090 or 3000: both services bind to loopback and
+  the only thing that should reach them is Caddy on the same box.
 
 ## Once, in DNS
 

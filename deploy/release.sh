@@ -37,6 +37,10 @@ sqlite3 "$ROOT/pb_data/data.db" ".backup '$ROOT/backups/data-$STAMP.db'"
 echo "  $ROOT/backups/data-$STAMP.db"
 
 # Keep the last few. A box with a full disk cannot serve a tournament either.
+#
+# `ls` rather than `find`, because the ordering is the point and these are
+# names this script wrote: data-<utc timestamp>.db, no spaces to mishandle.
+# shellcheck disable=SC2012
 ls -1t "$ROOT"/backups/data-*.db 2>/dev/null | tail -n "+$((KEEP_BACKUPS + 1))" | xargs -r rm --
 
 # ---------------------------------------------------------------------------
@@ -76,7 +80,7 @@ sudo systemctl restart whistleday-web
 # ---------------------------------------------------------------------------
 say "Checking it came back"
 # ---------------------------------------------------------------------------
-for i in $(seq 1 30); do
+for _ in $(seq 1 30); do
 	api=$(curl -sS -o /dev/null -w '%{http_code}' -m 3 http://127.0.0.1:8090/api/health || true)
 	web=$(curl -sS -o /dev/null -w '%{http_code}' -m 3 http://127.0.0.1:3000/new || true)
 	if [[ $api == 200 && $web == 200 ]]; then
