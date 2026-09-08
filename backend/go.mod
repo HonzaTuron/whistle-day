@@ -5,7 +5,7 @@ go 1.27
 require (
 	github.com/mark3labs/mcp-go v0.58.0
 	github.com/pocketbase/dbx v1.12.0
-	github.com/pocketbase/pocketbase v0.40.1
+	github.com/pocketbase/pocketbase v0.40.3
 )
 
 require (
@@ -31,7 +31,7 @@ require (
 	github.com/spf13/cobra v1.10.2 // indirect
 	github.com/spf13/pflag v1.0.10 // indirect
 	github.com/yosida95/uritemplate/v3 v3.0.2 // indirect
-	golang.org/x/crypto v0.55.0 // indirect
+	golang.org/x/crypto v0.56.0 // indirect
 	golang.org/x/image v0.45.0 // indirect
 	golang.org/x/net v0.58.0 // indirect
 	golang.org/x/oauth2 v0.36.0 // indirect

@@ -33,7 +33,7 @@ Rationale and trade-offs in [docs/DATA-MODEL.md](docs/DATA-MODEL.md).
 |---|---|
 | Go | 1.27+ — the floor is PocketBase's, not ours |
 | Bun | 1.4.0 — pinned in `.bun-version` and `packageManager` |
-| PocketBase | v0.40.1, as a Go dependency — not a downloaded binary |
+| PocketBase | v0.40.3, as a Go dependency — not a downloaded binary |
 
 PocketBase is used as a **Go framework**. `go build` produces a server with the
 tournament logic compiled in. Its JS hooks run in goja, which has no npm and no
