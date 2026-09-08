@@ -3434,6 +3434,29 @@ th,
   line-height: 1.5;
 }
 
+/* A text button that reads as a link — "Forgot your password?", "Resend" —
+   next to prose rather than as one more full-width bar under the form. */
+.account__link {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--accent);
+  font: inherit;
+  font-size: 0.8rem;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.account__link--center {
+  display: block;
+  margin: 0.25rem auto 0;
+}
+
+.account__link:disabled {
+  color: var(--muted);
+  cursor: default;
+}
+
 .account__providers {
   display: grid;
   gap: 0.5rem;

@@ -32,6 +32,10 @@ const (
 	// mail from here is signed and lands in an inbox rather than spam.
 	defaultMailFrom     = "no-reply@mail.whistle.day"
 	defaultMailFromName = "Whistle.day"
+
+	// What handoff and recovery links are built from. `go run` on a laptop can
+	// point it elsewhere with WHISTLEDAY_APP_URL.
+	defaultAppURL = "https://whistle.day"
 )
 
 // RegisterMail configures the SMTP relay from the environment on every boot.
@@ -55,6 +59,20 @@ func RegisterMail(app core.App) {
 		port := mailEnvInt("WHISTLEDAY_SMTP_PORT", defaultSMTPPort)
 
 		s := e.App.Settings()
+
+		// {APP_NAME} and {APP_URL} in the recovery email templates — and the
+		// base every handoff `/claim/...` link is built from. Both ship as
+		// PocketBase defaults ("Acme", "http://localhost:8090") that no step
+		// here has ever overridden, so a verification link would point at
+		// localhost. Set from code, past the default only: a deliberate
+		// dashboard change still wins.
+		if s.Meta.AppName == "" || s.Meta.AppName == "Acme" {
+			s.Meta.AppName = defaultMailFromName
+		}
+		if s.Meta.AppURL == "" || s.Meta.AppURL == "http://localhost:8090" {
+			s.Meta.AppURL = mailEnv("WHISTLEDAY_APP_URL", defaultAppURL)
+		}
+
 		s.Meta.SenderName = mailEnv("WHISTLEDAY_MAIL_FROM_NAME", defaultMailFromName)
 		s.Meta.SenderAddress = mailEnv("WHISTLEDAY_MAIL_FROM", defaultMailFrom)
 

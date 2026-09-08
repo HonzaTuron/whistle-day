@@ -196,6 +196,43 @@ export const en = {
     "It has been used, or it expired, or it was never a link at all. Ask whoever sent it for another one.",
   "claim.failed": "That did not work. Nothing has changed — try again.",
 
+  // Getting back into a claimed account: forgot-password, and the nudge to
+  // confirm an address so a reset can reach it.
+  "recover.forgotTitle": "Reset your password",
+  "recover.forgotBody":
+    "Type the email your account is on and we will send a link to set a new password.",
+  "recover.forgotLink": "Forgot your password?",
+  "recover.sendLink": "Send the link",
+  "recover.backToSignIn": "Back to sign in",
+  "recover.sent":
+    "If that address has an account, a reset link is on its way. Give it a minute, and check the spam folder.",
+  "recover.sendFailed": "That could not be sent just now. Try again in a moment.",
+  "recover.mismatch": "The two passwords are not the same.",
+  "recover.resetTitle": "Choose a new password",
+  "recover.resetBody": "For the account the reset link was sent to.",
+  "recover.newPassword": "New password",
+  "recover.confirmPassword": "Type it again",
+  "recover.setPassword": "Set password",
+  "recover.doneTitle": "Password changed",
+  "recover.doneBody": "Sign in with your email and the new password.",
+  "recover.toSignIn": "Sign in",
+  "recover.deadTitle": "This link has expired",
+  "recover.deadBody":
+    "A reset link lasts under an hour and works once. Ask for a fresh one from the sign-in screen.",
+  "recover.tryAgain": "Back to sign in",
+  "recover.verifyNudge":
+    "This email is not confirmed yet, so a password reset would have nowhere to go.",
+  "recover.verifyResent": "Sent. Look for the confirmation link in your inbox.",
+  "recover.resend": "Send it again",
+
+  // The two pages the recovery emails link to.
+  "verify.doneTitle": "Email confirmed",
+  "verify.doneBody": "This address can now bring you back to the account.",
+  "verify.deadTitle": "This link has expired",
+  "verify.deadBody":
+    "Confirmation links do not last forever. Sign in and send a new one from your account.",
+  "verify.toAccount": "Go to your account",
+
   "account.continueWith": "Continue with {provider}",
   "account.or": "or",
   "account.oauthFailed":

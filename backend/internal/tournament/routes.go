@@ -8,6 +8,7 @@ import (
 
 	"github.com/pocketbase/pocketbase/apis"
 	"github.com/pocketbase/pocketbase/core"
+	"github.com/pocketbase/pocketbase/mails"
 )
 
 // RegisterRoutes adds the custom endpoints that collection rules cannot express.
@@ -188,6 +189,16 @@ func RegisterRoutes(app core.App) {
 				// sentence whichever way it failed.
 				e.App.Logger().Error("could not claim an account", "user", user.Id, "error", err)
 				return e.BadRequestError(claimError(err), nil)
+			}
+
+			// Send the address a confirmation link. The claim is done either
+			// way — an organiser mid-setup in a hall is not made to wait on an
+			// email round-trip, and the account works unverified. What
+			// verifying buys is the recovery path: a verified address is one a
+			// password-reset can actually reach.
+			if err := mails.SendRecordVerification(e.App, user); err != nil {
+				e.App.Logger().Error("claim: could not send the verification email",
+					"user", user.Id, "error", err)
 			}
 
 			// The caller signs in again with what it just set; there is no

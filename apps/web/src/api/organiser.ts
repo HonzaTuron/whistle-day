@@ -45,6 +45,13 @@ export interface Session {
   /** Kept so the token can be renewed after it expires. */
   password: string;
   token: string;
+  /**
+   * Whether the address has been confirmed. Always false for the device
+   * account (there is no address to confirm); it is the claimed-account
+   * nudge on `/account` that reads it, to say whether a password reset would
+   * actually reach anybody.
+   */
+  verified?: boolean;
 }
 
 // ---------------------------------------------------------------------------
@@ -194,7 +201,11 @@ export async function ensureOrganiser(): Promise<Session> {
   if (stored?.token) {
     try {
       const refreshed = await as(stored).collection("users").authRefresh();
-      return writeSession({ ...stored, token: refreshed.token });
+      return writeSession({
+        ...stored,
+        token: refreshed.token,
+        verified: Boolean(refreshed.record.verified),
+      });
     } catch {
       // expired or revoked — fall through to the password
     }
@@ -205,7 +216,11 @@ export async function ensureOrganiser(): Promise<Session> {
       const auth = await pb()
         .collection("users")
         .authWithPassword(stored.email, stored.password);
-      return writeSession({ ...stored, token: auth.token });
+      return writeSession({
+        ...stored,
+        token: auth.token,
+        verified: Boolean(auth.record.verified),
+      });
     } catch {
       // the account is gone (a reset database, most likely) — start over
     }
@@ -309,6 +324,7 @@ export async function signIn(email: string, password: string): Promise<Session> 
     email,
     password,
     token: auth.token,
+    verified: Boolean(auth.record.verified),
   });
 }
 

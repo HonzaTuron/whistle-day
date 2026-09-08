@@ -196,6 +196,43 @@ export const cs: Record<keyof Catalog, Message> = {
     "Byl použitý, vypršel, nebo to odkaz nikdy nebyl. Řekněte si o nový tomu, kdo vám ho poslal.",
   "claim.failed": "Nepovedlo se to. Nic se nezměnilo — zkuste to znovu.",
 
+  // Návrat do převzatého účtu: zapomenuté heslo a pobídka potvrdit adresu,
+  // aby na ni šlo poslat obnovení.
+  "recover.forgotTitle": "Obnovení hesla",
+  "recover.forgotBody":
+    "Napište e-mail, na kterém účet máte, a pošleme odkaz pro nastavení nového hesla.",
+  "recover.forgotLink": "Zapomněli jste heslo?",
+  "recover.sendLink": "Poslat odkaz",
+  "recover.backToSignIn": "Zpět na přihlášení",
+  "recover.sent":
+    "Pokud na té adrese účet existuje, odkaz pro obnovení je na cestě. Dejte tomu chvíli a mrkněte i do spamu.",
+  "recover.sendFailed": "Teď se to poslat nepodařilo. Za chvíli to zkuste znovu.",
+  "recover.mismatch": "Hesla se neshodují.",
+  "recover.resetTitle": "Zvolte nové heslo",
+  "recover.resetBody": "Pro účet, na který byl odkaz poslaný.",
+  "recover.newPassword": "Nové heslo",
+  "recover.confirmPassword": "Napište ho ještě jednou",
+  "recover.setPassword": "Nastavit heslo",
+  "recover.doneTitle": "Heslo změněno",
+  "recover.doneBody": "Přihlaste se e-mailem a novým heslem.",
+  "recover.toSignIn": "Přihlásit se",
+  "recover.deadTitle": "Odkaz vypršel",
+  "recover.deadBody":
+    "Odkaz pro obnovení platí necelou hodinu a funguje jednou. Vyžádejte si nový na přihlašovací obrazovce.",
+  "recover.tryAgain": "Zpět na přihlášení",
+  "recover.verifyNudge":
+    "Tenhle e-mail zatím není potvrzený, takže obnovení hesla by nemělo kam dojít.",
+  "recover.verifyResent": "Odesláno. Hledejte potvrzovací odkaz ve schránce.",
+  "recover.resend": "Poslat znovu",
+
+  // Dvě stránky, na které míří e-maily pro obnovení.
+  "verify.doneTitle": "E-mail potvrzen",
+  "verify.doneBody": "Tahle adresa vás teď dokáže vrátit do účtu.",
+  "verify.deadTitle": "Odkaz vypršel",
+  "verify.deadBody":
+    "Potvrzovací odkazy neplatí věčně. Přihlaste se a pošlete si z účtu nový.",
+  "verify.toAccount": "Do účtu",
+
   "account.continueWith": "Pokračovat přes {provider}",
   "account.or": "nebo",
   "account.oauthFailed":

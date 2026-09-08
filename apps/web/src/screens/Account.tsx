@@ -20,8 +20,9 @@ import {
   startOAuth,
   type OAuthProvider,
 } from "../api/oauth";
+import { requestPasswordReset, resendVerification } from "../api/recovery";
 
-type Mode = "claim" | "signin";
+type Mode = "claim" | "signin" | "forgot";
 
 /** What a tournament's own state is called on the list of them. */
 const STATUS: Record<string, MessageKey> = {
@@ -45,6 +46,8 @@ export function Account() {
   const [error, setError] = useState<string | null>(null);
   const [providers, setProviders] = useState<OAuthProvider[]>([]);
   const [returning] = useState(isOAuthReturn);
+  const [sentReset, setSentReset] = useState(false);
+  const [resent, setResent] = useState(false);
 
   const active = useRef<Promise<Session> | null>(null);
 
@@ -86,6 +89,15 @@ export function Account() {
 
   const claimed = session !== null && !isDeviceAccount(session);
   const canClaim = session !== null && !claimed;
+  const needsVerify = claimed && session?.verified === false;
+
+  const heading = claimed
+    ? "account.signedIn"
+    : mode === "forgot"
+      ? "recover.forgotTitle"
+      : canClaim
+        ? "account.keepTitle"
+        : "account.signInTitle";
 
   useEffect(() => {
     if (!session || !claimed) return;
@@ -118,6 +130,35 @@ export function Account() {
     }
   };
 
+  const sendReset = async () => {
+    if (busy) return;
+    setBusy(true);
+    setError(null);
+    try {
+      await requestPasswordReset(email.trim());
+      // Shown whether or not the address has an account: which it is is not
+      // this form's to give away.
+      setSentReset(true);
+    } catch {
+      setError(t("recover.sendFailed"));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const resendVerify = async () => {
+    if (busy || !session) return;
+    setBusy(true);
+    try {
+      await resendVerification(session.email);
+      setResent(true);
+    } catch {
+      setError(t("recover.sendFailed"));
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const open = (tournament: TournamentRecord) => {
     rememberTournament({ id: tournament.id, name: tournament.name, token: "" });
     void navigate({ to: "/t/$id", params: { id: tournament.id } });
@@ -135,24 +176,33 @@ export function Account() {
       ) : null}
 
       <header>
-        <h1>
-          {t(
-            claimed
-              ? "account.signedIn"
-              : canClaim
-                ? "account.keepTitle"
-                : "account.signInTitle",
-          )}
-        </h1>
+        <h1>{t(heading)}</h1>
         <p>
           {claimed
             ? t("account.signedInAs", { email: session?.email ?? "" })
-            : t(canClaim ? "account.keepBody" : "account.signInBody")}
+            : mode === "forgot"
+              ? t("recover.forgotBody")
+              : t(canClaim ? "account.keepBody" : "account.signInBody")}
         </p>
       </header>
 
       {claimed ? (
         <section className="account__owned">
+          {needsVerify ? (
+            <p className="account__warning">
+              {resent ? t("recover.verifyResent") : t("recover.verifyNudge")}{" "}
+              {!resent ? (
+                <button
+                  type="button"
+                  className="account__link"
+                  disabled={busy}
+                  onClick={() => void resendVerify()}
+                >
+                  {t("recover.resend")}
+                </button>
+              ) : null}
+            </p>
+          ) : null}
           {owned === null ? (
             <p className="account__hint">{t("account.looking")}</p>
           ) : owned.length === 0 ? (
@@ -177,6 +227,61 @@ export function Account() {
             {t("common.done")}
           </Link>
         </section>
+      ) : mode === "forgot" ? (
+        sentReset ? (
+          <section className="account__owned">
+            <p className="account__hint">{t("recover.sent")}</p>
+            <button
+              type="button"
+              className="btn btn--quiet btn--block"
+              onClick={() => {
+                setMode("signin");
+                setSentReset(false);
+              }}
+            >
+              {t("recover.backToSignIn")}
+            </button>
+          </section>
+        ) : (
+          <form
+            className="account__form"
+            onSubmit={(event) => {
+              event.preventDefault();
+              void sendReset();
+            }}
+          >
+            <label>
+              <span>{t("account.email")}</span>
+              <input
+                type="email"
+                name="email"
+                autoComplete="email"
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+                required
+              />
+            </label>
+
+            <button
+              type="submit"
+              className="btn btn--primary btn--block"
+              disabled={busy}
+            >
+              {t(busy ? "common.moment" : "recover.sendLink")}
+            </button>
+
+            <button
+              type="button"
+              className="btn btn--quiet btn--block"
+              onClick={() => {
+                setMode("signin");
+                setError(null);
+              }}
+            >
+              {t("recover.backToSignIn")}
+            </button>
+          </form>
+        )
       ) : (
         <form
           className="account__form"
@@ -266,6 +371,20 @@ export function Account() {
 
           {mode === "signin" && canClaim ? (
             <p className="account__warning">{t("account.switchWarning")}</p>
+          ) : null}
+
+          {mode === "signin" ? (
+            <button
+              type="button"
+              className="account__link account__link--center"
+              onClick={() => {
+                setMode("forgot");
+                setError(null);
+                setSentReset(false);
+              }}
+            >
+              {t("recover.forgotLink")}
+            </button>
           ) : null}
         </form>
       )}

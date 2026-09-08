@@ -17,7 +17,9 @@ import { Route as ClaimTokenRouteImport } from './routes/claim.$token'
 import { Route as DisplayTokenRouteImport } from './routes/display.$token'
 import { Route as JoinTokenRouteImport } from './routes/join.$token'
 import { Route as MTokenRouteImport } from './routes/m.$token'
+import { Route as ResetTokenRouteImport } from './routes/reset.$token'
 import { Route as TIdRouteImport } from './routes/t.$id'
+import { Route as VerifyTokenRouteImport } from './routes/verify.$token'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -59,9 +61,19 @@ const MTokenRoute = MTokenRouteImport.update({
   path: '/m/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ResetTokenRoute = ResetTokenRouteImport.update({
+  id: '/reset/$token',
+  path: '/reset/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const TIdRoute = TIdRouteImport.update({
   id: '/t/$id',
   path: '/t/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const VerifyTokenRoute = VerifyTokenRouteImport.update({
+  id: '/verify/$token',
+  path: '/verify/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
 
@@ -74,7 +86,9 @@ export interface FileRoutesByFullPath {
   '/display/$token': typeof DisplayTokenRoute
   '/join/$token': typeof JoinTokenRoute
   '/m/$token': typeof MTokenRoute
+  '/reset/$token': typeof ResetTokenRoute
   '/t/$id': typeof TIdRoute
+  '/verify/$token': typeof VerifyTokenRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -85,7 +99,9 @@ export interface FileRoutesByTo {
   '/display/$token': typeof DisplayTokenRoute
   '/join/$token': typeof JoinTokenRoute
   '/m/$token': typeof MTokenRoute
+  '/reset/$token': typeof ResetTokenRoute
   '/t/$id': typeof TIdRoute
+  '/verify/$token': typeof VerifyTokenRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -97,7 +113,9 @@ export interface FileRoutesById {
   '/display/$token': typeof DisplayTokenRoute
   '/join/$token': typeof JoinTokenRoute
   '/m/$token': typeof MTokenRoute
+  '/reset/$token': typeof ResetTokenRoute
   '/t/$id': typeof TIdRoute
+  '/verify/$token': typeof VerifyTokenRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -110,7 +128,9 @@ export interface FileRouteTypes {
     | '/display/$token'
     | '/join/$token'
     | '/m/$token'
+    | '/reset/$token'
     | '/t/$id'
+    | '/verify/$token'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -121,7 +141,9 @@ export interface FileRouteTypes {
     | '/display/$token'
     | '/join/$token'
     | '/m/$token'
+    | '/reset/$token'
     | '/t/$id'
+    | '/verify/$token'
   id:
     | '__root__'
     | '/'
@@ -132,7 +154,9 @@ export interface FileRouteTypes {
     | '/display/$token'
     | '/join/$token'
     | '/m/$token'
+    | '/reset/$token'
     | '/t/$id'
+    | '/verify/$token'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -144,7 +168,9 @@ export interface RootRouteChildren {
   DisplayTokenRoute: typeof DisplayTokenRoute
   JoinTokenRoute: typeof JoinTokenRoute
   MTokenRoute: typeof MTokenRoute
+  ResetTokenRoute: typeof ResetTokenRoute
   TIdRoute: typeof TIdRoute
+  VerifyTokenRoute: typeof VerifyTokenRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -205,11 +231,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/reset/$token': {
+      id: '/reset/$token'
+      path: '/reset/$token'
+      fullPath: '/reset/$token'
+      preLoaderRoute: typeof ResetTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/t/$id': {
       id: '/t/$id'
       path: '/t/$id'
       fullPath: '/t/$id'
       preLoaderRoute: typeof TIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/verify/$token': {
+      id: '/verify/$token'
+      path: '/verify/$token'
+      fullPath: '/verify/$token'
+      preLoaderRoute: typeof VerifyTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
@@ -224,7 +264,9 @@ const rootRouteChildren: RootRouteChildren = {
   DisplayTokenRoute: DisplayTokenRoute,
   JoinTokenRoute: JoinTokenRoute,
   MTokenRoute: MTokenRoute,
+  ResetTokenRoute: ResetTokenRoute,
   TIdRoute: TIdRoute,
+  VerifyTokenRoute: VerifyTokenRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
