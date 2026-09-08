@@ -139,18 +139,19 @@ creates it empty; fill in:
 
 ```bash
 WHISTLEDAY_SMTP_PASS=xsmtpsib-…        # the Brevo SMTP key
-# WHISTLEDAY_MAIL_FROM=alerts@mail.whistle.day   # override the default sender
+# WHISTLEDAY_MAIL_FROM=alerts@whistle.day   # override the default sender
 ```
 
 Then restart the API. With no key the mailer stays off and every send is a
 logged no-op — which is what `go run` on a laptop wants.
 
-Mail is sent as `no-reply@mail.whistle.day`. That subdomain is the one
-authenticated in Brevo — its SPF, DKIM and DMARC records live on
-`mail.whistle.day` in Cloudflare, apart from the apex's mail policy — so a
-message is signed and reaches an inbox rather than spam. Brevo accepting a
-message at the relay is not the same as it being delivered; the domain auth is
-what closes that gap.
+Mail is sent as `no-reply@whistle.day`. The apex is the domain authenticated in
+Brevo — `brevo1`/`brevo2._domainkey.whistle.day` (CNAMEs to Brevo's DKIM keys)
+and `_dmarc.whistle.day`, all in Cloudflare DNS as **DNS only**. Brevo accepts
+a message at the relay whatever the From domain and then silently drops it if
+that domain is not one it has authenticated — so this has to match, and a send
+that "queued" is not the same as one that was delivered. Brevo's Transactional
+→ Logs is where the real outcome of a message is.
 
 ## Once, on your laptop
 

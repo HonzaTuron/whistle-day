@@ -27,10 +27,12 @@ const (
 	defaultSMTPPort = 587
 	defaultSMTPUser = "b85905001@smtp-brevo.com"
 
-	// The address mail is sent as. `mail.whistle.day` is the subdomain
-	// authenticated in Brevo (its SPF/DKIM/DMARC records, not the apex's), so
-	// mail from here is signed and lands in an inbox rather than spam.
-	defaultMailFrom     = "no-reply@mail.whistle.day"
+	// The address mail is sent as. `whistle.day` is the domain authenticated
+	// in Brevo — `brevo1`/`brevo2._domainkey.whistle.day` and its DMARC record
+	// — so Brevo will actually send from it and the message is DKIM-signed.
+	// Sending from a subdomain Brevo has not authenticated is accepted at the
+	// relay and then silently dropped.
+	defaultMailFrom     = "no-reply@whistle.day"
 	defaultMailFromName = "Whistle.day"
 
 	// What handoff and recovery links are built from. `go run` on a laptop can
