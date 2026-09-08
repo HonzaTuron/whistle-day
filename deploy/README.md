@@ -67,6 +67,8 @@ ssh -L 8090:127.0.0.1:8090 deploy@<host>
 #      - Application URL      https://whistle.day   (handoff links use it)
 #      - OAuth2 on `users`    Google + Facebook, redirect
 #                             https://whistle.day/account
+#    Mail is not set here — the SMTP key goes in /srv/whistleday/.env
+#    (WHISTLEDAY_SMTP_PASS); RegisterMail wires the rest on every boot.
 ```
 
 Then check it from outside, which is the only version of "it works" that counts:
@@ -124,6 +126,31 @@ in: `ssh -L 8090:127.0.0.1:8090 deploy@<host>`, then `http://127.0.0.1:8090/_/`.
   screen asks the server what is configured and draws only what comes back, so
   until this is done it is an email and a password and nothing else.
 - A superuser that is not `admin@whistleday.local` / `whistledayadmin1`.
+
+SMTP is **not** set here — `RegisterMail` (`backend/internal/tournament/mail.go`)
+points PocketBase at Brevo on every boot, reading the key from the env file
+below. The host, port and login are in that file in the repo; only the key is
+secret. A dashboard edit to Mail settings does not survive the next restart.
+
+## Once, in `/srv/whistleday/.env`
+
+The gitignored env file the API unit reads (`EnvironmentFile=`). `bootstrap.sh`
+creates it empty; fill in:
+
+```bash
+WHISTLEDAY_SMTP_PASS=xsmtpsib-…        # the Brevo SMTP key
+# WHISTLEDAY_MAIL_FROM=alerts@mail.whistle.day   # override the default sender
+```
+
+Then restart the API. With no key the mailer stays off and every send is a
+logged no-op — which is what `go run` on a laptop wants.
+
+Mail is sent as `no-reply@mail.whistle.day`. That subdomain is the one
+authenticated in Brevo — its SPF, DKIM and DMARC records live on
+`mail.whistle.day` in Cloudflare, apart from the apex's mail policy — so a
+message is signed and reaches an inbox rather than spam. Brevo accepting a
+message at the relay is not the same as it being delivered; the domain auth is
+what closes that gap.
 
 ## Once, on your laptop
 

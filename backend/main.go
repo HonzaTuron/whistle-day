@@ -23,6 +23,7 @@ func main() {
 		Automigrate: isGoRun,
 	})
 
+	tournament.RegisterMail(app)
 	tournament.RegisterHooks(app)
 	tournament.RegisterHistory(app)
 	tournament.RegisterRealtime(app)

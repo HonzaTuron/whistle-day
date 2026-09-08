@@ -62,8 +62,13 @@ usermod -aG whistleday "$DEPLOY_USER"
 mkdir -p /var/log/caddy
 chown caddy:caddy /var/log/caddy
 
-# Secrets that must not be in git — the OAuth2 client ids and anything else.
-# Created empty so the service file's EnvironmentFile has something to read.
+# Secrets that must not be in git — the OAuth2 client ids, the SMTP key, and
+# anything else. Created empty so the service file's EnvironmentFile has
+# something to read; filled in by hand afterwards (see deploy/README.md):
+#
+#   WHISTLEDAY_SMTP_PASS=...        the Brevo key; mail is off without it
+#   WHISTLEDAY_MAIL_FROM=...        optional, if whistle.day is not yet a
+#                                   verified sender in Brevo
 touch "$ROOT/.env"
 chown whistleday:whistleday "$ROOT/.env"
 chmod 0600 "$ROOT/.env"
