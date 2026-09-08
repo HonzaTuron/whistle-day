@@ -23,6 +23,7 @@ import {
   type OAuthProvider,
 } from "../api/oauth";
 import { requestPasswordReset, resendVerification } from "../api/recovery";
+import { AccountLegal } from "../components/AccountLegal";
 
 type Mode = "claim" | "signin" | "forgot";
 
@@ -437,6 +438,20 @@ export function Account() {
             )}
           </button>
 
+          {mode === "claim" ? (
+            <p className="account__agreement">
+              {t("account.termsNotice")}{" "}
+              <Link to="/$" params={{ _splat: "terms" }}>
+                {t("account.termsOfService")}
+              </Link>{" "}
+              {t("account.and")}{" "}
+              <Link to="/$" params={{ _splat: "privacy" }}>
+                {t("account.privacyPolicy")}
+              </Link>
+              .
+            </p>
+          ) : null}
+
           {canClaim ? (
             <button
               type="button"
@@ -471,6 +486,8 @@ export function Account() {
           ) : null}
         </form>
       )}
+
+      <AccountLegal />
     </div>
   );
 }

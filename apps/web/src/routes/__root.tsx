@@ -9,6 +9,7 @@ import {
 import { useState, type ReactNode } from "react";
 import { SiteNav } from "../components/marketing/SiteNav";
 import { AppChrome } from "../components/AppChrome";
+import { AccountLegal } from "../components/AccountLegal";
 import { I18nProvider } from "../lib/i18n";
 import { isAppRoute } from "../lib/routes";
 import "../styles.css";
@@ -178,6 +179,7 @@ function NotFound() {
         <a href="/" className="btn btn--primary">
           Whistle.day
         </a>
+        <AccountLegal />
       </div>
     </>
   );

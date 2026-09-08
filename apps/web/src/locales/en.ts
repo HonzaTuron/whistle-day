@@ -198,6 +198,10 @@ export const en = {
   "account.deleteConfirmButton": "Yes, permanently delete",
   "account.deleted":
     "Your account and all associated data have been permanently deleted.",
+  "account.termsNotice": "By continuing, you agree to our",
+  "account.termsOfService": "Terms of Service",
+  "account.privacyPolicy": "Privacy Policy",
+  "account.and": "and",
   // Being handed a tournament somebody else set up.
   "claim.title": "{tournament} is yours",
   "claim.body":

@@ -200,6 +200,10 @@ export const cs: Record<keyof Catalog, Message> = {
   "account.deleteConfirmButton": "Ano, trvale smazat",
   "account.deleted":
     "Váš účet a veškerá související data byla trvale smazána.",
+  "account.termsNotice": "Pokračováním vyjadřujete souhlas s",
+  "account.termsOfService": "podmínkami služby",
+  "account.privacyPolicy": "zásadami ochrany soukromí",
+  "account.and": "a",
   "claim.title": "{tournament} je váš",
   "claim.body":
     "Tenhle turnaj je založený na účtu, který zatím nikomu nepatří. Dejte na něj e-mail a heslo a je váš — los, výsledky i obrazovky, všechno.",

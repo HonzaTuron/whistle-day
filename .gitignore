@@ -17,9 +17,11 @@ backend/pocketbase
 .vscode/
 .claude/
 
-# Vite
+# Vite / TanStack
 apps/web/dist/
 apps/web/.vite/
+.tanstack/
+apps/web/.tanstack/
 
 # Built by `bun run deploy`: two binaries and a copy of dist/client.
 # 100MB+ of build output, and none of it is source.

@@ -2,6 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { useRef, useState } from "react";
 import { confirmPasswordReset } from "../api/recovery";
 import { useT } from "../lib/i18n";
+import { AccountLegal } from "../components/AccountLegal";
 
 /**
  * The far end of a "reset your password" link.
@@ -49,6 +50,7 @@ export function ResetPassword({ token }: { token: string }) {
         <Link to="/account" className="btn btn--primary btn--block">
           {t("recover.toSignIn")}
         </Link>
+        <AccountLegal />
       </div>
     );
   }
@@ -63,6 +65,7 @@ export function ResetPassword({ token }: { token: string }) {
         <Link to="/account" className="btn btn--primary btn--block">
           {t("recover.tryAgain")}
         </Link>
+        <AccountLegal />
       </div>
     );
   }
@@ -124,6 +127,8 @@ export function ResetPassword({ token }: { token: string }) {
           {t("recover.setPassword")}
         </button>
       </form>
+
+      <AccountLegal />
     </div>
   );
 }

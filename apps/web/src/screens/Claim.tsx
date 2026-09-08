@@ -1,8 +1,9 @@
-import { useNavigate } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { useRef, useState } from "react";
 import { usePreviewHandoff } from "../api/hooks";
 import { claimHandoff, rememberTournament } from "../api/organiser";
 import { useT } from "../lib/i18n";
+import { AccountLegal } from "../components/AccountLegal";
 
 /**
  * Being handed a tournament.
@@ -135,8 +136,22 @@ export function Claim({ token }: { token: string }) {
           {t(busy ? "common.moment" : "claim.accept")}
         </button>
 
+        <p className="account__agreement">
+          {t("account.termsNotice")}{" "}
+          <Link to="/$" params={{ _splat: "terms" }}>
+            {t("account.termsOfService")}
+          </Link>{" "}
+          {t("account.and")}{" "}
+          <Link to="/$" params={{ _splat: "privacy" }}>
+            {t("account.privacyPolicy")}
+          </Link>
+          .
+        </p>
+
         <p className="account__hint">{t("claim.once")}</p>
       </form>
+
+      <AccountLegal />
     </div>
   );
 }

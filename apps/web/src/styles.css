@@ -3570,6 +3570,53 @@ th,
   gap: 0.5rem;
 }
 
+.account__agreement {
+  margin: 0.25rem 0 0;
+  font-size: 0.8rem;
+  line-height: 1.45;
+  color: var(--muted);
+  text-align: center;
+}
+
+.account__agreement a {
+  color: var(--text);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.account__agreement a:hover {
+  color: var(--accent);
+}
+
+.account__legal {
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--line);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.account__legal a {
+  color: var(--muted);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.account__legal a:hover {
+  color: var(--text);
+}
+
+.account__legal-sep {
+  color: var(--muted);
+  opacity: 0.5;
+}
+
+
 .landing__account {
   margin-top: 1.5rem;
   color: var(--muted);

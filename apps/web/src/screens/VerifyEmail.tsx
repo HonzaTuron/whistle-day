@@ -2,6 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { confirmVerification } from "../api/recovery";
 import { useT } from "../lib/i18n";
+import { AccountLegal } from "../components/AccountLegal";
 
 /**
  * The far end of a "confirm your email" link.
@@ -41,6 +42,7 @@ export function VerifyEmail({ token }: { token: string }) {
       <Link to="/account" className="btn btn--primary btn--block">
         {t("verify.toAccount")}
       </Link>
+      <AccountLegal />
     </div>
   );
 }
