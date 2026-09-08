@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/pocketbase/dbx"
 	"github.com/pocketbase/pocketbase/apis"
 	"github.com/pocketbase/pocketbase/core"
 	"github.com/pocketbase/pocketbase/mails"
@@ -205,6 +206,35 @@ func RegisterRoutes(app core.App) {
 			// token to hand back that would still be valid.
 			return e.JSON(http.StatusOK, map[string]any{"email": data.Email})
 		}).Bind(apis.RequireAuth())
+
+		// Permanently delete an account and everything it owns.
+		//
+		// User deletion path / GDPR right to erasure.
+		//
+		// Cascades:
+		// 1. All tournaments owned by the user (owner = auth.Id) are deleted,
+		//    which cascades to their courts, entries, stages, pools, slots,
+		//    fixtures, games, displays, and staff.
+		// 2. Any fixtures where referee = auth.Id have the referee field cleared.
+		// 3. Any staff records where user = auth.Id cascade upon user deletion.
+		// 4. Any handoffs for this user cascade.
+		// 5. The user record itself is deleted.
+		deleteAccountHandler := func(e *core.RequestEvent) error {
+			auth := e.Auth
+			if auth == nil || auth.Collection().Name != "users" {
+				return e.UnauthorizedError("sign in first", nil)
+			}
+
+			if err := DeleteUserAccount(e.App, auth.Id); err != nil {
+				e.App.Logger().Error("could not delete account", "user", auth.Id, "error", err)
+				return e.InternalServerError("could not delete account", err)
+			}
+
+			return e.JSON(http.StatusOK, map[string]any{"deleted": true})
+		}
+
+		se.Router.POST("/api/organiser/delete", deleteAccountHandler).Bind(apis.RequireAuth())
+		se.Router.DELETE("/api/organiser/account", deleteAccountHandler).Bind(apis.RequireAuth())
 
 		// Take a team out of a tournament that is already running, and put
 		// one back.
@@ -701,3 +731,50 @@ func withoutTimestamp(payload *DisplayPayload) DisplayPayload {
 	copied.GeneratedAt = ""
 	return copied
 }
+
+// DeleteUserAccount permanently removes a user, every tournament they own, and
+// any references to them.
+func DeleteUserAccount(app core.App, userID string) error {
+	user, err := app.FindRecordById("users", userID)
+	if err != nil {
+		return err
+	}
+
+	tournaments, err := app.FindRecordsByFilter(
+		"tournaments",
+		"owner = {:owner}",
+		"",
+		0, 0,
+		dbx.Params{"owner": userID},
+	)
+	if err != nil {
+		return err
+	}
+
+	for _, t := range tournaments {
+		if err := app.Delete(t); err != nil {
+			return fmt.Errorf("could not delete tournament %s: %w", t.Id, err)
+		}
+	}
+
+	refereeFixtures, err := app.FindRecordsByFilter(
+		"fixtures",
+		"referee = {:referee}",
+		"",
+		0, 0,
+		dbx.Params{"referee": userID},
+	)
+	if err == nil {
+		for _, f := range refereeFixtures {
+			f.Set("referee", "")
+			_ = app.Save(f)
+		}
+	}
+
+	if err := app.Delete(user); err != nil {
+		return fmt.Errorf("could not delete user %s: %w", userID, err)
+	}
+
+	return nil
+}
+

@@ -30,7 +30,8 @@ export type PageKind =
   | "guide"
   | "comparison"
   | "roundup"
-  | "printable";
+  | "printable"
+  | "legal";
 
 /** A prose block. Headed sections become `<h2>`s and land in the page outline. */
 export interface Section {

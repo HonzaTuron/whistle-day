@@ -87,6 +87,17 @@ export function PageView({ page }: { page: Page }) {
           <span className="doc__foot-note">
             Free tournament organiser. No account, no ads, no cap.
           </span>
+          <div className="doc__foot-legal">
+            <Link to="/$" params={{ _splat: "privacy" }} className="doc__foot-sublink">
+              Privacy
+            </Link>
+            <Link to="/$" params={{ _splat: "terms" }} className="doc__foot-sublink">
+              Terms
+            </Link>
+            <Link to="/$" params={{ _splat: "user-deletion" }} className="doc__foot-sublink">
+              Data deletion
+            </Link>
+          </div>
         </footer>
       </article>
     </>

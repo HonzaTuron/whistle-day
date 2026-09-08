@@ -16,8 +16,9 @@
 import { COMPARISON_PAGES } from "./comparisons";
 import { FORMAT_PAGES, HUB } from "./formats";
 import { GUIDE_PAGES } from "./guides";
+import { LEGAL_PAGES } from "./legal";
 import { OPERATIONAL_PAGES } from "./operational";
-import { PARAMETRIC_PAGES, SLUG_ALIASES } from "./parametric";
+import { PARAMETRIC_PAGES, SLUG_ALIASES as PARAMETRIC_ALIASES } from "./parametric";
 import { PRINTABLE_PAGES } from "./printables";
 import { SPORT_PAGES } from "./sports";
 import type { Page } from "./types";
@@ -31,6 +32,7 @@ const ALL: Page[] = [
   ...GUIDE_PAGES,
   ...COMPARISON_PAGES,
   ...PRINTABLE_PAGES,
+  ...LEGAL_PAGES,
 ];
 
 /**
@@ -71,6 +73,16 @@ export const PAGES: Page[] = ALL.map((page) => ({
 
 const RESOLVED = new Map(PAGES.map((page) => [page.slug, page]));
 
+export const SLUG_ALIASES: Record<string, string> = {
+  ...PARAMETRIC_ALIASES,
+  "privacy-policy": "privacy",
+  "terms-of-service": "terms",
+  "terms-of-use": "terms",
+  "data-deletion": "user-deletion",
+  "delete-account": "user-deletion",
+  "account-deletion": "user-deletion",
+};
+
 /** The page at this slug, following an alias if there is one. */
 export function pageBySlug(slug: string): Page | undefined {
   return RESOLVED.get(SLUG_ALIASES[slug] ?? slug);
@@ -93,5 +105,4 @@ export const pagesOfKind = (kind: Page["kind"]) =>
  */
 export const MARKETING_PATHS: string[] = PAGES.map((page) => `/${page.slug}`);
 
-export { SLUG_ALIASES };
 export type { Page } from "./types";

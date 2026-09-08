@@ -222,6 +222,17 @@ export function Landing() {
 
       <footer className="home__footer">
         <p>{t("landing.footer")}</p>
+        <nav className="home__footer-links" aria-label="Legal">
+          <Link to="/$" params={{ _splat: "privacy" }}>
+            {t("nav.privacy")}
+          </Link>
+          <Link to="/$" params={{ _splat: "terms" }}>
+            {t("nav.terms")}
+          </Link>
+          <Link to="/$" params={{ _splat: "user-deletion" }}>
+            {t("nav.deletion")}
+          </Link>
+        </nav>
       </footer>
     </div>
   );

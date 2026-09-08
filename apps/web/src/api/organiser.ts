@@ -329,6 +329,29 @@ export async function signIn(email: string, password: string): Promise<Session> 
 }
 
 /**
+ * Sign out from this device, clearing stored session and draft state.
+ */
+export function signOut(): void {
+  try {
+    localStorage.removeItem(SESSION_KEY);
+    localStorage.removeItem(RUNNING_KEY);
+    localStorage.removeItem(DRAFT_KEY);
+  } catch {
+    /* nothing to clear */
+  }
+  pb().authStore.clear();
+}
+
+/**
+ * Permanently delete the user account and all owned tournaments.
+ * GDPR right to erasure / user deletion path.
+ */
+export async function deleteAccount(session: Session): Promise<void> {
+  await send(session, "/api/organiser/delete", { method: "POST" });
+  signOut();
+}
+
+/**
  * The tournaments this account can run, newest first — what a device that has
  * just signed in needs before it can show anything.
  *

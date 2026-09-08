@@ -4,11 +4,13 @@ import { useT, type MessageKey } from "../lib/i18n";
 import {
   ApiError,
   claimAccount,
+  deleteAccount,
   ensureOrganiser,
   isDeviceAccount,
   myTournaments,
   rememberTournament,
   signIn,
+  signOut,
   storedSession,
   type Session,
   type TournamentRecord,
@@ -48,6 +50,8 @@ export function Account() {
   const [returning] = useState(isOAuthReturn);
   const [sentReset, setSentReset] = useState(false);
   const [resent, setResent] = useState(false);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [deleted, setDeleted] = useState(false);
 
   const active = useRef<Promise<Session> | null>(null);
 
@@ -91,13 +95,15 @@ export function Account() {
   const canClaim = session !== null && !claimed;
   const needsVerify = claimed && session?.verified === false;
 
-  const heading = claimed
-    ? "account.signedIn"
-    : mode === "forgot"
-      ? "recover.forgotTitle"
-      : canClaim
-        ? "account.keepTitle"
-        : "account.signInTitle";
+  const heading = deleted
+    ? "account.deleteTitle"
+    : claimed
+      ? "account.signedIn"
+      : mode === "forgot"
+        ? "recover.forgotTitle"
+        : canClaim
+          ? "account.keepTitle"
+          : "account.signInTitle";
 
   useEffect(() => {
     if (!session || !claimed) return;
@@ -164,6 +170,30 @@ export function Account() {
     void navigate({ to: "/t/$id", params: { id: tournament.id } });
   };
 
+  const onSignOut = () => {
+    signOut();
+    setSession(null);
+    setOwned(null);
+    setMode("signin");
+  };
+
+  const onDelete = async () => {
+    if (!session || busy) return;
+    setBusy(true);
+    setError(null);
+    try {
+      await deleteAccount(session);
+      setSession(null);
+      setOwned(null);
+      setConfirmingDelete(false);
+      setDeleted(true);
+    } catch (thrown) {
+      setError(thrown instanceof Error ? thrown.message : t("error.notSaved"));
+    } finally {
+      setBusy(false);
+    }
+  };
+
   return (
     <div className="account">
       {error ? (
@@ -178,15 +208,23 @@ export function Account() {
       <header>
         <h1>{t(heading)}</h1>
         <p>
-          {claimed
-            ? t("account.signedInAs", { email: session?.email ?? "" })
-            : mode === "forgot"
-              ? t("recover.forgotBody")
-              : t(canClaim ? "account.keepBody" : "account.signInBody")}
+          {deleted
+            ? t("account.deleted")
+            : claimed
+              ? t("account.signedInAs", { email: session?.email ?? "" })
+              : mode === "forgot"
+                ? t("recover.forgotBody")
+                : t(canClaim ? "account.keepBody" : "account.signInBody")}
         </p>
       </header>
 
-      {claimed ? (
+      {deleted ? (
+        <section className="account__owned">
+          <Link to="/" className="btn btn--primary btn--block">
+            {t("common.done")}
+          </Link>
+        </section>
+      ) : claimed ? (
         <section className="account__owned">
           {needsVerify ? (
             <p className="account__warning">
@@ -223,9 +261,54 @@ export function Account() {
               ))}
             </ul>
           )}
-          <Link to="/" className="btn btn--quiet btn--block">
-            {t("common.done")}
-          </Link>
+          {confirmingDelete ? (
+            <div className="account__danger-card" role="alert">
+              <h3>{t("account.deleteConfirmTitle")}</h3>
+              <p>
+                {t("account.deleteConfirmPrompt", {
+                  count: owned?.length ?? 0,
+                })}
+              </p>
+              <div className="account__danger-actions">
+                <button
+                  type="button"
+                  className="btn btn--danger btn--block"
+                  disabled={busy}
+                  onClick={() => void onDelete()}
+                >
+                  {t(busy ? "common.moment" : "account.deleteConfirmButton")}
+                </button>
+                <button
+                  type="button"
+                  className="btn btn--quiet btn--block"
+                  disabled={busy}
+                  onClick={() => setConfirmingDelete(false)}
+                >
+                  {t("common.cancel")}
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="account__actions">
+              <Link to="/" className="btn btn--primary btn--block">
+                {t("common.done")}
+              </Link>
+              <button
+                type="button"
+                className="btn btn--quiet btn--block"
+                onClick={onSignOut}
+              >
+                {t("account.signOut")}
+              </button>
+              <button
+                type="button"
+                className="account__link account__link--center"
+                onClick={() => setConfirmingDelete(true)}
+              >
+                {t("account.deleteButton")}
+              </button>
+            </div>
+          )}
         </section>
       ) : mode === "forgot" ? (
         sentReset ? (

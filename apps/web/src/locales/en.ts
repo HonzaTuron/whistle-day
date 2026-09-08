@@ -94,6 +94,9 @@ export const en = {
   "nav.print": "Print",
   "nav.compare": "Compare",
   "nav.setUp": "Set up",
+  "nav.privacy": "Privacy",
+  "nav.terms": "Terms",
+  "nav.deletion": "Data deletion",
 
   // -------------------------------------------------------------------------
   // landing
@@ -184,6 +187,17 @@ export const en = {
     "Signing in as somebody else leaves anything set up on this device behind. It stays live on the wall; this browser just stops being the way in.",
   "account.claimRefused":
     "That address cannot be saved on this device. If it is already your account, sign in with it — anything set up here stays live and this browser stops being the way in.",
+  "account.signOut": "Sign out",
+  "account.deleteTitle": "Account deleted",
+  "account.deleteButton": "Delete account",
+  "account.deleteConfirmTitle": "Delete this account?",
+  "account.deleteConfirmPrompt": {
+    one: "This permanently deletes your account and {count} tournament you own. There is no way to recover them.",
+    other: "This permanently deletes your account and {count} tournaments you own. There is no way to recover them.",
+  },
+  "account.deleteConfirmButton": "Yes, permanently delete",
+  "account.deleted":
+    "Your account and all associated data have been permanently deleted.",
   // Being handed a tournament somebody else set up.
   "claim.title": "{tournament} is yours",
   "claim.body":

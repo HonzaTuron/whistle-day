@@ -95,6 +95,9 @@ export const cs: Record<keyof Catalog, Message> = {
   "nav.print": "K vytištění",
   "nav.compare": "Srovnání",
   "nav.setUp": "Založit",
+  "nav.privacy": "Soukromí",
+  "nav.terms": "Podmínky",
+  "nav.deletion": "Smazání údajů",
 
   // -------------------------------------------------------------------------
   // landing
@@ -185,6 +188,18 @@ export const cs: Record<keyof Catalog, Message> = {
     "Přihlášením pod někým jiným tady necháte všechno, co je založené na tomhle zařízení. Na zdi to běží dál; tenhle prohlížeč jen přestane být cestou dovnitř.",
   "account.claimRefused":
     "Tuhle adresu na tomhle zařízení uložit nelze. Pokud je to už váš účet, přihlaste se jím — všechno založené tady běží dál a tenhle prohlížeč přestane být cestou dovnitř.",
+  "account.signOut": "Odhlásit se",
+  "account.deleteTitle": "Účet smazán",
+  "account.deleteButton": "Smazat účet",
+  "account.deleteConfirmTitle": "Smazat tento účet?",
+  "account.deleteConfirmPrompt": {
+    one: "Tímto trvale smažete svůj účet a {count} turnaj, který vlastníte. Nelze to vzít zpět.",
+    few: "Tímto trvale smažete svůj účet a {count} turnaje, které vlastníte. Nelze to vzít zpět.",
+    other: "Tímto trvale smažete svůj účet a {count} turnajů, které vlastníte. Nelze to vzít zpět.",
+  },
+  "account.deleteConfirmButton": "Ano, trvale smazat",
+  "account.deleted":
+    "Váš účet a veškerá související data byla trvale smazána.",
   "claim.title": "{tournament} je váš",
   "claim.body":
     "Tenhle turnaj je založený na účtu, který zatím nikomu nepatří. Dejte na něj e-mail a heslo a je váš — los, výsledky i obrazovky, všechno.",
