@@ -235,7 +235,7 @@ export function Landing() {
         </nav>
         <a
           className="home__badge"
-          href="https://smithery.ai/server/turon-honza/whistle-day"
+          href="https://smithery.ai/servers/turon-honza/whistle-day"
           target="_blank"
           rel="noopener"
         >
