@@ -1848,6 +1848,11 @@ th,
   transition: opacity 0.15s ease;
 }
 
+/* Class selector would otherwise win over the UA [hidden] rule. */
+.home__badge[hidden] {
+  display: none;
+}
+
 .home__badge:hover {
   opacity: 1;
 }

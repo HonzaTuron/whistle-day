@@ -79,6 +79,8 @@ export function Landing() {
   const navigate = useNavigate();
   const [token, setToken] = useState("");
   const [running] = useState(rememberedTournament);
+  // Smithery's badge service is flaky; a broken image is worse than no badge.
+  const [badgeLoaded, setBadgeLoaded] = useState(false);
 
   const open = (to: "/display/$token" | "/m/$token") => {
     const trimmed = token.trim();
@@ -238,12 +240,15 @@ export function Landing() {
           href="https://smithery.ai/servers/turon-honza/whistle-day"
           target="_blank"
           rel="noopener"
+          hidden={!badgeLoaded}
         >
           <img
             src="https://smithery.ai/badge/turon-honza/whistle-day"
             alt={t("landing.smithery")}
             height={20}
             loading="lazy"
+            onLoad={() => setBadgeLoaded(true)}
+            onError={() => setBadgeLoaded(false)}
           />
         </a>
       </footer>
