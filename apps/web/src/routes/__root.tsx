@@ -43,7 +43,12 @@ export const Route = createRootRoute({
           "Free tournament organiser. Draw groups, brackets or a Swiss, run the day from your phone, and put the results on a projector.",
       },
     ],
-    links: [{ rel: "manifest", href: "/manifest.webmanifest" }],
+    links: [
+      { rel: "icon", href: "/icon.svg", type: "image/svg+xml" },
+      { rel: "icon", href: "/pwa-192.png", type: "image/png", sizes: "192x192" },
+      { rel: "apple-touch-icon", href: "/apple-touch-icon.png" },
+      { rel: "manifest", href: "/manifest.webmanifest" },
+    ],
   }),
   component: RootComponent,
   notFoundComponent: NotFound,
