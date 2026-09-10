@@ -107,7 +107,7 @@ export const LEGAL_PAGES: Page[] = [
     description:
       "The terms of service for using Whistle.day to organise tournaments, generate brackets, and display live scores.",
     lede:
-      "Whistle.day is a free, open-source tournament organisation platform. These terms set out what you can expect from the service, and the rules that govern your use of it.",
+      "Whistle.day is a free tournament organisation platform. These terms set out what you can expect from the service, and the rules that govern your use of it.",
     sections: [
       {
         heading: "Acceptance of terms",
@@ -119,7 +119,7 @@ export const LEGAL_PAGES: Page[] = [
         heading: "The service",
         body: [
           "Whistle.day provides tools to generate tournament schedules, calculate group tables, manage knockout brackets, coordinate multiple courts, and display live standings on projectors and mobile devices.",
-          "The software is provided free of charge and is open-source. We strive to maintain continuous availability and reliable calculations, but services may occasionally be updated, modified, or temporarily unavailable for maintenance.",
+          "The software is provided free of charge. We strive to maintain continuous availability and reliable calculations, but services may occasionally be updated, modified, or temporarily unavailable for maintenance.",
         ],
       },
       {
@@ -141,7 +141,6 @@ export const LEGAL_PAGES: Page[] = [
         heading: "Intellectual property",
         body: [
           "You retain all rights to the tournament names, team rosters, and competition data that you submit to Whistle.day.",
-          "The Whistle.day codebase and documentation are open-source. You may inspect, contribute to, and run the software according to its open-source license.",
         ],
       },
       {

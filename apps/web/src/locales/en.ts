@@ -162,7 +162,7 @@ export const en = {
   "landing.tokenPlaceholder": "screen token",
   "landing.projector": "Projector",
   "landing.phone": "Phone",
-  "landing.footer": "Whistle.day — free and open-source tournament organiser.",
+  "landing.footer": "Whistle.day — free tournament organiser.",
   "landing.smithery": "Whistle.day on Smithery",
 
   // -------------------------------------------------------------------------

@@ -163,7 +163,7 @@ export const cs: Record<keyof Catalog, Message> = {
   "landing.tokenPlaceholder": "kód obrazovky",
   "landing.projector": "Projektor",
   "landing.phone": "Mobil",
-  "landing.footer": "Whistle.day — svobodný open-source nástroj na turnaje.",
+  "landing.footer": "Whistle.day — bezplatný nástroj na turnaje.",
   "landing.smithery": "Whistle.day na Smithery",
 
   // -------------------------------------------------------------------------

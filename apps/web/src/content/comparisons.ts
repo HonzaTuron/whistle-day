@@ -343,7 +343,7 @@ export const COMPARISON_PAGES: Page[] = [
           "Stages in any order, with later stages seeded from earlier ones' tables — groups then Swiss then a playoff is expressible, not just groups then a playoff.",
           "Swiss as a first-class format, with the next round drawing itself when the previous one finishes.",
           "Setup asks how long the day should be rather than how many groups you want, and quotes matches and hours against the teams and courts you entered.",
-          "Open source, and self-hostable — the backend is a single Go binary.",
+          "Self-hostable — the backend is a single Go binary.",
         ],
       },
       {
@@ -367,7 +367,6 @@ export const COMPARISON_PAGES: Page[] = [
     ],
     related: [
       "alternatives/free-tournament-bracket-software",
-      "alternatives/open-source-tournament-software",
       "tournament-projector-display",
     ],
   },
@@ -424,62 +423,6 @@ export const COMPARISON_PAGES: Page[] = [
     ],
     related: [
       "vs/challonge",
-      "vs/tournify",
-      "alternatives/open-source-tournament-software",
-      "tournament-generator",
-    ],
-  },
-
-  {
-    slug: "alternatives/open-source-tournament-software",
-    kind: "roundup",
-    title: "Open Source Tournament Software — Self-Hosted and Free",
-    h1: "Open source tournament software",
-    description:
-      "Self-hostable tournament software: what to look for, and how Whistle.day is built — one Go binary, PocketBase as a framework, no external services.",
-    lede:
-      "If you want to run tournament software you control — on a club's own server, or on a laptop in a hall with no internet at all — the thing that matters most is how many moving parts it has.",
-    sections: [
-      {
-        heading: "What to look for in something self-hosted",
-        body: [
-          "One process rather than five. A tool that needs a database server, a cache, a queue and a web server is a tool that will be down when you need it and that nobody at the club can fix.",
-          "A file-backed database, so the backup is a file you can copy.",
-          "No dependency on an external service to render or compute anything, or the offline case is not really offline.",
-        ],
-      },
-      {
-        heading: "How Whistle.day is built",
-        body: [
-          "The backend is PocketBase used as a Go framework rather than as a downloaded binary — the tournament logic is compiled in, so `go build` produces one server with the generators, standings and slot resolution inside it. SQLite underneath, so the data is a file.",
-          "The frontend is a static build served by the same process. There is nothing else to run: no separate database, no cache, no queue, no worker.",
-          "The generators are Go and there is exactly one implementation of them. They used to be duplicated in TypeScript so the browser could preview a draw; that is gone, and preview goes through the server with a dry-run flag. Two implementations of bracket seeding is how brackets drift.",
-        ],
-      },
-      {
-        heading: "Running it yourself",
-        body: [
-          "Build the binary, run the migrations, serve. The whole test suite is `go vet`, the unit tests and a smoke run that boots a real server on a temporary data directory and plays an entire tournament through the REST API — a two-pool group stage, a playoff seeded from it, then a double elimination and a Swiss out to the end.",
-          "That last part is the only way to find out whether a bracket deadlocks or a round ever fails to draw itself, which is why it is the check that matters.",
-        ],
-      },
-    ],
-    faq: [
-      {
-        q: "Can I run it offline?",
-        a: "You can run the server on a local machine and have phones on the same wifi reach it. It is not a progressive web app that works with no server at all.",
-      },
-      {
-        q: "What is the licence?",
-        a: "Open source. Check the repository for the current licence text before building on it.",
-      },
-      {
-        q: "What does the backup look like?",
-        a: "A SQLite data directory. Copy it.",
-      },
-    ],
-    related: [
-      "alternatives/free-tournament-bracket-software",
       "vs/tournify",
       "tournament-generator",
     ],
