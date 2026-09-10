@@ -184,12 +184,12 @@ tool returned one. It also means what leaks, if the model's transcript leaks,
 is one tournament — that is what an account per tournament is for.
 
 A caller that *does* hold a token before it connects — a person reconnecting
-to an existing tournament through [Smithery](https://smithery.ai), whose
-gateway binds a config value at connect time — has nowhere to put it as an
+to an existing tournament through a gateway like [Smithery](https://smithery.ai)
+that binds a config value at connect time — has nowhere to put it as an
 argument, so `caller()` also reads an `X-Whistle-Session` header when a call
-carries no argument. `smithery.yaml` at the repo root is the config schema
-that maps a Smithery session field onto that header; see the comment in it for
-the publish command.
+carries no argument. A Smithery config schema with a single `sessionToken`
+field mapped `x-from`/`x-to` onto that header is all it takes to expose it
+there.
 
 `create_handoff` ends it. The link goes to whoever is actually running the day,
 they set an email and a password at `/claim/{token}`, and the account becomes
