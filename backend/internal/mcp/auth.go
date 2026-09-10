@@ -1,7 +1,10 @@
 package mcp
 
 import (
+	"context"
 	"fmt"
+	"net/http"
+	"strings"
 
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/pocketbase/pocketbase/core"
@@ -57,6 +60,35 @@ func withSession() mcp.ToolOption {
 	)
 }
 
+// SessionHeader is the other way in for the credential.
+//
+// The argument above is the canonical channel, for the reason set out at the
+// top of this file: an agent has no token when it opens the connection. But a
+// caller that already holds one — a person reconnecting through Smithery, whose
+// gateway binds a config value at connect time and has nowhere to thread it
+// afterwards — needs somewhere to put it, and a header is where a fixed
+// credential fits. `withSessionHeader` copies it onto the request context;
+// `caller` reads it back if no argument was sent.
+const SessionHeader = "X-Whistle-Session"
+
+type ctxKey int
+
+const sessionCtxKey ctxKey = iota
+
+// withSessionHeader is wired into the HTTP transport in New(). mcp-go runs it
+// once per request, before the tool handler.
+func withSessionHeader(ctx context.Context, r *http.Request) context.Context {
+	if v := strings.TrimSpace(r.Header.Get(SessionHeader)); v != "" {
+		return context.WithValue(ctx, sessionCtxKey, v)
+	}
+	return ctx
+}
+
+func sessionFromContext(ctx context.Context) string {
+	v, _ := ctx.Value(sessionCtxKey).(string)
+	return v
+}
+
 // newOrganiser mints an account for an agent and the token to act as it.
 //
 // Mirrors `signUp()` in `apps/web/src/api/organiser.ts`, including the address
@@ -94,8 +126,14 @@ func (s *WhistleMCP) newOrganiser() (*core.Record, string, error) {
 }
 
 // caller resolves the credential on a tool call to the account that holds it.
-func (s *WhistleMCP) caller(req mcp.CallToolRequest) (*core.Record, error) {
+//
+// Argument first, then the X-Whistle-Session header. A call that carries both
+// is a call that carries the argument.
+func (s *WhistleMCP) caller(ctx context.Context, req mcp.CallToolRequest) (*core.Record, error) {
 	token, _ := req.GetArguments()[sessionArg].(string)
+	if token == "" {
+		token = sessionFromContext(ctx)
+	}
 	if token == "" {
 		return nil, errNoSession
 	}
@@ -114,8 +152,8 @@ func (s *WhistleMCP) caller(req mcp.CallToolRequest) (*core.Record, error) {
 // The error is deliberately the same whether the tournament is somebody
 // else's or not there at all, so the tools cannot be used to find out which
 // tournaments exist.
-func (s *WhistleMCP) operator(req mcp.CallToolRequest, tournamentID string) (*core.Record, error) {
-	user, err := s.caller(req)
+func (s *WhistleMCP) operator(ctx context.Context, req mcp.CallToolRequest, tournamentID string) (*core.Record, error) {
+	user, err := s.caller(ctx, req)
 	if err != nil {
 		return nil, err
 	}

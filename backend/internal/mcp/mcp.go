@@ -46,14 +46,20 @@ func New(app core.App) *WhistleMCP {
 		"1.0.0",
 		server.WithToolCapabilities(true),
 		server.WithResourceCapabilities(true, true),
+		server.WithPromptCapabilities(false),
 		server.WithLogging(),
 	)
 
 	s.registerTools()
 	s.registerResources()
+	s.registerPrompts()
 
 	s.http = server.NewStreamableHTTPServer(s.mcp,
 		server.WithEndpointPath(MCPEndpoint),
+		// Lifts the X-Whistle-Session header onto the request context, where
+		// caller() looks for the credential when a tool call carries no
+		// session_token argument of its own.
+		server.WithHTTPContextFunc(withSessionHeader),
 		// A long poll through a proxy is a connection something will decide to
 		// close; the heartbeat is what stops it being closed as idle.
 		server.WithHeartbeatInterval(30*time.Second),
@@ -139,7 +145,7 @@ func addCourtTool() mcp.Tool {
 
 func (s *WhistleMCP) addCourt(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	tid := argString(req, "tournament_id")
-	if _, err := s.operator(req, tid); err != nil {
+	if _, err := s.operator(ctx, req, tid); err != nil {
 		return nil, err
 	}
 
@@ -195,7 +201,7 @@ func listCourtsTool() mcp.Tool {
 
 func (s *WhistleMCP) listCourts(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	tid := argString(req, "tournament_id")
-	if _, err := s.operator(req, tid); err != nil {
+	if _, err := s.operator(ctx, req, tid); err != nil {
 		return nil, err
 	}
 
@@ -225,7 +231,7 @@ func createHandoffTool() mcp.Tool {
 
 func (s *WhistleMCP) createHandoff(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	tid := argString(req, "tournament_id")
-	user, err := s.operator(req, tid)
+	user, err := s.operator(ctx, req, tid)
 	if err != nil {
 		return nil, err
 	}
@@ -273,7 +279,7 @@ func listTournamentsTool() mcp.Tool {
 }
 
 func (s *WhistleMCP) listTournaments(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	user, err := s.caller(req)
+	user, err := s.caller(ctx, req)
 	if err != nil {
 		return nil, err
 	}
@@ -303,7 +309,7 @@ func getTournamentTool() mcp.Tool {
 
 func (s *WhistleMCP) getTournament(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	id := argString(req, "id")
-	if _, err := s.operator(req, id); err != nil {
+	if _, err := s.operator(ctx, req, id); err != nil {
 		return nil, err
 	}
 	r, err := s.app.FindRecordById("tournaments", id)
@@ -326,7 +332,7 @@ func listStagesTool() mcp.Tool {
 
 func (s *WhistleMCP) listStages(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	tid := argString(req, "tournament_id")
-	if _, err := s.operator(req, tid); err != nil {
+	if _, err := s.operator(ctx, req, tid); err != nil {
 		return nil, err
 	}
 	records, err := s.app.FindRecordsByFilter(
@@ -353,7 +359,7 @@ func (s *WhistleMCP) getStage(ctx context.Context, req mcp.CallToolRequest) (*mc
 	if err != nil {
 		return nil, err
 	}
-	if _, err := s.operator(req, tid); err != nil {
+	if _, err := s.operator(ctx, req, tid); err != nil {
 		return nil, err
 	}
 	r, err := s.app.FindRecordById("stages", id)
@@ -380,7 +386,7 @@ func (s *WhistleMCP) listPools(ctx context.Context, req mcp.CallToolRequest) (*m
 	if err != nil {
 		return nil, err
 	}
-	if _, err := s.operator(req, tid); err != nil {
+	if _, err := s.operator(ctx, req, tid); err != nil {
 		return nil, err
 	}
 	records, err := s.app.FindRecordsByFilter(
@@ -410,7 +416,7 @@ func (s *WhistleMCP) listFixtures(ctx context.Context, req mcp.CallToolRequest) 
 	if err != nil {
 		return nil, err
 	}
-	if _, err := s.operator(req, tid); err != nil {
+	if _, err := s.operator(ctx, req, tid); err != nil {
 		return nil, err
 	}
 
@@ -455,7 +461,7 @@ func (s *WhistleMCP) getFixture(ctx context.Context, req mcp.CallToolRequest) (*
 	if err != nil {
 		return nil, err
 	}
-	if _, err := s.operator(req, tid); err != nil {
+	if _, err := s.operator(ctx, req, tid); err != nil {
 		return nil, err
 	}
 	r, err := s.app.FindRecordById("fixtures", id)
@@ -496,7 +502,7 @@ func listEntriesTool() mcp.Tool {
 
 func (s *WhistleMCP) listEntries(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	tid := argString(req, "tournament_id")
-	if _, err := s.operator(req, tid); err != nil {
+	if _, err := s.operator(ctx, req, tid); err != nil {
 		return nil, err
 	}
 	records, err := s.app.FindRecordsByFilter(
@@ -523,7 +529,7 @@ func (s *WhistleMCP) listStandings(ctx context.Context, req mcp.CallToolRequest)
 	if err != nil {
 		return nil, err
 	}
-	if _, err := s.operator(req, tid); err != nil {
+	if _, err := s.operator(ctx, req, tid); err != nil {
 		return nil, err
 	}
 	records, err := s.app.FindRecordsByFilter(
@@ -559,7 +565,7 @@ func (s *WhistleMCP) getStageTable(ctx context.Context, req mcp.CallToolRequest)
 	if err != nil {
 		return nil, err
 	}
-	if _, err := s.operator(req, tid); err != nil {
+	if _, err := s.operator(ctx, req, tid); err != nil {
 		return nil, err
 	}
 	records, err := tournament.StageTable(s.app, sid)
@@ -591,7 +597,7 @@ func (s *WhistleMCP) updateFixture(ctx context.Context, req mcp.CallToolRequest)
 	if err != nil {
 		return nil, err
 	}
-	if _, err := s.operator(req, tid); err != nil {
+	if _, err := s.operator(ctx, req, tid); err != nil {
 		return nil, err
 	}
 
@@ -642,7 +648,7 @@ func (s *WhistleMCP) generateStage(ctx context.Context, req mcp.CallToolRequest)
 	if err != nil {
 		return nil, err
 	}
-	if _, err := s.operator(req, tid); err != nil {
+	if _, err := s.operator(ctx, req, tid); err != nil {
 		return nil, err
 	}
 
@@ -692,7 +698,7 @@ func (s *WhistleMCP) resolveStage(ctx context.Context, req mcp.CallToolRequest) 
 	if err != nil {
 		return nil, err
 	}
-	if _, err := s.operator(req, tid); err != nil {
+	if _, err := s.operator(ctx, req, tid); err != nil {
 		return nil, err
 	}
 	resolved, err := tournament.ResolveStage(s.app, sid)
@@ -825,7 +831,7 @@ func addEntryTool() mcp.Tool {
 
 func (s *WhistleMCP) addEntry(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	tid := argString(req, "tournament_id")
-	if _, err := s.operator(req, tid); err != nil {
+	if _, err := s.operator(ctx, req, tid); err != nil {
 		return nil, err
 	}
 	name := argString(req, "name")
@@ -864,7 +870,7 @@ func createStageTool() mcp.Tool {
 
 func (s *WhistleMCP) createStage(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	tid := argString(req, "tournament_id")
-	if _, err := s.operator(req, tid); err != nil {
+	if _, err := s.operator(ctx, req, tid); err != nil {
 		return nil, err
 	}
 	name := argString(req, "name")
@@ -913,7 +919,7 @@ func createDisplayTool() mcp.Tool {
 
 func (s *WhistleMCP) createDisplay(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	tid := argString(req, "tournament_id")
-	if _, err := s.operator(req, tid); err != nil {
+	if _, err := s.operator(ctx, req, tid); err != nil {
 		return nil, err
 	}
 	name := "Main screen"
@@ -966,7 +972,7 @@ func publishTournamentTool() mcp.Tool {
 
 func (s *WhistleMCP) publishTournament(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	tid := argString(req, "tournament_id")
-	if _, err := s.operator(req, tid); err != nil {
+	if _, err := s.operator(ctx, req, tid); err != nil {
 		return nil, err
 	}
 

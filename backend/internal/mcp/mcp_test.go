@@ -1591,3 +1591,133 @@ func TestBestOfNextRejectsPoolsWithoutThatPlace(t *testing.T) {
 		t.Fatalf("error = %v, want it to say the pool is too small", err)
 	}
 }
+
+// The credential normally rides a tool argument. A caller that already holds
+// one when it opens the connection — a person reconnecting through Smithery —
+// puts it in the X-Whistle-Session header instead, and WithHTTPContextFunc
+// lifts it onto the context this reads.
+func TestSessionHeaderFallback(t *testing.T) {
+	app := newTestApp(t)
+	defer app.Cleanup()
+	s := New(app)
+
+	var cup map[string]any
+	call(t, s.createTournament, "create_tournament", map[string]any{"name": "Header Cup"}, &cup)
+	tok := cup["session_token"].(string)
+
+	// No session_token argument at all — only the context value the header
+	// would have produced.
+	hctx := context.WithValue(ctx, sessionCtxKey, tok)
+	r, err := s.listTournaments(hctx, toolArgs("list_tournaments", map[string]any{}))
+	if err != nil {
+		t.Fatalf("header session: %v", err)
+	}
+	var list []map[string]any
+	json.Unmarshal([]byte(r.Content[0].(mcp.TextContent).Text), &list)
+	if len(list) != 1 {
+		t.Fatalf("header session saw %d tournaments, want 1", len(list))
+	}
+
+	// Neither channel: still refused.
+	if _, err := s.listTournaments(ctx, toolArgs("list_tournaments", map[string]any{})); err == nil {
+		t.Fatal("a call with no credential in either place should be refused")
+	}
+
+	// The argument is canonical: a valid header does not rescue a bad argument.
+	if _, err := s.listTournaments(hctx, toolArgs("list_tournaments",
+		map[string]any{"session_token": "not-a-real-token"})); err == nil {
+		t.Fatal("a bogus session_token argument should not fall through to the header")
+	}
+}
+
+// prompts/list against a server that never declared the capability comes back
+// "method not found", which a client logs as "Failed to list prompts". This is
+// that path, end to end through the MCP server.
+func TestPromptsListed(t *testing.T) {
+	app := newTestApp(t)
+	defer app.Cleanup()
+	s := New(app)
+
+	raw := s.mcp.HandleMessage(ctx, json.RawMessage(
+		`{"jsonrpc":"2.0","id":1,"method":"prompts/list"}`))
+	out, _ := json.Marshal(raw)
+
+	var resp struct {
+		Error *struct {
+			Message string `json:"message"`
+		} `json:"error"`
+		Result struct {
+			Prompts []struct {
+				Name      string `json:"name"`
+				Arguments []struct {
+					Name     string `json:"name"`
+					Required bool   `json:"required"`
+				} `json:"arguments"`
+			} `json:"prompts"`
+		} `json:"result"`
+	}
+	if err := json.Unmarshal(out, &resp); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	if resp.Error != nil {
+		t.Fatalf("prompts/list errored: %s", resp.Error.Message)
+	}
+
+	byName := map[string]int{}
+	for _, p := range resp.Result.Prompts {
+		byName[p.Name] = len(p.Arguments)
+	}
+	for _, want := range []string{"plan_a_tournament", "enter_the_results"} {
+		if _, ok := byName[want]; !ok {
+			t.Fatalf("prompts/list did not offer %q; got %v", want, byName)
+		}
+	}
+	if byName["plan_a_tournament"] != 4 {
+		t.Fatalf("plan_a_tournament has %d arguments, want 4", byName["plan_a_tournament"])
+	}
+}
+
+// prompts/get renders the message text from its arguments and touches nothing
+// else — no session_token, no database.
+func TestPromptGetPlanTournament(t *testing.T) {
+	app := newTestApp(t)
+	defer app.Cleanup()
+	s := New(app)
+
+	raw := s.mcp.HandleMessage(ctx, json.RawMessage(
+		`{"jsonrpc":"2.0","id":1,"method":"prompts/get","params":{"name":"plan_a_tournament","arguments":{"name":"Spring Cup","sport":"volleyball","teams":"Alpha, Bravo, Charlie","format":"round_robin"}}}`))
+	out, _ := json.Marshal(raw)
+
+	var resp struct {
+		Error *struct {
+			Message string `json:"message"`
+		} `json:"error"`
+		Result struct {
+			Messages []struct {
+				Role    string `json:"role"`
+				Content struct {
+					Text string `json:"text"`
+				} `json:"content"`
+			} `json:"messages"`
+		} `json:"result"`
+	}
+	if err := json.Unmarshal(out, &resp); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	if resp.Error != nil {
+		t.Fatalf("prompts/get errored: %s", resp.Error.Message)
+	}
+	if len(resp.Result.Messages) == 0 {
+		t.Fatal("prompt returned no messages")
+	}
+
+	text := resp.Result.Messages[0].Content.Text
+	for _, want := range []string{
+		"Spring Cup", "volleyball", "3 teams", "Alpha, Bravo, Charlie",
+		"create_tournament", "create_handoff",
+	} {
+		if !strings.Contains(text, want) {
+			t.Fatalf("prompt text is missing %q:\n%s", want, text)
+		}
+	}
+}

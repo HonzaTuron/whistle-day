@@ -159,7 +159,10 @@ its final positions.
 
 `/api/mcp` is an MCP server over Streamable HTTP — one endpoint, `POST` for a
 request, `GET` for the stream, `DELETE` to end a session. Twenty-one tools: the
-same generate, resolve, score and publish the screens use.
+same generate, resolve, score and publish the screens use. Two prompts —
+`plan_a_tournament` and `enter_the_results` — that write out those tool
+sequences in order, so a client that asks for `prompts/list` gets a plan
+rather than a `method not found`.
 
 `create_tournament` asks what is being played, for the same reason the wizard
 does — three points for a win with a draw possible is right for football and
@@ -179,6 +182,14 @@ which looks wrong and is not: the agent has no token when it opens the
 connection, and the header a client is configured with cannot change because a
 tool returned one. It also means what leaks, if the model's transcript leaks,
 is one tournament — that is what an account per tournament is for.
+
+A caller that *does* hold a token before it connects — a person reconnecting
+to an existing tournament through [Smithery](https://smithery.ai), whose
+gateway binds a config value at connect time — has nowhere to put it as an
+argument, so `caller()` also reads an `X-Whistle-Session` header when a call
+carries no argument. `smithery.yaml` at the repo root is the config schema
+that maps a Smithery session field onto that header; see the comment in it for
+the publish command.
 
 `create_handoff` ends it. The link goes to whoever is actually running the day,
 they set an email and a password at `/claim/{token}`, and the account becomes

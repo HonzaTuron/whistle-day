@@ -1,0 +1,43 @@
+# Smithery config schema for the Whistle.day MCP server.
+#
+# The server is self-hosted: it runs inside PocketBase at
+# https://whistle.day/api/mcp over Streamable HTTP, so Smithery proxies to it
+# rather than building or hosting it. There is no `runtime`/`build` section for
+# that reason — this file exists only to declare the session config.
+#
+# Publish (or re-publish) with the Smithery CLI:
+#
+#   npm install -g @smithery/cli
+#   smithery auth login
+#   smithery mcp publish https://whistle.day/api/mcp \
+#     -n @honzaturon/whistleday \
+#     --config-schema '{"type":"object","additionalProperties":false,"properties":{"sessionToken":{"type":"string","title":"Session token","description":"The session_token that create_tournament returned, to reconnect to a tournament you already started. Leave blank to begin a new one.","x-from":{"header":"x-whistle-session"},"x-to":{"header":"X-Whistle-Session"}}}}'
+#
+# ...or paste the URL at https://smithery.ai/new and enter the same fields.
+# Keep the JSON above and the YAML below in step — they are the one schema in
+# two notations.
+
+startCommand:
+  type: http
+  # One optional field. create_tournament needs no credential and mints its
+  # own, so a first run leaves this blank; a returning user pastes the token
+  # they were given. Smithery reads it from the `x-whistle-session` header on
+  # the connection and forwards it upstream as `X-Whistle-Session`, which
+  # caller() in backend/internal/mcp/auth.go checks when a tool call carries
+  # no session_token argument of its own.
+  configSchema:
+    type: object
+    additionalProperties: false
+    properties:
+      sessionToken:
+        type: string
+        title: Session token
+        description: >-
+          The session_token that create_tournament returned, to reconnect to a
+          tournament you already started. Leave blank to begin a new one.
+        x-from:
+          header: x-whistle-session
+        x-to:
+          header: X-Whistle-Session
+  exampleConfig:
+    sessionToken: ""
