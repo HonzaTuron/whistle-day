@@ -233,6 +233,19 @@ export function Landing() {
             {t("nav.deletion")}
           </Link>
         </nav>
+        <a
+          className="home__badge"
+          href="https://smithery.ai/server/turon-honza/whistle-day"
+          target="_blank"
+          rel="noopener"
+        >
+          <img
+            src="https://smithery.ai/badge/turon-honza/whistle-day"
+            alt={t("landing.smithery")}
+            height={20}
+            loading="lazy"
+          />
+        </a>
       </footer>
     </div>
   );

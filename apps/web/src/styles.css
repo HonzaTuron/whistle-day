@@ -1841,6 +1841,23 @@ th,
   text-decoration: underline;
 }
 
+.home__badge {
+  display: inline-block;
+  margin-top: 1.25rem;
+  opacity: 0.8;
+  transition: opacity 0.15s ease;
+}
+
+.home__badge:hover {
+  opacity: 1;
+}
+
+.home__badge img {
+  display: block;
+  height: 20px;
+  width: auto;
+}
+
 /* ==========================================================================
    Setting a tournament up
    --------------------------------------------------------------------------

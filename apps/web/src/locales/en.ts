@@ -163,6 +163,7 @@ export const en = {
   "landing.projector": "Projector",
   "landing.phone": "Phone",
   "landing.footer": "Whistle.day — free and open-source tournament organiser.",
+  "landing.smithery": "Whistle.day on Smithery",
 
   // -------------------------------------------------------------------------
   // account

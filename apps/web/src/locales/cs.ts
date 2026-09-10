@@ -164,6 +164,7 @@ export const cs: Record<keyof Catalog, Message> = {
   "landing.projector": "Projektor",
   "landing.phone": "Mobil",
   "landing.footer": "Whistle.day — svobodný open-source nástroj na turnaje.",
+  "landing.smithery": "Whistle.day na Smithery",
 
   // -------------------------------------------------------------------------
   // account
