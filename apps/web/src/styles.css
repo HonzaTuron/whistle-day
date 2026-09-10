@@ -1842,24 +1842,22 @@ th,
 }
 
 .home__badge {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
   margin-top: 1.25rem;
-  opacity: 0.8;
-  transition: opacity 0.15s ease;
-}
-
-/* Class selector would otherwise win over the UA [hidden] rule. */
-.home__badge[hidden] {
-  display: none;
+  color: var(--muted);
+  font-size: 0.8rem;
+  text-decoration: none;
 }
 
 .home__badge:hover {
-  opacity: 1;
+  color: var(--text);
+  text-decoration: underline;
 }
 
 .home__badge img {
-  display: block;
-  height: 20px;
+  height: 14px;
   width: auto;
 }
 
