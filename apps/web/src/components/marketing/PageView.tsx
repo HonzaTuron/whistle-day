@@ -4,6 +4,7 @@ import type { Page } from "../../content/types";
 import { PrintableSheet } from "./PrintableSheet";
 import { SiteNav } from "./SiteNav";
 import { FORMAT_OF } from "../../content/formats-map";
+import { renderInlineMarkdown } from "./InlineMarkdown";
 
 /**
  * The layout every marketing page uses.
@@ -27,7 +28,7 @@ export function PageView({ page }: { page: Page }) {
       <article className="doc">
         <header className="doc__head">
           <h1 className="doc__title">{page.h1}</h1>
-          <p className="doc__lede">{page.lede}</p>
+          <p className="doc__lede">{renderInlineMarkdown(page.lede)}</p>
         </header>
 
         {page.facts && page.facts.length > 0 && (
@@ -36,7 +37,9 @@ export function PageView({ page }: { page: Page }) {
               <div className="doc__fact" key={fact.label}>
                 <dt className="doc__fact-label">{fact.label}</dt>
                 <dd className="doc__fact-value">{fact.value}</dd>
-                {fact.note && <dd className="doc__fact-note">{fact.note}</dd>}
+                {fact.note && (
+                  <dd className="doc__fact-note">{renderInlineMarkdown(fact.note)}</dd>
+                )}
               </div>
             ))}
           </dl>
@@ -60,7 +63,7 @@ export function PageView({ page }: { page: Page }) {
             <h2 className="doc__heading">{section.heading}</h2>
             {section.body.map((paragraph) => (
               <p className="doc__para" key={paragraph.slice(0, 48)}>
-                {paragraph}
+                {renderInlineMarkdown(paragraph)}
               </p>
             ))}
             {section.code?.map((block) => (
@@ -80,7 +83,7 @@ export function PageView({ page }: { page: Page }) {
             {page.faq.map((item) => (
               <div className="doc__faq" key={item.q}>
                 <h3 className="doc__faq-q">{item.q}</h3>
-                <p className="doc__para">{item.a}</p>
+                <p className="doc__para">{renderInlineMarkdown(item.a)}</p>
               </div>
             ))}
           </section>

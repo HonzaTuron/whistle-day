@@ -43,7 +43,7 @@ export interface CodeBlock {
 /** A prose block. Headed sections become `<h2>`s and land in the page outline. */
 export interface Section {
   heading: string;
-  /** Each string is a paragraph. Markdown is deliberately not supported. */
+  /** Each string is a paragraph. Inline markdown (bold, italic, code, links) is supported. */
   body: string[];
   /** Verbatim snippets under the prose — the one thing prose can't be. */
   code?: CodeBlock[];

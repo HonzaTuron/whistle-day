@@ -4399,6 +4399,41 @@ th,
   line-height: 1.7;
 }
 
+.doc__para strong,
+.doc__lede strong,
+.doc__fact-note strong,
+.doc__faq-q strong {
+  font-weight: 650;
+  color: var(--text);
+}
+
+.doc__para code,
+.doc__lede code,
+.doc__fact-note code {
+  font-family: var(--numeric);
+  font-size: 0.88em;
+  padding: 0.15em 0.38em;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: 0.35rem;
+  color: var(--text);
+  word-break: break-word;
+}
+
+.doc__para a,
+.doc__lede a,
+.doc__fact-note a {
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.doc__para a:hover,
+.doc__lede a:hover,
+.doc__fact-note a:hover {
+  filter: brightness(1.15);
+}
+
 .doc__code {
   display: grid;
   gap: 0.4rem;

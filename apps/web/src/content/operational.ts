@@ -460,7 +460,7 @@ export const OPERATIONAL_PAGES: Page[] = [
         heading: "Claude Desktop and Claude Code",
         body: [
           "Claude Code adds a remote server from the command line, one command and nothing to edit by hand:",
-          "Claude Desktop and claude.ai take the same URL as a custom connector — Settings → Connectors → Add custom connector — or the equivalent block in claude_desktop_config.json:",
+          "Claude Desktop and claude.ai take the same URL as a custom connector — **Settings → Connectors → Add custom connector** — or the equivalent block in `claude_desktop_config.json`:",
         ],
         code: [
           {
@@ -476,14 +476,14 @@ export const OPERATIONAL_PAGES: Page[] = [
       {
         heading: "ChatGPT",
         body: [
-          "Settings → Connectors → Advanced → Developer mode, then create a connector: give it a name, paste the URL below, and set authentication to none. ChatGPT lists the 21 tools once it connects.",
+          "**Settings → Connectors → Advanced → Developer mode**, then create a connector: give it a name, paste the URL below, and set authentication to none. ChatGPT lists the 21 tools once it connects.",
         ],
         code: [{ code: "https://whistle.day/api/mcp" }],
       },
       {
         heading: "Cursor, Windsurf, Cline, or anything else that reads an MCP config",
         body: [
-          "The same shape every one of them expects for a remote server — no command, no local process, just the URL:",
+          "The same shape every one of them expects for a remote server — no command, no local process, just the URL in `mcp.json`:",
         ],
         code: [
           {
@@ -495,44 +495,44 @@ export const OPERATIONAL_PAGES: Page[] = [
       {
         heading: "Or skip the URL entirely",
         body: [
-          "Whistle.day is listed on Smithery, so a client that installs from there gets the connection made for it rather than a URL to paste.",
+          "Whistle.day is listed on [Smithery](https://smithery.ai/servers/turon-honza/whistle-day), so a client that installs from there gets the connection made for it rather than a URL to paste.",
         ],
       },
       {
         heading: "What an agent actually does with it",
         body: [
-          "create_tournament is the only tool that asks for nothing first — it makes an account for that tournament alone and hands back a session token every other tool then requires. Two prompts, plan_a_tournament and enter_the_results, lay out the rest of the sequence: add the teams, add the courts, create a stage and generate its draw, publish, open a display. The second one is for the day itself — find what is live, settle it, move on.",
-          "Nothing here is a shortcut version of the app. generate_stage takes a dry_run so an agent can preview a draw before committing to it, and update_fixture triggers the same re-resolve the results screen does, so the tables, the next Swiss round and the playoff seeded from them come out right either way.",
+          "`create_tournament` is the only tool that asks for nothing first — it makes an account for that tournament alone and hands back a session token every other tool then requires. Two prompts, `plan_a_tournament` and `enter_the_results`, lay out the rest of the sequence: add the teams, add the courts, create a stage and generate its draw, publish, open a display. The second one is for the day itself — find what is live, settle it, move on.",
+          "Nothing here is a shortcut version of the app. `generate_stage` takes a `dry_run` so an agent can preview a draw before committing to it, and `update_fixture` triggers the same re-resolve the results screen does, so the tables, the next Swiss round and the playoff seeded from them come out right either way.",
         ],
       },
       {
         heading: "What the 21 tools cover",
         body: [
-          "Setup: create_tournament (with sport presets for football, volleyball, chess, tennis, and more), add_entry (teams and seeds), add_court (pitches, tables, and display ordering), and list_tournaments.",
-          "Draws and formats: create_stage (round robin, single elimination, double elimination, Swiss), generate_stage with dry_run previews, list_stages, and list_pools.",
-          "Scoring and live play: list_fixtures (filter by live or ready), update_fixture (set scores, mark walkovers, assign courts), resolve_stage to recalculate standings and advance winners, and get_stage_table / list_standings for group and cross-pool tables.",
-          "Delivery: publish_tournament to take the day public, create_display for spectator projector panels, and create_handoff so a human organiser can claim full control.",
+          "**Setup:** `create_tournament` (with sport presets for football, volleyball, chess, tennis, and more), `add_entry` (teams and seeds), `add_court` (pitches, tables, and display ordering), and `list_tournaments`.",
+          "**Draws and formats:** `create_stage` (round robin, single elimination, double elimination, Swiss), `generate_stage` with `dry_run` previews, `list_stages`, and `list_pools`.",
+          "**Scoring and live play:** `list_fixtures` (filter by live or ready), `update_fixture` (set scores, mark walkovers, assign courts), `resolve_stage` to recalculate standings and advance winners, and `get_stage_table` / `list_standings` for group and cross-pool tables.",
+          "**Delivery:** `publish_tournament` to take the day public, `create_display` for spectator projector panels, and `create_handoff` so a human organiser can claim full control.",
         ],
       },
       {
         heading: "One tournament per token, on purpose",
         body: [
           "The token travels as a tool argument rather than a header, because the agent has none when it first connects and a client's header can't change partway through a session — which also means what leaks, if a transcript leaks, is one tournament rather than an operator's whole account.",
-          "create_handoff ends it cleanly: it mints a link for whoever is actually running the day, they set an email and a password, and the agent's token stops working the moment they do.",
+          "`create_handoff` ends it cleanly: it mints a link for whoever is actually running the day, they set an email and a password, and the agent's token stops working the moment they do.",
         ],
       },
       {
         heading: "Sign in once instead",
         body: [
-          "That per-tournament token is the right default for an agent setting up today's tournament from nothing, but it means list_tournaments on a fresh connection is always empty — there is nothing yet for it to find. A person who already has a Whistle.day account can sign in once in a browser and connect an agent to that account instead: most clients (Claude, ChatGPT) discover this automatically and offer a plain \"Sign in\" button rather than the URL above.",
-          "Once connected that way, an agent reaches everything that account owns or crews — the same tournaments the web app itself shows after signing in, not a narrower set — and create_tournament builds new ones under that real account rather than a fresh throwaway one. Nothing about what a tool can do changes; only whose tournaments it can see does.",
+          "That per-tournament token is the right default for an agent setting up today's tournament from nothing, but it means `list_tournaments` on a fresh connection is always empty — there is nothing yet for it to find. A person who already has a Whistle.day account can sign in once in a browser and connect an agent to that account instead: most clients (Claude, ChatGPT) discover this automatically and offer a plain **Sign in** button rather than the URL above.",
+          "Once connected that way, an agent reaches everything that account owns or crews — the same tournaments the web app itself shows after signing in, not a narrower set — and `create_tournament` builds new ones under that real account rather than a fresh throwaway one. Nothing about what a tool can do changes; only whose tournaments it can see does.",
         ],
       },
     ],
     faq: [
       {
         q: "Does an agent need an account first?",
-        a: "No. create_tournament makes one automatically and returns a session token, which every other tool call then needs — unless the connection already signed in as a real account, in which case nothing extra is needed.",
+        a: "No. `create_tournament` makes one automatically and returns a session token, which every other tool call then needs — unless the connection already signed in as a real account, in which case nothing extra is needed.",
       },
       {
         q: "Can it see other people's tournaments?",
@@ -548,7 +548,7 @@ export const OPERATIONAL_PAGES: Page[] = [
       },
       {
         q: "I'm reconnecting through a gateway that only lets me set config, not arguments — what then?",
-        a: "Map a sessionToken config value onto the X-Whistle-Session header (a Smithery config schema does exactly that); a tool call with no session_token argument reads it from there instead.",
+        a: "Map a `sessionToken` config value onto the `X-Whistle-Session` header (a Smithery config schema does exactly that); a tool call with no `session_token` argument reads it from there instead.",
       },
     ],
     related: [
