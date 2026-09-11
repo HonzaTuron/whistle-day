@@ -42,6 +42,26 @@ export const Route = createRootRoute({
         content:
           "Free tournament organiser. Draw groups, brackets or a Swiss, run the day from your phone, and put the results on a projector.",
       },
+      { property: "og:site_name", content: "Whistle.day" },
+      { property: "og:type", content: "website" },
+      { property: "og:title", content: "Whistle.day — Run a tournament off a phone" },
+      {
+        property: "og:description",
+        content:
+          "Free tournament organiser. Draw groups, brackets or a Swiss, run the day from your phone, and put the results on a projector.",
+      },
+      { property: "og:image", content: "https://whistle.day/og.png" },
+      { property: "og:image:width", content: "1200" },
+      { property: "og:image:height", content: "630" },
+      { property: "og:image:type", content: "image/png" },
+      { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: "Whistle.day — Run a tournament off a phone" },
+      {
+        name: "twitter:description",
+        content:
+          "Free tournament organiser. Draw groups, brackets or a Swiss, run the day from your phone, and put the results on a projector.",
+      },
+      { name: "twitter:image", content: "https://whistle.day/og.png" },
     ],
     links: [
       { rel: "icon", href: "/icon.svg", type: "image/svg+xml" },

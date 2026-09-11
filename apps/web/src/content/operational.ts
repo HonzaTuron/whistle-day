@@ -506,6 +506,15 @@ export const OPERATIONAL_PAGES: Page[] = [
         ],
       },
       {
+        heading: "What the 21 tools cover",
+        body: [
+          "Setup: create_tournament (with sport presets for football, volleyball, chess, tennis, and more), add_entry (teams and seeds), add_court (pitches, tables, and display ordering), and list_tournaments.",
+          "Draws and formats: create_stage (round robin, single elimination, double elimination, Swiss), generate_stage with dry_run previews, list_stages, and list_pools.",
+          "Scoring and live play: list_fixtures (filter by live or ready), update_fixture (set scores, mark walkovers, assign courts), resolve_stage to recalculate standings and advance winners, and get_stage_table / list_standings for group and cross-pool tables.",
+          "Delivery: publish_tournament to take the day public, create_display for spectator projector panels, and create_handoff so a human organiser can claim full control.",
+        ],
+      },
+      {
         heading: "One tournament per token, on purpose",
         body: [
           "The token travels as a tool argument rather than a header, because the agent has none when it first connects and a client's header can't change partway through a session — which also means what leaks, if a transcript leaks, is one tournament rather than an operator's whole account.",

@@ -72,18 +72,47 @@ export function structuredData(page: Page, site: string): ScriptTag[] {
     );
   }
 
-  // The hub is the product itself; the rest are pages about it.
-  if (page.kind === "hub") {
+  // Emit SoftwareApplication for the hub, format pages, parametric format pages, MCP, and comparisons
+  const isFormat = page.kind === "format" || page.kind === "parametric" || page.generator !== undefined;
+  const isMcp = page.slug === "mcp";
+  const isComparison = page.kind === "comparison" || page.slug.startsWith("vs/");
+  const isHub = page.kind === "hub";
+
+  if (isHub || isFormat || isMcp || isComparison) {
     tags.push(
       json({
         "@context": "https://schema.org",
         "@type": "SoftwareApplication",
-        name: "Whistle.day",
-        applicationCategory: "SportsApplication",
-        operatingSystem: "Web",
-        url: site,
+        name: isMcp ? "Whistle.day MCP Server" : "Whistle.day",
+        applicationCategory: isMcp
+          ? "DeveloperApplication, SportsApplication"
+          : "SportsApplication",
+        applicationSubCategory: isMcp
+          ? "Tournament Management MCP Server"
+          : "Sports & Event Tournament Management",
+        operatingSystem: "Web, Mobile",
+        url: isMcp ? `${site}/mcp` : site,
         description: page.description,
-        offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
+        offers: {
+          "@type": "Offer",
+          price: "0",
+          priceCurrency: "USD",
+        },
+        featureList: isMcp
+          ? [
+              "21 MCP tools over Streamable HTTP",
+              "OAuth 2.1 authentication with PKCE",
+              "Round Robin, Swiss, Single & Double Elimination brackets",
+              "Live match scoring, court scheduling & projector displays",
+              "Disposable anonymous sessions or account sign-in",
+            ]
+          : [
+              "Instant bracket and schedule generation",
+              "No account required to start",
+              "Live court scheduling & referee phone scoring",
+              "Self-driving hall projector display",
+              "No ads, 100% free",
+            ],
       }),
     );
   }

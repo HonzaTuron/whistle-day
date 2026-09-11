@@ -96,7 +96,7 @@ export default defineConfig({
       injectRegister: false,
       // Nothing is precached here; see `serviceWorker()`.
       selfDestroying: false,
-      includeAssets: ["icon.svg", "apple-touch-icon.png"],
+      includeAssets: ["icon.svg", "apple-touch-icon.png", "og.png", "og.jpg"],
       manifest: {
         name: "Whistle.day",
         short_name: "Whistle.day",

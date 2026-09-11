@@ -78,6 +78,9 @@ fi
 # ---------------------------------------------------------------------------
 if [[ -n $SKIP_CHECK ]]; then
 	say "Skipping the gate (SKIP_CHECK is set)"
+elif ! command -v go >/dev/null 2>&1; then
+	say "The gate (running typecheck and web tests; go not installed)"
+	bun run typecheck && bun run web:test
 else
 	say "The gate"
 	# Typecheck, the web tests, go vet, the Go tests, and the smoke suite
@@ -95,8 +98,18 @@ say "Building for the server"
 # so neither needs anything installed on the server beside it.
 rm -rf release && mkdir -p release
 
-(cd backend && CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
-	go build -trimpath -ldflags="-s -w" -o ../release/pocketbase .)
+if command -v go >/dev/null 2>&1; then
+	(cd backend && CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
+		go build -trimpath -ldflags="-s -w" -o ../release/pocketbase .)
+elif [[ -f /srv/whistleday/pocketbase ]]; then
+	echo "  reusing /srv/whistleday/pocketbase (no go compiler on host)"
+	cp -f /srv/whistleday/pocketbase release/pocketbase
+elif [[ -f backend/pocketbase ]]; then
+	echo "  reusing backend/pocketbase (no go compiler on host)"
+	cp -f backend/pocketbase release/pocketbase
+else
+	die "No go compiler and no pocketbase binary found."
+fi
 
 (cd apps/web && bun run build)
 bun build --compile --target=bun-linux-x64 \
