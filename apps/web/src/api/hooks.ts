@@ -44,6 +44,7 @@ import {
 import type { SportId } from "../lib/scoring";
 import type { PresetId } from "../lib/presets";
 import { launchTournament, type LaunchStep } from "./launch";
+import { previewConsentRequest } from "./connect";
 
 // ---------------------------------------------------------------------------
 // Query key factories
@@ -62,6 +63,7 @@ export const keys = {
   invite: (tournament: Id, role: StaffRole) => ["invite", tournament, role] as const,
   preview: (token: string) => ["preview", token] as const,
   handoff: (token: string) => ["handoff", token] as const,
+  oauthConsent: (requestId: string) => ["oauthConsent", requestId] as const,
 };
 
 // ---------------------------------------------------------------------------
@@ -196,6 +198,15 @@ export function usePreviewHandoff(token: string) {
     queryKey: keys.handoff(token),
     queryFn: () => previewHandoff(token),
     enabled: !!token,
+    retry: false,
+  });
+}
+
+export function usePreviewConsent(requestId: string) {
+  return useQuery({
+    queryKey: keys.oauthConsent(requestId),
+    queryFn: () => previewConsentRequest(requestId),
+    enabled: !!requestId,
     retry: false,
   });
 }

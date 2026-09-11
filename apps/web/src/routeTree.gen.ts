@@ -17,6 +17,7 @@ import { Route as ClaimTokenRouteImport } from './routes/claim.$token'
 import { Route as DisplayTokenRouteImport } from './routes/display.$token'
 import { Route as JoinTokenRouteImport } from './routes/join.$token'
 import { Route as MTokenRouteImport } from './routes/m.$token'
+import { Route as OauthConsentRouteImport } from './routes/oauth.consent'
 import { Route as ResetTokenRouteImport } from './routes/reset.$token'
 import { Route as TIdRouteImport } from './routes/t.$id'
 import { Route as VerifyTokenRouteImport } from './routes/verify.$token'
@@ -61,6 +62,11 @@ const MTokenRoute = MTokenRouteImport.update({
   path: '/m/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
+const OauthConsentRoute = OauthConsentRouteImport.update({
+  id: '/oauth/consent',
+  path: '/oauth/consent',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ResetTokenRoute = ResetTokenRouteImport.update({
   id: '/reset/$token',
   path: '/reset/$token',
@@ -86,6 +92,7 @@ export interface FileRoutesByFullPath {
   '/display/$token': typeof DisplayTokenRoute
   '/join/$token': typeof JoinTokenRoute
   '/m/$token': typeof MTokenRoute
+  '/oauth/consent': typeof OauthConsentRoute
   '/reset/$token': typeof ResetTokenRoute
   '/t/$id': typeof TIdRoute
   '/verify/$token': typeof VerifyTokenRoute
@@ -99,6 +106,7 @@ export interface FileRoutesByTo {
   '/display/$token': typeof DisplayTokenRoute
   '/join/$token': typeof JoinTokenRoute
   '/m/$token': typeof MTokenRoute
+  '/oauth/consent': typeof OauthConsentRoute
   '/reset/$token': typeof ResetTokenRoute
   '/t/$id': typeof TIdRoute
   '/verify/$token': typeof VerifyTokenRoute
@@ -113,6 +121,7 @@ export interface FileRoutesById {
   '/display/$token': typeof DisplayTokenRoute
   '/join/$token': typeof JoinTokenRoute
   '/m/$token': typeof MTokenRoute
+  '/oauth/consent': typeof OauthConsentRoute
   '/reset/$token': typeof ResetTokenRoute
   '/t/$id': typeof TIdRoute
   '/verify/$token': typeof VerifyTokenRoute
@@ -128,6 +137,7 @@ export interface FileRouteTypes {
     | '/display/$token'
     | '/join/$token'
     | '/m/$token'
+    | '/oauth/consent'
     | '/reset/$token'
     | '/t/$id'
     | '/verify/$token'
@@ -141,6 +151,7 @@ export interface FileRouteTypes {
     | '/display/$token'
     | '/join/$token'
     | '/m/$token'
+    | '/oauth/consent'
     | '/reset/$token'
     | '/t/$id'
     | '/verify/$token'
@@ -154,6 +165,7 @@ export interface FileRouteTypes {
     | '/display/$token'
     | '/join/$token'
     | '/m/$token'
+    | '/oauth/consent'
     | '/reset/$token'
     | '/t/$id'
     | '/verify/$token'
@@ -168,6 +180,7 @@ export interface RootRouteChildren {
   DisplayTokenRoute: typeof DisplayTokenRoute
   JoinTokenRoute: typeof JoinTokenRoute
   MTokenRoute: typeof MTokenRoute
+  OauthConsentRoute: typeof OauthConsentRoute
   ResetTokenRoute: typeof ResetTokenRoute
   TIdRoute: typeof TIdRoute
   VerifyTokenRoute: typeof VerifyTokenRoute
@@ -231,6 +244,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/oauth/consent': {
+      id: '/oauth/consent'
+      path: '/oauth/consent'
+      fullPath: '/oauth/consent'
+      preLoaderRoute: typeof OauthConsentRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/reset/$token': {
       id: '/reset/$token'
       path: '/reset/$token'
@@ -264,6 +284,7 @@ const rootRouteChildren: RootRouteChildren = {
   DisplayTokenRoute: DisplayTokenRoute,
   JoinTokenRoute: JoinTokenRoute,
   MTokenRoute: MTokenRoute,
+  OauthConsentRoute: OauthConsentRoute,
   ResetTokenRoute: ResetTokenRoute,
   TIdRoute: TIdRoute,
   VerifyTokenRoute: VerifyTokenRoute,

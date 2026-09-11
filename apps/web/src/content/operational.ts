@@ -449,6 +449,11 @@ export const OPERATIONAL_PAGES: Page[] = [
         value: "None to make",
         note: "the first tool call mints one, scoped to that tournament",
       },
+      {
+        label: "Sign-in",
+        value: "Optional",
+        note: "OAuth 2.1 with PKCE, for reaching an account you already have",
+      },
     ],
     sections: [
       {
@@ -507,15 +512,22 @@ export const OPERATIONAL_PAGES: Page[] = [
           "create_handoff ends it cleanly: it mints a link for whoever is actually running the day, they set an email and a password, and the agent's token stops working the moment they do.",
         ],
       },
+      {
+        heading: "Sign in once instead",
+        body: [
+          "That per-tournament token is the right default for an agent setting up today's tournament from nothing, but it means list_tournaments on a fresh connection is always empty — there is nothing yet for it to find. A person who already has a Whistle.day account can sign in once in a browser and connect an agent to that account instead: most clients (Claude, ChatGPT) discover this automatically and offer a plain \"Sign in\" button rather than the URL above.",
+          "Once connected that way, an agent reaches everything that account owns or crews — the same tournaments the web app itself shows after signing in, not a narrower set — and create_tournament builds new ones under that real account rather than a fresh throwaway one. Nothing about what a tool can do changes; only whose tournaments it can see does.",
+        ],
+      },
     ],
     faq: [
       {
         q: "Does an agent need an account first?",
-        a: "No. create_tournament makes one automatically and returns a session token, which every other tool call then needs.",
+        a: "No. create_tournament makes one automatically and returns a session token, which every other tool call then needs — unless the connection already signed in as a real account, in which case nothing extra is needed.",
       },
       {
         q: "Can it see other people's tournaments?",
-        a: "No. Each tournament the MCP server creates gets its own account, so a session token is scoped to the one tournament it made.",
+        a: "No, either way. An anonymous session's token is scoped to the one tournament it made. A signed-in connection reaches exactly what that account owns or is crew on — the same as signing in on the web — and nothing beyond it.",
       },
       {
         q: "What transport does it use?",

@@ -35,7 +35,7 @@ const STATUS: Record<string, MessageKey> = {
   archived: "status.archived",
 };
 
-export function Account() {
+export function Account({ next }: { next?: string } = {}) {
   const t = useT();
   const navigate = useNavigate();
   const [session, setSession] = useState<Session | null>(storedSession);
@@ -118,13 +118,20 @@ export function Account() {
     setBusy(true);
     setError(null);
     try {
-      const next =
+      const nextSession =
         mode === "claim" && session
           ? await claimAccount(session, email.trim(), password)
           : await signIn(email.trim(), password);
-      active.current = Promise.resolve(next);
-      setSession(next);
+      active.current = Promise.resolve(nextSession);
+      setSession(nextSession);
       setPassword("");
+      // Sent here to sign in before approving something — the consent
+      // screen at `next` picks up from a claimed account exactly where this
+      // one leaves off.
+      if (next && !isDeviceAccount(nextSession)) {
+        window.location.assign(next);
+        return;
+      }
     } catch (thrown) {
       if (mode === "claim" && thrown instanceof ApiError && thrown.status === 400) {
         setMode("signin");

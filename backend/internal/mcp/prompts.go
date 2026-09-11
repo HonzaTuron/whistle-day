@@ -82,9 +82,12 @@ func (s *WhistleMCP) planTournament(ctx context.Context, req mcp.GetPromptReques
 
 Work through the Whistle.day tools in this order:
 
-1. create_tournament {name: %q, sport: %q}. It needs no session_token and
-   returns one — keep it, every later call takes it, and it is the only way
-   back to this tournament.
+1. create_tournament {name: %q, sport: %q}. If this connection already
+   carries an Authorization: Bearer token from signing in, it is created
+   under that real account and no session_token comes back — there is
+   nothing new to keep. Otherwise it needs no session_token and returns
+   one — keep it, every later call takes it, and it is the only way back
+   to this tournament.
 2. add_entry once per team, seed 1..N in the order given.
 3. add_court for each court, pitch or table the day is played on.
 4. create_stage {name: %q, format: %q, position: 0}. Add further stages at
@@ -137,7 +140,9 @@ func (s *WhistleMCP) enterResults(ctx context.Context, req mcp.GetPromptRequest)
 5. get_stage_table {stage_id} reads the cross-pool standings once the pools
    are done.
 
-Every call takes the session_token that create_tournament returned.`, where)
+Every call takes the session_token that create_tournament returned — unless
+this connection already carries an Authorization: Bearer token from signing
+in, in which case none of them need one.`, where)
 
 	return mcp.NewGetPromptResult(
 		"How to enter results",

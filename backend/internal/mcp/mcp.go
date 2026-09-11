@@ -56,10 +56,10 @@ func New(app core.App) *WhistleMCP {
 
 	s.http = server.NewStreamableHTTPServer(s.mcp,
 		server.WithEndpointPath(MCPEndpoint),
-		// Lifts the X-Whistle-Session header onto the request context, where
-		// caller() looks for the credential when a tool call carries no
-		// session_token argument of its own.
-		server.WithHTTPContextFunc(withSessionHeader),
+		// Lifts X-Whistle-Session and Authorization: Bearer onto the request
+		// context, where caller() looks for a credential when a tool call
+		// carries no session_token argument of its own.
+		server.WithHTTPContextFunc(withCredentials),
 		// A long poll through a proxy is a connection something will decide to
 		// close; the heartbeat is what stops it being closed as idle.
 		server.WithHeartbeatInterval(30*time.Second),
@@ -783,13 +783,28 @@ func (s *WhistleMCP) createTournament(ctx context.Context, req mcp.CallToolReque
 	}
 	preset := tournament.SportByID(sport)
 
-	// An account of its own rather than one shared system user. What that
-	// bought: every tournament the MCP made used to have the same owner, so
-	// any caller could edit any of them, and no human could ever be given one
-	// without being given all of them.
-	owner, session, err := s.newOrganiser()
+	// A caller that already signed in (internal/oauth) owns this outright —
+	// no throwaway account, no session_token to hand back, because there is
+	// nothing new to keep. Anything else — including a credential that was
+	// presented but did not check out, such as an expired Bearer token —
+	// falls back to the anonymous device account this always minted, so a
+	// bad credential errors here rather than quietly becoming a fresh
+	// account with an empty list_tournaments later.
+	owner, err := s.callerOrNil(ctx, req)
 	if err != nil {
-		return nil, fmt.Errorf("could not make an account for this tournament: %w", err)
+		return nil, err
+	}
+
+	var session string
+	if owner == nil {
+		// An account of its own rather than one shared system user. What
+		// that bought: every tournament the MCP made used to have the same
+		// owner, so any caller could edit any of them, and no human could
+		// ever be given one without being given all of them.
+		owner, session, err = s.newOrganiser()
+		if err != nil {
+			return nil, fmt.Errorf("could not make an account for this tournament: %w", err)
+		}
 	}
 
 	col, err := s.app.FindCollectionByNameOrId("tournaments")
@@ -811,10 +826,15 @@ func (s *WhistleMCP) createTournament(ctx context.Context, req mcp.CallToolReque
 
 	data := recordToMap(r, "id", "name", "sport", "status", "created")
 	data["scoring"] = preset.Scoring
-	data["session_token"] = session
 	data["owner"] = owner.Id
-	data["note"] = "Pass session_token to every other tool. " +
-		"Use create_handoff when a person should take this tournament over."
+	if session != "" {
+		data["session_token"] = session
+		data["note"] = "Pass session_token to every other tool. " +
+			"Use create_handoff when a person should take this tournament over."
+	} else {
+		data["note"] = "Created under the signed-in account this connection already carries. " +
+			"Every other tool works the same way, with no session_token needed."
+	}
 
 	return resultJSON(data)
 }

@@ -196,6 +196,36 @@ they set an email and a password at `/claim/{token}`, and the account becomes
 theirs — after which the agent's `session_token` stops working, which is the
 point.
 
+### Or: sign in as an account you already have
+
+`backend/internal/oauth` makes this same server an OAuth 2.1 authorization
+server (authorization code + mandatory PKCE, dynamic client registration —
+`/.well-known/oauth-authorization-server`, `/.well-known/oauth-protected-resource`,
+`/oauth/register`, `/oauth/authorize`, `/oauth/token`), so a real organiser can
+sign in once in a browser and hand an agent a token scoped to their existing
+account instead of a fresh anonymous one. `caller()` tries an
+`Authorization: Bearer` header — resolved by `oauth.ResolveAccessToken`
+against this package's own database-backed tokens, not a PocketBase auth
+JWT, because those cannot be individually revoked — as the second of its
+three identity channels, between the `session_token` argument and
+`X-Whistle-Session`. `tournament.IsOperator` decides what the resulting
+account may touch either way, so a signed-in connection reaches exactly what
+the account owns or crews, no more and no less.
+
+Access and refresh tokens are opaque and short-lived (an hour) with a
+sliding, rotating refresh (60 days); a refresh token redeemed twice — reuse —
+revokes every token descended from that grant, not just the replayed one.
+`/oauth/token` is the one form-encoded endpoint in an otherwise all-JSON API,
+deliberately: it is what every OAuth client library posts. The browser side
+of the flow — `/oauth/consent` — is an ordinary SPA route
+(`apps/web/src/routes/oauth.consent.tsx`) that reuses `/account`'s existing
+sign-in form via a `?next=` redirect, not a second one.
+
+`create_tournament` notices which identity a connection carries: signed-in,
+the tournament is created under that real account and no `session_token`
+comes back — there's nothing new to keep — otherwise it falls back to minting
+the anonymous device account exactly as before.
+
 | | |
 |---|---|
 | `WHISTLEDAY_MCP_BEHIND_PROXY` | Set when a reverse proxy on the same host forwards to PocketBase over loopback while keeping the original `Host`. Without it mcp-go's DNS rebinding protection sees a loopback connection claiming to be `whistle.day` and answers 403. Leave it unset locally, where the protection is the one that matters. |

@@ -114,8 +114,12 @@ const list = <T>(
 /**
  * A custom route — the ones collection rules cannot express, like generating a
  * stage or taking a team out. `session` is null for the public ones.
+ *
+ * Exported so api/connect.ts — the browser side of an agent asking to
+ * connect, which calls its own custom routes rather than any collection —
+ * can reuse it instead of re-deriving the same `as(session).send(...)` call.
  */
-const send = <T>(
+export const send = <T>(
   session: Session | null,
   path: string,
   options: { method?: string; body?: unknown } = {},

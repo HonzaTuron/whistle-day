@@ -217,6 +217,20 @@ export const cs: Record<keyof Catalog, Message> = {
     "Byl použitý, vypršel, nebo to odkaz nikdy nebyl. Řekněte si o nový tomu, kdo vám ho poslal.",
   "claim.failed": "Nepovedlo se to. Nic se nezměnilo — zkuste to znovu.",
 
+  "connect.title": "{client} se chce připojit",
+  "connect.unnamedClient": "Aplikace",
+  "connect.body":
+    "Bude moct vidět a spravovat turnaje, které vlastníte nebo na kterých pomáháte — stejně jako po přihlášení na webu.",
+  "connect.signInPrompt": "Nejdřív se přihlaste, abyste to mohli povolit.",
+  "connect.signInLink": "Přihlásit se",
+  "connect.approve": "Povolit",
+  "connect.deny": "Teď ne",
+  "connect.denied": "Odmítnuto. Tuhle záložku můžete zavřít.",
+  "connect.deadTitle": "Tenhle odkaz už neplatí",
+  "connect.deadBody":
+    "Byl použitý, vypršel, nebo to odkaz nikdy nebyl. Vraťte se tam, odkud jste se připojovali, a zkuste to znovu.",
+  "connect.failed": "Nepovedlo se to. Nic se nezměnilo — zkuste to znovu.",
+
   // Návrat do převzatého účtu: zapomenuté heslo a pobídka potvrdit adresu,
   // aby na ni šlo poslat obnovení.
   "recover.forgotTitle": "Obnovení hesla",

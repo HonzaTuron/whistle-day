@@ -10,6 +10,7 @@ import (
 	"github.com/pocketbase/pocketbase/core"
 	"github.com/pocketbase/pocketbase/tools/security"
 
+	"whistleday/backend/internal/oauth"
 	"whistleday/backend/internal/tournament"
 )
 
@@ -38,6 +39,15 @@ What that costs is worth saying plainly. The token goes back through the
 model's context, so it lands in a transcript and probably a log. Nothing here
 can prevent that. What it can do is bound it: one account per tournament, so
 what leaks is one tournament rather than a platform.
+
+A caller that already has a real account can skip all of that: signing in
+once in a browser (internal/oauth) and handing the resulting access token to
+an agent as an `Authorization: Bearer` header identifies it as that real
+user, with everything they own or crew reachable — the same account, not a
+narrower one, because tournament.IsOperator is the only gate either way. See
+caller() below for how the two identities and three channels (a
+session_token argument, that header, and X-Whistle-Session for a gateway)
+are tried in order.
 */
 
 // Unambiguous, and the same alphabet the browser uses: these end up read off a
@@ -73,19 +83,35 @@ const SessionHeader = "X-Whistle-Session"
 
 type ctxKey int
 
-const sessionCtxKey ctxKey = iota
+const (
+	sessionCtxKey ctxKey = iota
+	bearerCtxKey
+)
 
-// withSessionHeader is wired into the HTTP transport in New(). mcp-go runs it
-// once per request, before the tool handler.
-func withSessionHeader(ctx context.Context, r *http.Request) context.Context {
+// withCredentials is wired into the HTTP transport in New(). mcp-go runs it
+// once per request, before the tool handler, and takes exactly one such
+// function — there is only one slot — so this lifts both header-borne
+// credentials onto the context rather than there being two of these.
+func withCredentials(ctx context.Context, r *http.Request) context.Context {
 	if v := strings.TrimSpace(r.Header.Get(SessionHeader)); v != "" {
-		return context.WithValue(ctx, sessionCtxKey, v)
+		ctx = context.WithValue(ctx, sessionCtxKey, v)
+	}
+	// RFC 6750's scheme, for a caller that completed the OAuth flow in
+	// internal/oauth — see the doc comment above for how this and
+	// X-Whistle-Session differ.
+	if auth := r.Header.Get("Authorization"); strings.HasPrefix(auth, "Bearer ") {
+		ctx = context.WithValue(ctx, bearerCtxKey, strings.TrimSpace(strings.TrimPrefix(auth, "Bearer ")))
 	}
 	return ctx
 }
 
 func sessionFromContext(ctx context.Context) string {
 	v, _ := ctx.Value(sessionCtxKey).(string)
+	return v
+}
+
+func bearerFromContext(ctx context.Context) string {
+	v, _ := ctx.Value(bearerCtxKey).(string)
 	return v
 }
 
@@ -127,24 +153,53 @@ func (s *WhistleMCP) newOrganiser() (*core.Record, string, error) {
 
 // caller resolves the credential on a tool call to the account that holds it.
 //
-// Argument first, then the X-Whistle-Session header. A call that carries both
-// is a call that carries the argument.
+// Three channels, tried in this order, each failing closed: a channel that
+// carries something invalid errors immediately rather than falling through
+// to the next one, which matters most for the Bearer case — a caller whose
+// access token just expired should hear that, not silently end up as a new
+// anonymous account.
+//
+//  1. The session_token argument — a device account create_tournament minted.
+//  2. Authorization: Bearer — a real account, via internal/oauth.
+//  3. X-Whistle-Session — the same session_token, for a gateway that binds
+//     config at connect time and has nowhere to put a per-call argument.
 func (s *WhistleMCP) caller(ctx context.Context, req mcp.CallToolRequest) (*core.Record, error) {
-	token, _ := req.GetArguments()[sessionArg].(string)
-	if token == "" {
-		token = sessionFromContext(ctx)
+	if token, _ := req.GetArguments()[sessionArg].(string); token != "" {
+		return resolveSessionToken(s.app, token)
 	}
-	if token == "" {
-		return nil, errNoSession
+	if bearer := bearerFromContext(ctx); bearer != "" {
+		return oauth.ResolveAccessToken(s.app, bearer)
 	}
+	if header := sessionFromContext(ctx); header != "" {
+		return resolveSessionToken(s.app, header)
+	}
+	return nil, errNoSession
+}
 
-	user, err := s.app.FindAuthRecordByToken(token, core.TokenTypeAuth)
+func resolveSessionToken(app core.App, token string) (*core.Record, error) {
+	user, err := app.FindAuthRecordByToken(token, core.TokenTypeAuth)
 	if err != nil || user == nil {
 		// One sentence for expired, revoked and never-existed alike. The
 		// difference is only useful to somebody guessing.
 		return nil, fmt.Errorf("that session_token is not valid any more")
 	}
 	return user, nil
+}
+
+// callerOrNil is caller() with "nothing was presented at all" turned into a
+// nil, nil result instead of errNoSession.
+//
+// create_tournament is the one tool that needs to tell those apart: nothing
+// presented means fall back to minting a fresh device account, same as
+// always, but something presented that did not check out — an expired
+// Bearer token, most likely — should surface as an error rather than
+// quietly producing a throwaway account nobody meant to make.
+func (s *WhistleMCP) callerOrNil(ctx context.Context, req mcp.CallToolRequest) (*core.Record, error) {
+	user, err := s.caller(ctx, req)
+	if err == errNoSession {
+		return nil, nil
+	}
+	return user, err
 }
 
 // operator resolves the caller and checks it may operate this tournament.

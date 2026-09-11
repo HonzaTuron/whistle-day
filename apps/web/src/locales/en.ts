@@ -216,6 +216,21 @@ export const en = {
     "It has been used, or it expired, or it was never a link at all. Ask whoever sent it for another one.",
   "claim.failed": "That did not work. Nothing has changed — try again.",
 
+  // An AI agent asking to connect to a signed-in account (the MCP OAuth flow).
+  "connect.title": "{client} wants to connect",
+  "connect.unnamedClient": "An app",
+  "connect.body":
+    "It will be able to see and manage tournaments you own or are staff on — the same as signing in on the web.",
+  "connect.signInPrompt": "Sign in first to allow this.",
+  "connect.signInLink": "Sign in",
+  "connect.approve": "Allow",
+  "connect.deny": "Not now",
+  "connect.denied": "Declined. You can close this tab.",
+  "connect.deadTitle": "This link is not valid any more",
+  "connect.deadBody":
+    "It has been used, or it expired, or it was never a link at all. Go back to whatever you were connecting and try again.",
+  "connect.failed": "That did not work. Nothing has changed — try again.",
+
   // Getting back into a claimed account: forgot-password, and the nudge to
   // confirm an address so a reset can reach it.
   "recover.forgotTitle": "Reset your password",

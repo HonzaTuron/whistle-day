@@ -9,6 +9,7 @@ import (
 	"github.com/pocketbase/pocketbase/plugins/migratecmd"
 
 	"whistleday/backend/internal/mcp"
+	"whistleday/backend/internal/oauth"
 	"whistleday/backend/internal/tournament"
 	_ "whistleday/backend/migrations"
 )
@@ -32,6 +33,8 @@ func main() {
 	tournament.RegisterHandoffRoutes(app)
 	tournament.RegisterSweep(app)
 	mcp.RegisterMCPServer(app)
+	oauth.RegisterOAuthServer(app)
+	oauth.RegisterSweep(app)
 
 	if err := app.Start(); err != nil {
 		log.Fatal(err)
