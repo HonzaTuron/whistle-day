@@ -58,6 +58,22 @@ whistle.day, www.whistle.day {
 		}
 	}
 
+	# The OAuth authorization server (backend/internal/oauth) — an agent
+	# signing in as an account you already have, so it can reach that
+	# account's tournaments over MCP instead of always starting a fresh
+	# anonymous one. These paths are dictated by the OAuth/MCP specs
+	# themselves (RFC 8414, RFC 9728, RFC 7591), so they cannot move under
+	# /api/ to share that block above.
+	handle /oauth/* {
+		reverse_proxy 127.0.0.1:8090
+	}
+	handle /.well-known/oauth-protected-resource {
+		reverse_proxy 127.0.0.1:8090
+	}
+	handle /.well-known/oauth-authorization-server {
+		reverse_proxy 127.0.0.1:8090
+	}
+
 	# The PocketBase dashboard. Superuser-only already, but it is the one
 	# address on this host where a stolen password is the whole database, so
 	# it is worth deciding rather than leaving open. Replace with your own
