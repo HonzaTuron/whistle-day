@@ -68,7 +68,7 @@ func TestMintAndResolveAccessToken(t *testing.T) {
 	user := testUser(t, app, "person@example.test")
 	client := testClient(t, app)
 
-	access, refresh, err := MintTokenPair(app, user, client, "tournaments", "")
+	access, refresh, err := MintTokenPair(app, user, client, "tournaments")
 	if err != nil {
 		t.Fatalf("mint: %v", err)
 	}
@@ -98,7 +98,7 @@ func TestResolveAccessTokenRejectsExpiredAndRevoked(t *testing.T) {
 	})
 
 	t.Run("expired", func(t *testing.T) {
-		access, _, err := MintTokenPair(app, user, client, "tournaments", "")
+		access, _, err := MintTokenPair(app, user, client, "tournaments")
 		if err != nil {
 			t.Fatalf("mint: %v", err)
 		}
@@ -117,7 +117,7 @@ func TestResolveAccessTokenRejectsExpiredAndRevoked(t *testing.T) {
 	})
 
 	t.Run("revoked", func(t *testing.T) {
-		access, _, err := MintTokenPair(app, user, client, "tournaments", "")
+		access, _, err := MintTokenPair(app, user, client, "tournaments")
 		if err != nil {
 			t.Fatalf("mint: %v", err)
 		}
@@ -142,7 +142,7 @@ func TestRotateTokenPair(t *testing.T) {
 	user := testUser(t, app, "person@example.test")
 	client := testClient(t, app)
 
-	_, refresh, err := MintTokenPair(app, user, client, "tournaments", "")
+	_, refresh, err := MintTokenPair(app, user, client, "tournaments")
 	if err != nil {
 		t.Fatalf("mint: %v", err)
 	}
@@ -181,7 +181,7 @@ func TestRefreshReuseRevokesFamily(t *testing.T) {
 	user := testUser(t, app, "person@example.test")
 	client := testClient(t, app)
 
-	_, firstRefresh, err := MintTokenPair(app, user, client, "tournaments", "")
+	_, firstRefresh, err := MintTokenPair(app, user, client, "tournaments")
 	if err != nil {
 		t.Fatalf("mint: %v", err)
 	}

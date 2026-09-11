@@ -221,6 +221,18 @@ of the flow — `/oauth/consent` — is an ordinary SPA route
 (`apps/web/src/routes/oauth.consent.tsx`) that reuses `/account`'s existing
 sign-in form via a `?next=` redirect, not a second one.
 
+Two details taken from [the MCP authorization spec](https://modelcontextprotocol.io/specification/draft/basic/authorization)
+rather than assumed: every token is bound to `/api/mcp` as its audience (RFC
+8707) — a `resource` parameter naming anything else is refused at both
+`/oauth/authorize` and `/oauth/token` — and every redirect back to a client
+carries `iss` (RFC 9207), advertised via
+`authorization_response_iss_parameter_supported`. One known, deliberate gap:
+the spec's discovery flow assumes a client learns OAuth is available from a
+401 challenge, and this server never 401s at the transport level, because
+`create_tournament` has to keep working with no credential at all. A client
+that only checks for `/.well-known/oauth-protected-resource` after a 401 may
+not discover sign-in here — the `/mcp` page's own docs are the mitigation.
+
 `create_tournament` notices which identity a connection carries: signed-in,
 the tournament is created under that real account and no `session_token`
 comes back — there's nothing new to keep — otherwise it falls back to minting

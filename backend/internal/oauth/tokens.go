@@ -35,8 +35,13 @@ func hashToken(raw string) string {
 // "Unrelated" matters: this is the entry point for a brand new grant (an
 // authorization-code exchange), not a rotation, so the new row has no
 // `parent` — there is nothing to walk back to if it is ever replayed.
-func MintTokenPair(app core.App, user, client *core.Record, scope, resource string) (access, refresh string, err error) {
-	return mintTokenPair(app, user, client, scope, resource, nil)
+//
+// Bound to canonicalResource(app) unconditionally rather than trusting a
+// caller-supplied resource string — RFC 8707 audience binding is then a
+// property of every token this function ever produces, not something a call
+// site can get wrong by passing the wrong value through.
+func MintTokenPair(app core.App, user, client *core.Record, scope string) (access, refresh string, err error) {
+	return mintTokenPair(app, user, client, scope, nil)
 }
 
 // RotateTokenPair retires `old` and mints its replacement, both in one
@@ -49,8 +54,7 @@ func RotateTokenPair(app core.App, old, user, client *core.Record) (access, refr
 		if err := tx.Save(old); err != nil {
 			return err
 		}
-		a, r, mintErr := mintTokenPair(tx, user, client,
-			old.GetString("scope"), old.GetString("resource"), old)
+		a, r, mintErr := mintTokenPair(tx, user, client, old.GetString("scope"), old)
 		if mintErr != nil {
 			return mintErr
 		}
@@ -60,7 +64,7 @@ func RotateTokenPair(app core.App, old, user, client *core.Record) (access, refr
 	return access, refresh, err
 }
 
-func mintTokenPair(app core.App, user, client *core.Record, scope, resource string, parent *core.Record) (access, refresh string, err error) {
+func mintTokenPair(app core.App, user, client *core.Record, scope string, parent *core.Record) (access, refresh string, err error) {
 	collection, err := app.FindCollectionByNameOrId("oauth_tokens")
 	if err != nil {
 		return "", "", err
@@ -76,7 +80,7 @@ func mintTokenPair(app core.App, user, client *core.Record, scope, resource stri
 	r.Set("access_token_hash", hashToken(access))
 	r.Set("refresh_token_hash", hashToken(refresh))
 	r.Set("scope", scope)
-	r.Set("resource", resource)
+	r.Set("resource", canonicalResource(app))
 	r.Set("access_expires", now.Add(AccessTokenLifetime))
 	r.Set("refresh_expires", now.Add(RefreshTokenLifetime))
 	r.Set("revoked", false)
@@ -110,6 +114,15 @@ func ResolveAccessToken(app core.App, raw string) (*core.Record, error) {
 
 	expires := row.GetDateTime("access_expires")
 	if !expires.IsZero() && expires.Time().Before(time.Now()) {
+		return nil, fmt.Errorf("that access token is not valid any more")
+	}
+
+	// RFC 8707 audience binding: every token minted here (see mintTokenPair)
+	// is written with the canonical resource, never whatever a client asked
+	// for, so this can never fail for a token this server issued honestly —
+	// it exists to fail loudly instead of silently for one that somehow
+	// wasn't, rather than to do the binding itself.
+	if row.GetString("resource") != canonicalResource(app) {
 		return nil, fmt.Errorf("that access token is not valid any more")
 	}
 

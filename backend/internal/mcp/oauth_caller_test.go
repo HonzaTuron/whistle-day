@@ -67,7 +67,7 @@ func TestCallerPrefersSessionArgOverBearer(t *testing.T) {
 
 	person := realAccount(t, app, "person@example.test")
 	client := oauthClient(t, app)
-	access, _, err := oauth.MintTokenPair(app, person, client, "tournaments", "")
+	access, _, err := oauth.MintTokenPair(app, person, client, "tournaments")
 	if err != nil {
 		t.Fatalf("mint access token: %v", err)
 	}
@@ -96,7 +96,7 @@ func TestCallerAcceptsBearerWithNoSessionArg(t *testing.T) {
 
 	person := realAccount(t, app, "person@example.test")
 	client := oauthClient(t, app)
-	access, _, err := oauth.MintTokenPair(app, person, client, "tournaments", "")
+	access, _, err := oauth.MintTokenPair(app, person, client, "tournaments")
 	if err != nil {
 		t.Fatalf("mint access token: %v", err)
 	}
@@ -126,7 +126,7 @@ func TestCreateTournamentUsesRealOwnerWhenBearerPresent(t *testing.T) {
 
 	person := realAccount(t, app, "person@example.test")
 	client := oauthClient(t, app)
-	access, _, err := oauth.MintTokenPair(app, person, client, "tournaments", "")
+	access, _, err := oauth.MintTokenPair(app, person, client, "tournaments")
 	if err != nil {
 		t.Fatalf("mint access token: %v", err)
 	}

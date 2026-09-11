@@ -78,6 +78,20 @@ func issuer(app core.App) string {
 	return strings.TrimSuffix(app.Settings().Meta.AppURL, "/")
 }
 
+// canonicalResource is the one resource this authorization server exists to
+// protect, per RFC 8707: what a client's `resource` parameter must name and
+// what every token this server issues is bound to.
+func canonicalResource(app core.App) string {
+	return issuer(app) + mcpResource
+}
+
+// validResource reports whether a client-supplied `resource` parameter names
+// this server, tolerant of a trailing slash the way the MCP spec's own
+// canonical-URI examples are.
+func validResource(app core.App, resource string) bool {
+	return strings.TrimSuffix(resource, "/") == canonicalResource(app)
+}
+
 // RegisterOAuthServer wires the authorization-server routes onto the app.
 func RegisterOAuthServer(app core.App) {
 	app.OnServe().BindFunc(func(se *core.ServeEvent) error {
@@ -118,6 +132,10 @@ func discoverServer(e *core.RequestEvent) error {
 		"code_challenge_methods_supported":      []string{"S256"},
 		"token_endpoint_auth_methods_supported": []string{"none"},
 		"scopes_supported":                      []string{"tournaments"},
+		// RFC 9207: this server sets `iss` on every authorize redirect (see
+		// errorRedirect and consume() below), so it advertises that plainly
+		// rather than leaving a client to find out by receiving one.
+		"authorization_response_iss_parameter_supported": true,
 	})
 }
 
@@ -269,7 +287,7 @@ func authorize(e *core.RequestEvent) error {
 	// is the open-redirect mistake mandatory PKCE exists partly to close off,
 	// and it stays a plain 400.
 	fail := func(code, description string) error {
-		return e.Redirect(http.StatusFound, errorRedirect(redirectURI, state, code, description))
+		return e.Redirect(http.StatusFound, errorRedirect(e.App, redirectURI, state, code, description))
 	}
 
 	if responseType != "code" {
@@ -280,6 +298,13 @@ func authorize(e *core.RequestEvent) error {
 	}
 	if challenge == "" {
 		return fail("invalid_request", "code_challenge is required")
+	}
+	// RFC 8707: the one resource this server protects, or none named at all
+	// — accepted for a client that predates sending it, but never a
+	// mismatched one, since a token bound to the wrong audience is exactly
+	// what resource indicators exist to prevent.
+	if resource != "" && !validResource(e.App, resource) {
+		return fail("invalid_target", "resource must be this MCP server's own URL: "+canonicalResource(e.App))
 	}
 
 	collection, err := e.App.FindCollectionByNameOrId("oauth_requests")
@@ -293,7 +318,11 @@ func authorize(e *core.RequestEvent) error {
 	r.Set("redirect_uri", redirectURI)
 	r.Set("state", state)
 	r.Set("scope", scope)
-	r.Set("resource", resource)
+	// Normalised to the one value it can validly be, whether or not the
+	// client sent it — every token this server issues is bound to its own
+	// resource regardless, so what matters is that a *wrong* one was refused
+	// above, not preserving whatever form a right one arrived in.
+	r.Set("resource", canonicalResource(e.App))
 	r.Set("code_challenge", challenge)
 	r.Set("code_challenge_method", method)
 	r.Set("expires", types.NowDateTime().Add(requestLifetime))
@@ -307,7 +336,12 @@ func authorize(e *core.RequestEvent) error {
 	return e.Redirect(http.StatusFound, consentURL)
 }
 
-func errorRedirect(redirectURI, state, code, description string) string {
+// errorRedirect builds an OAuth error redirect, with `iss` set per RFC 9207
+// so a client that recorded the issuer at authorize time can tell this
+// response apart from one a mix-up attack forged from a different
+// authorization server — see discoverServer's
+// authorization_response_iss_parameter_supported, which promises this.
+func errorRedirect(app core.App, redirectURI, state, code, description string) string {
 	u, err := url.Parse(redirectURI)
 	if err != nil {
 		return redirectURI
@@ -320,6 +354,7 @@ func errorRedirect(redirectURI, state, code, description string) string {
 	if state != "" {
 		q.Set("state", state)
 	}
+	q.Set("iss", issuer(app))
 	u.RawQuery = q.Encode()
 	return u.String()
 }
@@ -397,7 +432,7 @@ func consume(e *core.RequestEvent) error {
 			return e.InternalServerError("could not record that decision", err)
 		}
 		return e.JSON(http.StatusOK, map[string]any{
-			"redirect": errorRedirect(redirectURI, state, "access_denied", ""),
+			"redirect": errorRedirect(e.App, redirectURI, state, "access_denied", ""),
 		})
 	}
 
@@ -429,7 +464,8 @@ func consume(e *core.RequestEvent) error {
 		return e.InternalServerError("could not finish signing in", err)
 	}
 
-	redirect := redirectURI + querySep(redirectURI) + "code=" + url.QueryEscape(code.GetString("code"))
+	redirect := redirectURI + querySep(redirectURI) + "code=" + url.QueryEscape(code.GetString("code")) +
+		"&iss=" + url.QueryEscape(issuer(e.App))
 	if state != "" {
 		redirect += "&state=" + url.QueryEscape(state)
 	}
@@ -481,6 +517,13 @@ func exchangeCode(e *core.RequestEvent, form url.Values) error {
 	clientID := form.Get("client_id")
 	verifier := form.Get("code_verifier")
 
+	// RFC 8707 asks a client to send `resource` at the token endpoint too,
+	// not only at authorize — accepted if absent, refused if it names
+	// anything other than this one server.
+	if resource := form.Get("resource"); resource != "" && !validResource(e.App, resource) {
+		return oauthError(e, "invalid_target", "resource must be this MCP server's own URL")
+	}
+
 	row, err := e.App.FindFirstRecordByFilter("oauth_codes",
 		"code = {:c} && used = false", map[string]any{"c": codeValue})
 	if err != nil || row == nil {
@@ -513,7 +556,7 @@ func exchangeCode(e *core.RequestEvent, form url.Values) error {
 		if err := tx.Save(row); err != nil {
 			return err
 		}
-		a, r, mintErr := MintTokenPair(tx, user, client, row.GetString("scope"), row.GetString("resource"))
+		a, r, mintErr := MintTokenPair(tx, user, client, row.GetString("scope"))
 		if mintErr != nil {
 			return mintErr
 		}
@@ -536,6 +579,10 @@ func exchangeCode(e *core.RequestEvent, form url.Values) error {
 func refreshGrant(e *core.RequestEvent, form url.Values) error {
 	raw := form.Get("refresh_token")
 	clientID := form.Get("client_id")
+
+	if resource := form.Get("resource"); resource != "" && !validResource(e.App, resource) {
+		return oauthError(e, "invalid_target", "resource must be this MCP server's own URL")
+	}
 
 	row, err := FindTokenByRefreshHash(e.App, raw)
 	if err != nil || row == nil {

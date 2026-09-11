@@ -144,6 +144,52 @@ func TestAuthorizeRejectsUnknownClientOrRedirect(t *testing.T) {
 	plainPKCE.Test(t)
 }
 
+// RFC 8707: a resource naming anything other than this one server is
+// refused, whether at /oauth/authorize (as a redirected error, since
+// client_id and redirect_uri already checked out by that point) or at
+// /oauth/token (as a plain 400, matching every other token-endpoint error).
+func TestResourceIndicatorMustNameThisServer(t *testing.T) {
+	wrongAtAuthorize := tests.ApiScenario{
+		Name:   "a resource naming somebody else's server is refused at authorize",
+		Method: http.MethodGet,
+		URL: "/oauth/authorize?client_id=wd_client_test&redirect_uri=" +
+			url.QueryEscape("http://127.0.0.1:9999/callback") +
+			"&response_type=code&code_challenge=abc&code_challenge_method=S256" +
+			"&resource=" + url.QueryEscape("https://not-this-server.example/mcp"),
+		BeforeTestFunc: func(t testing.TB, app *tests.TestApp, e *core.ServeEvent) {
+			testClient(t, app)
+		},
+		ExpectedStatus: 302,
+		TestAppFactory: bootedApp,
+		AfterTestFunc: func(t testing.TB, app *tests.TestApp, res *http.Response) {
+			loc := res.Header.Get("Location")
+			if !strings.Contains(loc, "error=invalid_target") {
+				t.Fatalf("expected an invalid_target redirect, got %q", loc)
+			}
+		},
+	}
+	wrongAtAuthorize.Test(t)
+
+	wrongAtToken := tests.ApiScenario{
+		Name:   "a resource naming somebody else's server is refused at the token endpoint",
+		Method: http.MethodPost,
+		URL:    "/oauth/token",
+		Body: strings.NewReader(url.Values{
+			"grant_type":    {"authorization_code"},
+			"code":          {"whatever"},
+			"redirect_uri":  {"http://127.0.0.1:9999/callback"},
+			"client_id":     {"wd_client_test"},
+			"code_verifier": {"whatever"},
+			"resource":      {"https://not-this-server.example/mcp"},
+		}.Encode()),
+		Headers:         map[string]string{"content-type": "application/x-www-form-urlencoded"},
+		ExpectedStatus:  400,
+		ExpectedContent: []string{`"invalid_target"`},
+		TestAppFactory:  bootedApp,
+	}
+	wrongAtToken.Test(t)
+}
+
 // The whole loop: register a client, start an authorize call, approve consent
 // as a real signed-in user, exchange the code, and confirm the resulting
 // access token resolves to that same real user — not a fresh device account.
@@ -258,6 +304,11 @@ func TestFullAuthorizationCodeFlow(t *testing.T) {
 	}
 	if redirectOut.Query().Get("state") != "xyz" {
 		t.Fatalf("state was not echoed back: %q", redirectOut)
+	}
+	// RFC 9207: every redirect back to the client's own redirect_uri carries
+	// iss, matching authorization_response_iss_parameter_supported.
+	if redirectOut.Query().Get("iss") == "" {
+		t.Fatalf("no iss in the authorization response: %q", redirectOut)
 	}
 
 	tokenForm := func(values url.Values) *http.Response {
