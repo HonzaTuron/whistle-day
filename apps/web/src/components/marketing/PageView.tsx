@@ -63,6 +63,14 @@ export function PageView({ page }: { page: Page }) {
                 {paragraph}
               </p>
             ))}
+            {section.code?.map((block) => (
+              <div className="doc__code" key={block.code}>
+                {block.label && <div className="doc__code-label">{block.label}</div>}
+                <pre>
+                  <code>{block.code}</code>
+                </pre>
+              </div>
+            ))}
           </section>
         ))}
 

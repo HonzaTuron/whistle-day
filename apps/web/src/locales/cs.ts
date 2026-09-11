@@ -94,6 +94,7 @@ export const cs: Record<keyof Catalog, Message> = {
   "nav.screens": "Obrazovky",
   "nav.print": "K vytištění",
   "nav.compare": "Srovnání",
+  "nav.mcp": "MCP",
   "nav.setUp": "Založit",
   "nav.privacy": "Soukromí",
   "nav.terms": "Podmínky",

@@ -93,6 +93,7 @@ export const en = {
   "nav.screens": "Screens",
   "nav.print": "Print",
   "nav.compare": "Compare",
+  "nav.mcp": "MCP",
   "nav.setUp": "Set up",
   "nav.privacy": "Privacy",
   "nav.terms": "Terms",

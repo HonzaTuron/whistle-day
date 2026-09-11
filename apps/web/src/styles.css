@@ -4399,6 +4399,35 @@ th,
   line-height: 1.7;
 }
 
+.doc__code {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.doc__code-label {
+  font-size: 0.8rem;
+  font-weight: 650;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+
+.doc__code pre {
+  margin: 0;
+  padding: 1rem 1.1rem;
+  overflow-x: auto;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 0.6rem;
+  font-family: var(--numeric);
+  font-size: 0.85rem;
+  line-height: 1.55;
+}
+
+.doc__code code {
+  white-space: pre;
+}
+
 .doc__faq {
   display: grid;
   gap: 0.5rem;

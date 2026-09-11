@@ -33,11 +33,20 @@ export type PageKind =
   | "printable"
   | "legal";
 
+/** One command or config snippet, shown verbatim in a monospace block. */
+export interface CodeBlock {
+  /** What it is — "Claude Code", "curl" — shown above the block. */
+  label?: string;
+  code: string;
+}
+
 /** A prose block. Headed sections become `<h2>`s and land in the page outline. */
 export interface Section {
   heading: string;
   /** Each string is a paragraph. Markdown is deliberately not supported. */
   body: string[];
+  /** Verbatim snippets under the prose — the one thing prose can't be. */
+  code?: CodeBlock[];
 }
 
 /**

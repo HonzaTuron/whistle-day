@@ -427,4 +427,113 @@ export const OPERATIONAL_PAGES: Page[] = [
       "guide/how-many-courts-do-i-need",
     ],
   },
+
+  {
+    slug: "mcp",
+    kind: "operational",
+    title: "MCP Server for Tournaments — Set One Up by Prompt",
+    h1: "Run a tournament through an AI agent",
+    description:
+      "Whistle.day is also an MCP server. Point Claude, ChatGPT or any MCP client at it and an agent can set up, draw and score a tournament.",
+    lede:
+      "Whistle.day is also an MCP server: the same 21 tools its own screens are built on, over one HTTP endpoint. Point an agent at it and it can create a tournament, add teams and courts, draw a stage, settle matches, and hand you back a link and a QR code — without anybody touching the wizard.",
+    facts: [
+      {
+        label: "Tools",
+        value: "21",
+        note: "create, draw, score, publish — nothing the app's own screens can't also do",
+      },
+      { label: "Endpoint", value: "/api/mcp", note: "one URL, Streamable HTTP" },
+      {
+        label: "Account",
+        value: "None to make",
+        note: "the first tool call mints one, scoped to that tournament",
+      },
+    ],
+    sections: [
+      {
+        heading: "Claude Desktop and Claude Code",
+        body: [
+          "Claude Code adds a remote server from the command line, one command and nothing to edit by hand:",
+          "Claude Desktop and claude.ai take the same URL as a custom connector — Settings → Connectors → Add custom connector — or the equivalent block in claude_desktop_config.json:",
+        ],
+        code: [
+          {
+            label: "Claude Code",
+            code: "claude mcp add --transport http whistleday https://whistle.day/api/mcp",
+          },
+          {
+            label: "claude_desktop_config.json",
+            code: '{\n  "mcpServers": {\n    "whistleday": {\n      "type": "http",\n      "url": "https://whistle.day/api/mcp"\n    }\n  }\n}',
+          },
+        ],
+      },
+      {
+        heading: "ChatGPT",
+        body: [
+          "Settings → Connectors → Advanced → Developer mode, then create a connector: give it a name, paste the URL below, and set authentication to none. ChatGPT lists the 21 tools once it connects.",
+        ],
+        code: [{ code: "https://whistle.day/api/mcp" }],
+      },
+      {
+        heading: "Cursor, Windsurf, Cline, or anything else that reads an MCP config",
+        body: [
+          "The same shape every one of them expects for a remote server — no command, no local process, just the URL:",
+        ],
+        code: [
+          {
+            label: "mcp.json",
+            code: '{\n  "mcpServers": {\n    "whistleday": {\n      "url": "https://whistle.day/api/mcp"\n    }\n  }\n}',
+          },
+        ],
+      },
+      {
+        heading: "Or skip the URL entirely",
+        body: [
+          "Whistle.day is listed on Smithery, so a client that installs from there gets the connection made for it rather than a URL to paste.",
+        ],
+      },
+      {
+        heading: "What an agent actually does with it",
+        body: [
+          "create_tournament is the only tool that asks for nothing first — it makes an account for that tournament alone and hands back a session token every other tool then requires. Two prompts, plan_a_tournament and enter_the_results, lay out the rest of the sequence: add the teams, add the courts, create a stage and generate its draw, publish, open a display. The second one is for the day itself — find what is live, settle it, move on.",
+          "Nothing here is a shortcut version of the app. generate_stage takes a dry_run so an agent can preview a draw before committing to it, and update_fixture triggers the same re-resolve the results screen does, so the tables, the next Swiss round and the playoff seeded from them come out right either way.",
+        ],
+      },
+      {
+        heading: "One tournament per token, on purpose",
+        body: [
+          "The token travels as a tool argument rather than a header, because the agent has none when it first connects and a client's header can't change partway through a session — which also means what leaks, if a transcript leaks, is one tournament rather than an operator's whole account.",
+          "create_handoff ends it cleanly: it mints a link for whoever is actually running the day, they set an email and a password, and the agent's token stops working the moment they do.",
+        ],
+      },
+    ],
+    faq: [
+      {
+        q: "Does an agent need an account first?",
+        a: "No. create_tournament makes one automatically and returns a session token, which every other tool call then needs.",
+      },
+      {
+        q: "Can it see other people's tournaments?",
+        a: "No. Each tournament the MCP server creates gets its own account, so a session token is scoped to the one tournament it made.",
+      },
+      {
+        q: "What transport does it use?",
+        a: "Streamable HTTP — one endpoint answers POST for a request, GET for the stream, and DELETE to end a session. No SSE fallback to configure separately.",
+      },
+      {
+        q: "Is it free?",
+        a: "Yes — the MCP server calls the same tournament engine the free web app runs on.",
+      },
+      {
+        q: "I'm reconnecting through a gateway that only lets me set config, not arguments — what then?",
+        a: "Map a sessionToken config value onto the X-Whistle-Session header (a Smithery config schema does exactly that); a tool call with no session_token argument reads it from there instead.",
+      },
+    ],
+    related: [
+      "run-a-tournament-from-your-phone",
+      "referee-scoring-app",
+      "tournament-projector-display",
+    ],
+  },
 ];

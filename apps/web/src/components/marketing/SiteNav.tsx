@@ -28,6 +28,7 @@ const DESTINATIONS: { slug: string; key: MessageKey }[] = [
   { slug: "tournament-projector-display", key: "nav.screens" },
   { slug: "printable/round-robin-schedule", key: "nav.print" },
   { slug: "alternatives/free-tournament-bracket-software", key: "nav.compare" },
+  { slug: "mcp", key: "nav.mcp" },
 ];
 
 // Same reasoning as `related` in the content module: a nav link to a page that
