@@ -150,11 +150,24 @@ function RootDocument({ children }: Readonly<{ children: ReactNode }>) {
  * a script on the one screen an organiser is mid-task on to find out is the
  * wrong trade.
  *
- * Plausible rather than something with autocapture: no cookies, so no consent
- * banner in front of a landing page whose whole job is to convert, and about a
- * kilobyte on pages that have an LCP budget. Nothing here identifies anybody,
- * which is what keeps §4 of the launch checklist short.
+ * Cloudflare Web Analytics rather than something with autocapture: no
+ * cookies, so no consent banner in front of a landing page whose whole job is
+ * to convert, and a couple of kilobytes on pages that have an LCP budget.
+ * Nothing here identifies anybody, which is what keeps §4 of the launch
+ * checklist short. Free with no event or pageview cap, unlike Plausible's
+ * cloud past its trial — worth stating since that is the whole reason this
+ * replaced it rather than only rotating the script tag.
+ *
+ * The token is not a secret — it ends up in this same page's HTML either way
+ * — but it is specific to the whistle.day site in Cloudflare's dashboard:
+ * Analytics & Logs → Web Analytics → Add a site (whistle.day is already on
+ * Cloudflare's nameservers for DNS, so it should already be selectable
+ * there) → the snippet it shows has the token to paste below. Grey-clouded
+ * (DNS-only) is fine; this beacon reports straight from the browser and does
+ * not need the zone proxied.
  */
+const CLOUDFLARE_BEACON_TOKEN = "b92d774814c04702a4dfc8a00614e672";
+
 function Analytics() {
   const pathname = useRouterState({
     select: (state) => state.location.pathname,
@@ -164,7 +177,11 @@ function Analytics() {
   if (isAppRoute(pathname)) return null;
 
   return (
-    <script defer data-domain="whistle.day" src="https://plausible.io/js/script.js" />
+    <script
+      type="module"
+      src="https://static.cloudflareinsights.com/beacon.min.js"
+      data-cf-beacon={`{"token": "${CLOUDFLARE_BEACON_TOKEN}"}`}
+    />
   );
 }
 
