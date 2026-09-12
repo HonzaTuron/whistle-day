@@ -1,0 +1,87 @@
+# Whistle.day
+
+> Free tournament organiser: draw a bracket, group stage or Swiss tournament,
+> run the day from a phone, and put live scores on a projector or TV. No
+> account required to start, no ads, no caps. Also reachable by an AI agent
+> over MCP — the same tools the web app's own screens are built on.
+
+Whistle.day supports round robin, single elimination, double elimination and
+Swiss formats, in any order (a group stage feeding a playoff, for example).
+Results entered from a phone at the court propagate to tables, brackets and
+projector screens in under a second. Every tournament gets a shareable link
+and a QR code; no signup is required until an organiser wants to keep it.
+
+## Agents
+
+- [MCP server](https://whistle.day/mcp): Point Claude, ChatGPT or any MCP
+  client at `https://whistle.day/api/mcp` (Streamable HTTP, no account
+  needed) and an agent can create a tournament, add teams and courts, draw a
+  stage, score matches, and hand back a link and a QR code — the same 21
+  tools the web app's own screens use.
+
+## Formats
+
+- [Tournament generator](https://whistle.day/tournament-generator): the hub —
+  pick a format by how much of a day you have, not by what it's called.
+- [Round robin generator](https://whistle.day/round-robin-generator): every
+  team plays every other; groups feed into a playoff.
+- [Single elimination bracket generator](https://whistle.day/single-elimination-bracket-generator):
+  lose once and you're out.
+- [Double elimination bracket generator](https://whistle.day/double-elimination-bracket-generator):
+  a losers bracket gives everyone a second chance.
+- [Swiss tournament generator](https://whistle.day/swiss-tournament-generator):
+  pairings by record, no elimination, every team plays every round.
+- [Group stage and knockout generator](https://whistle.day/group-stage-knockout-generator):
+  pools then a playoff.
+- [League table generator](https://whistle.day/league-table-generator):
+  standings with tiebreakers explained.
+- [Multi-stage tournament builder](https://whistle.day/multi-stage-tournament-builder):
+  chain formats in any order.
+
+## Running the day
+
+- [Run a tournament from your phone](https://whistle.day/run-a-tournament-from-your-phone):
+  set up, schedule and score a whole tournament with no laptop and no account.
+- [Tournament projector display](https://whistle.day/tournament-projector-display):
+  live scores, tables and the bracket on a screen in the hall, self-rotating.
+- [Live tournament standings screen](https://whistle.day/live-tournament-standings-screen):
+  group tables and league standings, rebuilt after every result.
+- [Tournament bracket on a TV](https://whistle.day/tournament-bracket-on-a-tv):
+  a bracket that fills itself in as results come in.
+- [QR code tournament results](https://whistle.day/qr-code-tournament-results):
+  a QR code that opens live results on a spectator's phone.
+- [Referee scoring app](https://whistle.day/referee-scoring-app): each referee
+  scores their own court from their own phone.
+- [Multi-court tournament scheduler](https://whistle.day/multi-court-tournament-scheduler):
+  assign matches to courts and times and catch clashes before they happen.
+
+## Sports
+
+- [Volleyball](https://whistle.day/volleyball-tournament-bracket)
+- [Beach volleyball](https://whistle.day/beach-volleyball-tournament-generator)
+- [Padel](https://whistle.day/padel-tournament-generator)
+- [Pickleball](https://whistle.day/pickleball-round-robin-generator)
+- [Badminton](https://whistle.day/badminton-tournament-draw)
+- [Table tennis](https://whistle.day/table-tennis-tournament-generator)
+- [Futsal](https://whistle.day/futsal-tournament-generator)
+- [Chess](https://whistle.day/chess-swiss-tournament-generator)
+- [Esports](https://whistle.day/esports-tournament-bracket)
+
+## Guides
+
+- [How Swiss pairing works](https://whistle.day/guide/how-swiss-pairing-works)
+- [How many Swiss rounds](https://whistle.day/guide/how-many-swiss-rounds)
+- [Group stage tiebreakers explained](https://whistle.day/guide/group-stage-tiebreakers-explained)
+- [How to seed a bracket](https://whistle.day/guide/how-to-seed-a-bracket)
+- [Byes in a round robin](https://whistle.day/guide/byes-in-a-round-robin)
+- [Group stage vs Swiss](https://whistle.day/guide/group-stage-vs-swiss)
+- [Single vs double elimination](https://whistle.day/guide/single-vs-double-elimination)
+- [How many courts do I need](https://whistle.day/guide/how-many-courts-do-i-need)
+- [How to run a one-day tournament](https://whistle.day/guide/how-to-run-a-one-day-tournament)
+
+## Optional
+
+- [Alternatives roundup](https://whistle.day/alternatives/free-tournament-bracket-software)
+- [Privacy](https://whistle.day/privacy)
+- [Terms](https://whistle.day/terms)
+- [Data deletion](https://whistle.day/user-deletion)

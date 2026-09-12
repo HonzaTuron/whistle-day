@@ -1628,9 +1628,14 @@ th,
   width: 100%;
 }
 
-.home__section--screen {
+.home__section--center {
   text-align: center;
   justify-items: center;
+}
+
+/* Whichever centered section renders last gets the extra breathing room
+   before the footer, rather than one hardcoded to know it is last. */
+.home__section--center:last-of-type {
   padding-bottom: 4rem;
 }
 

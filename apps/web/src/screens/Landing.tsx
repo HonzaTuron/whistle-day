@@ -190,7 +190,7 @@ export function Landing() {
         </ul>
       </section>
 
-      <section className="home__section home__section--screen">
+      <section className="home__section home__section--center">
         <h2 className="home__section-title">{t("landing.screenTitle")}</h2>
         <p className="home__section-note">{t("landing.screenNote")}</p>
         <input
@@ -218,6 +218,14 @@ export function Landing() {
             {t("landing.phone")}
           </button>
         </div>
+      </section>
+
+      <section className="home__section home__section--center">
+        <h2 className="home__section-title">{t("landing.agentsTitle")}</h2>
+        <p className="home__section-note">{t("landing.agentsNote")}</p>
+        <Link to="/$" params={{ _splat: "mcp" }} className="btn btn--quiet">
+          {t("landing.agentsLink")}
+        </Link>
       </section>
 
       <footer className="home__footer">

@@ -164,6 +164,10 @@ export const cs: Record<keyof Catalog, Message> = {
   "landing.tokenPlaceholder": "kód obrazovky",
   "landing.projector": "Projektor",
   "landing.phone": "Mobil",
+  "landing.agentsTitle": "Funguje i pro AI agenty",
+  "landing.agentsNote":
+    "Whistle.day je zároveň MCP server — nasměrujte na něj Claude, ChatGPT nebo jiného MCP klienta a agent si sám založí turnaj, přidá týmy a kurty, vylosuje skupinu a zapíše výsledky.",
+  "landing.agentsLink": "Zobrazit MCP server",
   "landing.footer": "Whistle.day — bezplatný nástroj na turnaje.",
   "landing.smithery": "Whistle.day na Smithery",
 
