@@ -680,9 +680,9 @@ export const cs: Record<keyof Catalog, Message> = {
   "crew.scorerHint": "Zapisuje skóre, set po setu.",
   "crew.organizer": "Spolupořadatel",
   "crew.organizerHint": "Řídí den spolu s vámi.",
-  "crew.scanThis": "Ať si to naskenují — není se kam registrovat.",
+  "crew.scanThis": "Stačí načíst QR kód, systém nevyžaduje registraci.",
   "crew.pickRole": "Vyberte, co budou dělat, a objeví se kód.",
-  "crew.replace": "Nahradit tenhle kód",
+  "crew.replace": "Nahradit kód",
   "crew.working": "Pracuje se…",
   "crew.replaceNote":
     "Nahrazením přestane ten starý fungovat. Kdo už je na seznamu, zůstává — přišli dveřmi, ne kódem.",

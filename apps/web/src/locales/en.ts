@@ -662,9 +662,9 @@ export const en = {
   "crew.scorerHint": "Keeps score, set by set.",
   "crew.organizer": "Co-organiser",
   "crew.organizerHint": "Runs the day alongside you.",
-  "crew.scanThis": "Have them scan this — there is nothing to sign up for.",
+  "crew.scanThis": "Just scan the QR code — no registration required.",
   "crew.pickRole": "Pick what they will be doing and a code appears.",
-  "crew.replace": "Replace this code",
+  "crew.replace": "Replace code",
   "crew.working": "Working…",
   "crew.replaceNote":
     "Replacing it stops the old one working. Anyone already on the list stays — they came through the door, they are not it.",
