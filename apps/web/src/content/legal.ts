@@ -78,7 +78,7 @@ export const LEGAL_PAGES: Page[] = [
       {
         heading: "Contact",
         body: [
-          "If you have questions about this privacy policy or wish to submit a data protection request, you can reach the maintainers at privacy@whistle.day.",
+          "If you have questions about this privacy policy or wish to submit a data protection request, you can reach the maintainers at info@whistle.day.",
         ],
       },
     ],
@@ -232,7 +232,7 @@ export const LEGAL_PAGES: Page[] = [
         heading: "Manual deletion request by email",
         body: [
           "If you are unable to access your account or need assistance deleting your data, you can submit a manual deletion request.",
-          "Send an email to privacy@whistle.day with the subject 'Data Deletion Request' from the email address registered to your account.",
+          "Send an email to info@whistle.day with the subject 'Data Deletion Request' from the email address registered to your account.",
           "Our team will verify your identity, permanently delete your account and all associated data within 48 hours, and email you confirmation.",
         ],
       },

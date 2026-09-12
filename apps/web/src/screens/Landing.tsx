@@ -222,7 +222,8 @@ export function Landing() {
 
       <footer className="home__footer">
         <p>{t("landing.footer")}</p>
-        <nav className="home__footer-links" aria-label="Legal">
+        <nav className="home__footer-links" aria-label="Footer">
+          <a href="mailto:info@whistle.day">info@whistle.day</a>
           <Link to="/$" params={{ _splat: "privacy" }}>
             {t("nav.privacy")}
           </Link>

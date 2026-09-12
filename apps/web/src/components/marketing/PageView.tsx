@@ -99,6 +99,9 @@ export function PageView({ page }: { page: Page }) {
             Free tournament organiser. No account, no ads, no cap.
           </span>
           <div className="doc__foot-legal">
+            <a href="mailto:info@whistle.day" className="doc__foot-sublink">
+              info@whistle.day
+            </a>
             <Link to="/$" params={{ _splat: "privacy" }} className="doc__foot-sublink">
               Privacy
             </Link>
