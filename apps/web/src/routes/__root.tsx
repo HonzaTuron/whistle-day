@@ -2,6 +2,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
   createRootRoute,
   HeadContent,
+  isNotFound,
   Outlet,
   Scripts,
   useRouterState,
@@ -27,49 +28,75 @@ import "../styles.css";
  * shared between requests would serve one organiser's board to the next
  * visitor, so it is made per render and only reused across re-renders.
  */
+const ICON_LINKS = [
+  { rel: "icon", href: "/icon.svg", type: "image/svg+xml" },
+  { rel: "icon", href: "/pwa-192.png", type: "image/png", sizes: "192x192" },
+  { rel: "apple-touch-icon", href: "/apple-touch-icon.png" },
+  { rel: "manifest", href: "/manifest.webmanifest" },
+] as const;
+
 export const Route = createRootRoute({
-  head: () => ({
-    meta: [
-      { charSet: "utf-8" },
-      {
-        name: "viewport",
-        content: "width=device-width, initial-scale=1, viewport-fit=cover",
-      },
-      { name: "apple-mobile-web-app-capable", content: "yes" },
-      { title: "Whistle.day — run a tournament off a phone" },
-      {
-        name: "description",
-        content:
-          "Free tournament organiser. Draw groups, brackets or a Swiss, run the day from your phone, and put the results on a projector.",
-      },
-      { property: "og:site_name", content: "Whistle.day" },
-      { property: "og:type", content: "website" },
-      { property: "og:title", content: "Whistle.day — Run a tournament off a phone" },
-      {
-        property: "og:description",
-        content:
-          "Free tournament organiser. Draw groups, brackets or a Swiss, run the day from your phone, and put the results on a projector.",
-      },
-      { property: "og:image", content: "https://whistle.day/og.png" },
-      { property: "og:image:width", content: "1200" },
-      { property: "og:image:height", content: "630" },
-      { property: "og:image:type", content: "image/png" },
-      { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:title", content: "Whistle.day — Run a tournament off a phone" },
-      {
-        name: "twitter:description",
-        content:
-          "Free tournament organiser. Draw groups, brackets or a Swiss, run the day from your phone, and put the results on a projector.",
-      },
-      { name: "twitter:image", content: "https://whistle.day/og.png" },
-    ],
-    links: [
-      { rel: "icon", href: "/icon.svg", type: "image/svg+xml" },
-      { rel: "icon", href: "/pwa-192.png", type: "image/png", sizes: "192x192" },
-      { rel: "apple-touch-icon", href: "/apple-touch-icon.png" },
-      { rel: "manifest", href: "/manifest.webmanifest" },
-    ],
-  }),
+  // A not-found bubbles up to this route (the nearest ancestor with a
+  // `notFoundComponent`) and lands on *this* match rather than the leaf
+  // route's — which is also why the leaf's own `head()` never runs for it.
+  // Branching here is the only place that can give a 404 its own title
+  // instead of silently keeping the homepage's.
+  head: ({ match }) =>
+    isNotFound(match.error)
+      ? {
+          meta: [
+            { charSet: "utf-8" },
+            {
+              name: "viewport",
+              content: "width=device-width, initial-scale=1, viewport-fit=cover",
+            },
+            { name: "apple-mobile-web-app-capable", content: "yes" },
+            { title: "Page not found — Whistle.day" },
+            {
+              name: "description",
+              content: "There is no page at this address on Whistle.day.",
+            },
+            { name: "robots", content: "noindex" },
+          ],
+          links: [...ICON_LINKS],
+        }
+      : {
+          meta: [
+            { charSet: "utf-8" },
+            {
+              name: "viewport",
+              content: "width=device-width, initial-scale=1, viewport-fit=cover",
+            },
+            { name: "apple-mobile-web-app-capable", content: "yes" },
+            { title: "Whistle.day — run a tournament off a phone" },
+            {
+              name: "description",
+              content:
+                "Free tournament organiser. Draw groups, brackets or a Swiss, run the day from your phone, and put the results on a projector.",
+            },
+            { property: "og:site_name", content: "Whistle.day" },
+            { property: "og:type", content: "website" },
+            { property: "og:title", content: "Whistle.day — Run a tournament off a phone" },
+            {
+              property: "og:description",
+              content:
+                "Free tournament organiser. Draw groups, brackets or a Swiss, run the day from your phone, and put the results on a projector.",
+            },
+            { property: "og:image", content: "https://whistle.day/og.png" },
+            { property: "og:image:width", content: "1200" },
+            { property: "og:image:height", content: "630" },
+            { property: "og:image:type", content: "image/png" },
+            { name: "twitter:card", content: "summary_large_image" },
+            { name: "twitter:title", content: "Whistle.day — Run a tournament off a phone" },
+            {
+              name: "twitter:description",
+              content:
+                "Free tournament organiser. Draw groups, brackets or a Swiss, run the day from your phone, and put the results on a projector.",
+            },
+            { name: "twitter:image", content: "https://whistle.day/og.png" },
+          ],
+          links: [...ICON_LINKS],
+        },
   component: RootComponent,
   notFoundComponent: NotFound,
 });
