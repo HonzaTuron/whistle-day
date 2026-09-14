@@ -13,9 +13,17 @@ interface Resume {
 interface Props {
   initial: string;
   sport: SportId;
+  /** Sets override for a sport that asks, `null` while the preset's own
+   *  default still stands. */
+  bestOf: number | null;
+  customSportName: string;
+  customDrawsAllowed: boolean;
   busy: boolean;
   resume: Resume | null;
   onSport: (sport: SportId) => void;
+  onBestOf: (bestOf: number) => void;
+  onCustomSportName: (name: string) => void;
+  onCustomDrawsAllowed: (allowed: boolean) => void;
   onNext: (name: string) => void;
 }
 
@@ -36,11 +44,30 @@ interface Props {
  * after it is saved as it is typed rather than held in a tab that an incoming
  * phone call can kill.
  */
-export function NameStep({ initial, sport, busy, resume, onSport, onNext }: Props) {
+export function NameStep({
+  initial,
+  sport,
+  bestOf,
+  customSportName,
+  customDrawsAllowed,
+  busy,
+  resume,
+  onSport,
+  onBestOf,
+  onCustomSportName,
+  onCustomDrawsAllowed,
+  onNext,
+}: Props) {
   const t = useT();
   const [name, setName] = useState(initial);
   const trimmed = name.trim();
   const ready = trimmed.length > 0 && !busy;
+  const picked = sportById(sport);
+  const isOther = sport === "other";
+  const effectiveBestOf = bestOf ?? picked.scoring.bestOf;
+
+  const setLabel = (value: number) =>
+    value === 1 ? t("wizard.setsSingle") : t("wizard.setsOf", { count: value });
 
   /**
    * The submitted form is the truth, not the state.
@@ -133,8 +160,74 @@ export function NameStep({ initial, sport, busy, resume, onSport, onNext }: Prop
             </button>
           ))}
         </div>
-        <p className="wiz__chip-hint">{t(sportById(sport).hint)}</p>
+        <p className="wiz__chip-hint">{t(picked.hint)}</p>
       </fieldset>
+
+      {isOther ? (
+        <div className="wiz__subwizard">
+          <label className="wiz__sub" htmlFor="custom-sport-name">
+            {t("wizard.customSportLegend")}
+            <input
+              id="custom-sport-name"
+              className="wiz__input wiz__input--sub"
+              value={customSportName}
+              onChange={(event) => onCustomSportName(event.target.value)}
+              placeholder={t("wizard.customSportPlaceholder")}
+              maxLength={40}
+              autoComplete="off"
+            />
+          </label>
+
+          <fieldset className="wiz__sports">
+            <legend>{t("wizard.decidedLegend")}</legend>
+            <div className="wiz__chips">
+              {picked.setChoices?.map((value) => (
+                <button
+                  key={value}
+                  type="button"
+                  className={
+                    value === effectiveBestOf ? "wiz__chip wiz__chip--small is-active" : "wiz__chip wiz__chip--small"
+                  }
+                  aria-pressed={value === effectiveBestOf}
+                  onClick={() => onBestOf(value)}
+                >
+                  {setLabel(value)}
+                </button>
+              ))}
+            </div>
+          </fieldset>
+
+          {effectiveBestOf === 1 ? (
+            <label className="wiz__toggle">
+              <input
+                type="checkbox"
+                checked={customDrawsAllowed}
+                onChange={(event) => onCustomDrawsAllowed(event.target.checked)}
+              />
+              {t("wizard.customDraws")}
+            </label>
+          ) : null}
+        </div>
+      ) : picked.setChoices ? (
+        <fieldset className="wiz__sports">
+          <legend>{t("wizard.setsLegend")}</legend>
+          <div className="wiz__chips">
+            {picked.setChoices.map((value) => (
+              <button
+                key={value}
+                type="button"
+                className={
+                  value === effectiveBestOf ? "wiz__chip wiz__chip--small is-active" : "wiz__chip wiz__chip--small"
+                }
+                aria-pressed={value === effectiveBestOf}
+                onClick={() => onBestOf(value)}
+              >
+                {setLabel(value)}
+              </button>
+            ))}
+          </div>
+        </fieldset>
+      ) : null}
     </WizardShell>
   );
 }

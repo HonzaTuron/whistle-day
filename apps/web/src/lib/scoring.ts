@@ -14,7 +14,16 @@ import type { MessageKey } from "./i18n";
  * not a bug in the preset — it is a local league.
  */
 
-export type SportId = "volleyball" | "football" | "basketball" | "other";
+export type SportId =
+  | "volleyball"
+  | "football"
+  | "basketball"
+  | "tennis"
+  | "padel"
+  | "badminton"
+  | "table_tennis"
+  | "handball"
+  | "other";
 
 export interface Sport {
   id: SportId;
@@ -26,6 +35,13 @@ export interface Sport {
   /** One line on the chip's own terms: what picking this actually decides. */
   hint: MessageKey;
   scoring: ScoringConfig;
+  /**
+   * How many sets settle a match, for a sport where that is a real choice —
+   * a club plays best of 3 or best of 5 and the wizard should ask rather than
+   * guess. Absent where it is not a question: volleyball is always three
+   * sets, football and basketball are never sets at all.
+   */
+  setChoices?: number[];
 }
 
 /**
@@ -92,6 +108,85 @@ export const SPORTS: Sport[] = [
     },
   },
   {
+    id: "tennis",
+    label: "sport.tennis",
+    sport: "tennis",
+    hint: "sport.tennis.hint",
+    scoring: {
+      bestOf: 3,
+      pointsWin: 2,
+      pointsDraw: 0,
+      pointsLoss: 0,
+      drawsAllowed: false,
+      walkoverScore: 2,
+      tiebreakers: ["points", "head_to_head", "score_diff", "sub_diff", "score_for", "seed"],
+    },
+    setChoices: [3, 5],
+  },
+  {
+    id: "padel",
+    label: "sport.padel",
+    sport: "padel",
+    hint: "sport.padel.hint",
+    scoring: {
+      bestOf: 3,
+      pointsWin: 2,
+      pointsDraw: 0,
+      pointsLoss: 0,
+      drawsAllowed: false,
+      walkoverScore: 2,
+      tiebreakers: ["points", "head_to_head", "score_diff", "sub_diff", "score_for", "seed"],
+    },
+    setChoices: [3, 5],
+  },
+  {
+    id: "badminton",
+    label: "sport.badminton",
+    sport: "badminton",
+    hint: "sport.badminton.hint",
+    scoring: {
+      bestOf: 3,
+      pointsWin: 2,
+      pointsDraw: 0,
+      pointsLoss: 0,
+      drawsAllowed: false,
+      walkoverScore: 2,
+      tiebreakers: ["points", "head_to_head", "score_diff", "sub_diff", "score_for", "seed"],
+    },
+    setChoices: [3, 5],
+  },
+  {
+    id: "table_tennis",
+    label: "sport.table_tennis",
+    sport: "table_tennis",
+    hint: "sport.table_tennis.hint",
+    scoring: {
+      bestOf: 5,
+      pointsWin: 2,
+      pointsDraw: 0,
+      pointsLoss: 0,
+      drawsAllowed: false,
+      walkoverScore: 2,
+      tiebreakers: ["points", "head_to_head", "score_diff", "sub_diff", "score_for", "seed"],
+    },
+    setChoices: [3, 5, 7],
+  },
+  {
+    id: "handball",
+    label: "sport.handball",
+    sport: "handball",
+    hint: "sport.handball.hint",
+    scoring: {
+      bestOf: 1,
+      pointsWin: 2,
+      pointsDraw: 1,
+      pointsLoss: 0,
+      drawsAllowed: true,
+      walkoverScore: 2,
+      tiebreakers: GENERIC_TIEBREAKERS,
+    },
+  },
+  {
     id: "other",
     label: "sport.other",
     sport: "",
@@ -105,6 +200,7 @@ export const SPORTS: Sport[] = [
       walkoverScore: 0,
       tiebreakers: GENERIC_TIEBREAKERS,
     },
+    setChoices: [1, 3, 5],
   },
 ];
 

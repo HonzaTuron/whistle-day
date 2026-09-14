@@ -41,7 +41,6 @@ import {
   type Board,
   type SetScore,
 } from "./organiser";
-import type { SportId } from "../lib/scoring";
 import type { PresetId } from "../lib/presets";
 import { launchTournament, type LaunchStep } from "./launch";
 import { previewConsentRequest } from "./connect";
@@ -218,8 +217,17 @@ export function usePreviewConsent(requestId: string) {
 export function useCreateDraft() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ session, name, sport }: { session: Session; name: string; sport: SportId }) =>
-      createDraft(session, name, sport),
+    mutationFn: ({
+      session,
+      name,
+      sport,
+      scoring,
+    }: {
+      session: Session;
+      name: string;
+      sport: string;
+      scoring: ScoringConfig;
+    }) => createDraft(session, name, sport, scoring),
     onSuccess: (tournament) => {
       qc.setQueryData(keys.tournament(tournament.id), tournament);
     },

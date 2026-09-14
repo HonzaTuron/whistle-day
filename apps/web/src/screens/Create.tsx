@@ -29,10 +29,12 @@ import { useI18n, useT } from "../lib/i18n";
 import { defaultPreset, presetById, type PresetId } from "../lib/presets";
 import {
   DEFAULT_SPORT,
+  drawsAllowed,
   matchSport,
   sportById,
   type SportId,
 } from "../lib/scoring";
+import type { ScoringConfig } from "@whistleday/engine";
 
 type Step = "name" | "teams" | "courts" | "format" | "done";
 
@@ -61,6 +63,11 @@ export function Create({ initialPreset }: Props = {}) {
   const [courts, setCourts] = useState<CourtRecord[]>([]);
   const [preset, setPreset] = useState<PresetId>("groups");
   const [sport, setSport] = useState<SportId>(DEFAULT_SPORT);
+  // Overrides the preset's own default sets, once the organiser has picked
+  // one — `null` means "whatever the sport implies", not "one set".
+  const [bestOf, setBestOf] = useState<number | null>(null);
+  const [customSportName, setCustomSportName] = useState("");
+  const [customDrawsAllowed, setCustomDrawsAllowed] = useState(true);
   const [resumable, setResumable] = useState<Resumable | null>(null);
   const [busy, setBusy] = useState(false);
   const [launching, setLaunching] = useState<LaunchStep | null>(null);
@@ -120,19 +127,40 @@ export function Create({ initialPreset }: Props = {}) {
     }
   }
 
+  /**
+   * The sport chip plus its two small overrides — how many sets, and what a
+   * custom sport is even called — collapsed into what the record actually
+   * needs: a name for `tournaments.sport` and a full scoring table.
+   */
+  const effectiveSport = (): { sport: string; scoring: ScoringConfig } => {
+    const picked = sportById(sport);
+    const resolvedBestOf = bestOf ?? picked.scoring.bestOf;
+    if (sport === "other") {
+      return {
+        sport: customSportName.trim(),
+        scoring: {
+          ...picked.scoring,
+          bestOf: resolvedBestOf,
+          // A match settled by sets never ends level; the toggle only means
+          // something once a single score is what decides it.
+          drawsAllowed: resolvedBestOf > 1 ? false : customDrawsAllowed,
+        },
+      };
+    }
+    return { sport: picked.sport, scoring: { ...picked.scoring, bestOf: resolvedBestOf } };
+  };
+
   const submitName = (name: string) =>
     void run(async (active) => {
+      const { sport: sportName, scoring } = effectiveSport();
       if (tournament) {
-        const picked = sportById(sport);
-        setTournament(
-          await renameDraft(active, tournament.id, name, picked.sport, picked.scoring),
-        );
+        setTournament(await renameDraft(active, tournament.id, name, sportName, scoring));
       } else {
         if (resumable) {
           await deleteDraft(active, resumable.tournament.id).catch(() => undefined);
           setResumable(null);
         }
-        setTournament(await createDraft(active, name, sport));
+        setTournament(await createDraft(active, name, sportName, scoring));
       }
       setStep("teams");
     });
@@ -142,9 +170,11 @@ export function Create({ initialPreset }: Props = {}) {
     setTournament(resumable.tournament);
     setTeams(resumable.teams);
     setCourts(resumable.courts);
-    setSport(
-      matchSport(resumable.tournament.sport, resumable.tournament.scoring) ?? DEFAULT_SPORT,
-    );
+    const matched = matchSport(resumable.tournament.sport, resumable.tournament.scoring);
+    setSport(matched ?? "other");
+    setCustomSportName(matched ? "" : resumable.tournament.sport);
+    setBestOf(resumable.tournament.scoring?.bestOf ?? null);
+    setCustomDrawsAllowed(drawsAllowed(resumable.tournament.scoring));
     nextSeed.current =
       resumable.teams.reduce((highest, team) => Math.max(highest, team.seed), 0) + 1;
     setResumable(null);
@@ -257,6 +287,9 @@ export function Create({ initialPreset }: Props = {}) {
         <NameStep
           initial={tournament?.name ?? ""}
           sport={sport}
+          bestOf={bestOf}
+          customSportName={customSportName}
+          customDrawsAllowed={customDrawsAllowed}
           busy={busy}
           resume={
             resumable
@@ -268,7 +301,13 @@ export function Create({ initialPreset }: Props = {}) {
                 }
               : null
           }
-          onSport={setSport}
+          onSport={(next) => {
+            setSport(next);
+            setBestOf(null);
+          }}
+          onBestOf={setBestOf}
+          onCustomSportName={setCustomSportName}
+          onCustomDrawsAllowed={setCustomDrawsAllowed}
           onNext={submitName}
         />
       ) : null}

@@ -15,7 +15,6 @@ import type {
   StaffRole,
 } from "@whistleday/engine";
 import { tr } from "../lib/i18n";
-import { sportById, type SportId } from "../lib/scoring";
 import { call, pb } from "./client";
 
 /**
@@ -389,20 +388,20 @@ function slugify(name: string): string {
 export async function createDraft(
   session: Session,
   name: string,
-  sport: SportId,
+  sport: string,
+  scoring: ScoringConfig,
 ): Promise<TournamentRecord> {
-  const picked = sportById(sport);
   const tournament = await create<TournamentRecord>(session, "tournaments", {
       name,
       slug: slugify(name),
       status: "draft",
       owner: session.userId,
-      sport: picked.sport,
+      sport,
       // The sport is the whole question the first screen asks about scoring.
       // Every number it implies is still editable from the scoring sheet on
       // the results screen, because a local league that plays for two points
       // is not a preset going wrong.
-      scoring: picked.scoring,
+      scoring,
     });
 
   rememberDraft(tournament.id);

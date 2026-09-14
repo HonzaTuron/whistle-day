@@ -2047,6 +2047,37 @@ th,
   font-size: 1rem;
 }
 
+/* The two small follow-up questions a sport can ask: what a custom one is
+   called, and how many sets settle it. Boxed so a tap on a sport chip reads
+   as opening something rather than the screen silently growing. */
+.wiz__subwizard {
+  display: grid;
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+  padding: 0.85rem;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface-2);
+}
+
+.wiz__subwizard .wiz__sports {
+  margin: 0;
+}
+
+.wiz__chip--small {
+  min-height: 38px;
+  padding: 0 0.8rem;
+  font-size: 0.85rem;
+}
+
+.wiz__toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  color: var(--text);
+}
+
 .wiz__sub {
   display: grid;
   gap: 0.3rem;

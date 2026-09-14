@@ -58,6 +58,105 @@
     }
   },
   {
+    "id": "tennis",
+    "sport": "tennis",
+    "scoring": {
+      "bestOf": 3,
+      "pointsWin": 2,
+      "pointsDraw": 0,
+      "pointsLoss": 0,
+      "drawsAllowed": false,
+      "walkoverScore": 2,
+      "tiebreakers": [
+        "points",
+        "head_to_head",
+        "score_diff",
+        "sub_diff",
+        "score_for",
+        "seed"
+      ]
+    }
+  },
+  {
+    "id": "padel",
+    "sport": "padel",
+    "scoring": {
+      "bestOf": 3,
+      "pointsWin": 2,
+      "pointsDraw": 0,
+      "pointsLoss": 0,
+      "drawsAllowed": false,
+      "walkoverScore": 2,
+      "tiebreakers": [
+        "points",
+        "head_to_head",
+        "score_diff",
+        "sub_diff",
+        "score_for",
+        "seed"
+      ]
+    }
+  },
+  {
+    "id": "badminton",
+    "sport": "badminton",
+    "scoring": {
+      "bestOf": 3,
+      "pointsWin": 2,
+      "pointsDraw": 0,
+      "pointsLoss": 0,
+      "drawsAllowed": false,
+      "walkoverScore": 2,
+      "tiebreakers": [
+        "points",
+        "head_to_head",
+        "score_diff",
+        "sub_diff",
+        "score_for",
+        "seed"
+      ]
+    }
+  },
+  {
+    "id": "table_tennis",
+    "sport": "table_tennis",
+    "scoring": {
+      "bestOf": 5,
+      "pointsWin": 2,
+      "pointsDraw": 0,
+      "pointsLoss": 0,
+      "drawsAllowed": false,
+      "walkoverScore": 2,
+      "tiebreakers": [
+        "points",
+        "head_to_head",
+        "score_diff",
+        "sub_diff",
+        "score_for",
+        "seed"
+      ]
+    }
+  },
+  {
+    "id": "handball",
+    "sport": "handball",
+    "scoring": {
+      "bestOf": 1,
+      "pointsWin": 2,
+      "pointsDraw": 1,
+      "pointsLoss": 0,
+      "drawsAllowed": true,
+      "walkoverScore": 2,
+      "tiebreakers": [
+        "points",
+        "head_to_head",
+        "score_diff",
+        "score_for",
+        "seed"
+      ]
+    }
+  },
+  {
     "id": "other",
     "sport": "",
     "scoring": {
