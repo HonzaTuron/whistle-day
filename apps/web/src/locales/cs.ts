@@ -395,8 +395,9 @@ export const cs: Record<keyof Catalog, Message> = {
   "wizard.doneEyebrow": "Právě běží",
   "wizard.doneFallbackName": "Váš turnaj",
   "wizard.doneCaption": "Naskenujte pro rozpis, tabulky a výsledky",
-  "wizard.doneEnterResults": "Začít zapisovat výsledky",
+  "wizard.doneEnterResults": "Admin — spustit turnaj",
   "wizard.doneOpenProjector": "Otevřít obrazovku pro projektor",
+  "wizard.doneProjectorNote": "Co ukazuje, můžete po spuštění dne změnit.",
   "wizard.doneCopyProjector": "Zkopírovat odkaz na projektor",
   "wizard.doneProjectorCopied": "Odkaz na projektor zkopírován",
   "wizard.doneWarning":

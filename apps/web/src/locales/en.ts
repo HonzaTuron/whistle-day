@@ -388,8 +388,9 @@ export const en = {
   "wizard.doneEyebrow": "Live now",
   "wizard.doneFallbackName": "Your tournament",
   "wizard.doneCaption": "Scan for the schedule, tables and results",
-  "wizard.doneEnterResults": "Start entering results",
+  "wizard.doneEnterResults": "Admin — start the tournament",
   "wizard.doneOpenProjector": "Open the projector screen",
+  "wizard.doneProjectorNote": "What it shows is editable once the day is running.",
   "wizard.doneCopyProjector": "Copy the projector link",
   "wizard.doneProjectorCopied": "Projector link copied",
   "wizard.doneWarning":

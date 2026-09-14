@@ -493,6 +493,7 @@ export const GUIDE_PAGES: Page[] = [
       "Work out court requirements from your team count and format. Why round robins parallelise and knockouts do not, with worked numbers.",
     lede:
       "Take the number of matches, divide by the number of courts, multiply by how long a match takes including changeover. That is the floor — and for a knockout it is an optimistic one, because each round has to wait for the one before it.",
+    generator: { preset: "groups" },
     facts: [
       { label: "Rule of thumb", value: "matches ÷ courts × 25 min" },
       { label: "Round robins", value: "Parallelise almost perfectly" },

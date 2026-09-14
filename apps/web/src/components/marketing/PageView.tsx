@@ -1,10 +1,12 @@
 import { Link } from "@tanstack/react-router";
+import { useState } from "react";
 import { pageBySlug } from "../../content";
-import type { Page } from "../../content/types";
+import type { CodeBlock, Page } from "../../content/types";
 import { PrintableSheet } from "./PrintableSheet";
 import { SiteNav } from "./SiteNav";
 import { FORMAT_OF } from "../../content/formats-map";
 import { renderInlineMarkdown } from "./InlineMarkdown";
+import { useT } from "../../lib/i18n";
 
 /**
  * The layout every marketing page uses.
@@ -66,14 +68,7 @@ export function PageView({ page }: { page: Page }) {
                 {renderInlineMarkdown(paragraph)}
               </p>
             ))}
-            {section.code?.map((block) => (
-              <div className="doc__code" key={block.code}>
-                {block.label && <div className="doc__code-label">{block.label}</div>}
-                <pre>
-                  <code>{block.code}</code>
-                </pre>
-              </div>
-            ))}
+            {section.code?.map((block) => <CodeBlockView block={block} key={block.code} />)}
           </section>
         ))}
 
@@ -140,6 +135,42 @@ function Cta({ page }: { page: Page }) {
         Free, and there is no account to make first. About a minute to the QR
         code.
       </p>
+    </div>
+  );
+}
+
+/**
+ * A command or config snippet, with a button to take it rather than select it
+ * by hand — the same clipboard pattern the wizard's own handoff links use.
+ */
+function CodeBlockView({ block }: { block: CodeBlock }) {
+  const t = useT();
+  const [copied, setCopied] = useState(false);
+
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(block.code);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // Clipboard access is refused on some browsers; the text is still
+      // there to select by hand.
+    }
+  };
+
+  return (
+    <div className="doc__code">
+      {block.label && <div className="doc__code-label">{block.label}</div>}
+      <pre>
+        <button
+          type="button"
+          className="doc__code-copy"
+          onClick={() => void copy()}
+        >
+          {t(copied ? "common.copied" : "common.copy")}
+        </button>
+        <code>{block.code}</code>
+      </pre>
     </div>
   );
 }

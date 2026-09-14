@@ -70,9 +70,15 @@ export function DoneStep({ name, tournamentId, result }: Props) {
         >
           {t("wizard.doneEnterResults")}
         </Link>
-        <a className="btn btn--block" href={result.projectorUrl}>
+        <a
+          className="btn btn--block"
+          href={result.projectorUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
           {t("wizard.doneOpenProjector")}
         </a>
+        <p className="done__note">{t("wizard.doneProjectorNote")}</p>
         <button
           type="button"
           className="btn btn--quiet btn--block"

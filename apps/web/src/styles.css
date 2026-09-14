@@ -2471,6 +2471,13 @@ th,
   margin-top: 0.5rem;
 }
 
+.done__note {
+  margin: -0.2rem 0 0;
+  color: var(--muted);
+  font-size: 0.8rem;
+  text-align: center;
+}
+
 .done__warning {
   max-width: 26rem;
   margin: 0.5rem 0 0;
@@ -4484,6 +4491,7 @@ th,
 }
 
 .doc__code pre {
+  position: relative;
   margin: 0;
   padding: 1rem 1.1rem;
   overflow-x: auto;
@@ -4497,6 +4505,33 @@ th,
 
 .doc__code code {
   white-space: pre;
+}
+
+.doc__code-copy {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  min-height: 30px;
+  padding: 0 0.6rem;
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  background: var(--surface-2);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.7rem;
+  font-weight: 650;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+}
+
+.doc__code-copy:hover {
+  filter: brightness(1.1);
+}
+
+.doc__code-copy:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 .doc__faq {
