@@ -627,4 +627,67 @@ export const GUIDE_PAGES: Page[] = [
       "tournament-projector-display",
     ],
   },
+
+  {
+    slug: "guide/how-to-organize-a-7-team-tournament",
+    kind: "guide",
+    title: "How to Organize a 7 Team Tournament — Formats Compared",
+    h1: "How to organize a 7 team tournament",
+    description:
+      "Seven doesn't halve and doesn't group evenly. Round robin, two uneven groups or a bracket with one bye — match and round counts for each, and which to pick.",
+    lede:
+      "Seven is the field size that exposes what every format assumes. It is not a power of two, so a bracket needs a bye; it does not split in half, so groups come out uneven. Three formats actually work for seven teams, and which is right depends on how much time there is, not on a rule about sevens.",
+    generator: { preset: "groups" },
+    facts: [
+      { label: "Round robin", value: "21 matches, 7 rounds" },
+      { label: "Two groups", value: "4 and 3, then a playoff" },
+      { label: "Bracket", value: "One bye, 3 rounds" },
+    ],
+    sections: [
+      {
+        heading: "Round robin: every team plays six matches",
+        body: [
+          "Everyone plays everyone once — 21 matches. With an odd number of teams, one team sits out each round rather than being eliminated, so it takes seven rounds rather than six, and everybody still plays six matches by the end.",
+          "This is the format that produces the fairest table, because it is the only one where the ranking is not affected by who happened to meet whom. It is also the most matches by a wide margin, so it needs the most time: at 25 minutes a slot and two courts, that is close to four and a half hours.",
+        ],
+      },
+      {
+        heading: "Two groups of four and three, then a playoff",
+        body: [
+          "Split seven into two groups — one of four, one of three — and it plays out as 9 pool matches (6 in the group of four, 3 in the group of three) before a playoff seeded from where each team finished. That is under half the matches of a full round robin.",
+          "The uneven split is worth saying out loud before the day starts: the group of three plays two matches each, the group of four plays three, and a team in the smaller group reaches the same playoff on less evidence. Nobody minds this if it is mentioned in advance; it reads as unfair if it is discovered on the table.",
+        ],
+      },
+      {
+        heading: "A single-elimination bracket, if the day is short",
+        body: [
+          "Seven does not fill a bracket — the nearest size is eight, so one team gets a bye straight into round two while the other six play three first-round matches. Three rounds, seven matches in total including third place.",
+          "This is the fastest option and the one where most teams play once and go home. It is the right call for a short evening, and the wrong one for a field that has driven over expecting more than one match each.",
+        ],
+      },
+      {
+        heading: "Which one, in practice",
+        body: [
+          "If the day has the time, round robin: it is the most matches, the fairest table, and there is no bracket seeding to argue about afterwards.",
+          "If the day is tighter, two groups of four and three with a playoff — flag the uneven split up front and it is not a problem. Save a straight knockout for when there genuinely is not time for anything else; a field of seven that drove over to play one match is the outcome worth avoiding.",
+        ],
+      },
+    ],
+    faq: [
+      {
+        q: "What is the best format for 7 teams?",
+        a: "Round robin if the day allows 21 matches over seven rounds. Two groups of four and three with a playoff if time is tighter. A single-elimination bracket with one bye only if the day is genuinely short.",
+      },
+      {
+        q: "Does a team get a bye with 7 teams?",
+        a: "In a round robin, one team sits out each round in rotation — nobody is eliminated, everybody still plays six matches. In a bracket, one team skips straight to round two because seven does not fill an eight-team draw.",
+      },
+    ],
+    related: [
+      "7-team-round-robin-schedule",
+      "7-team-single-elimination-bracket",
+      "7-team-double-elimination-bracket",
+      "guide/how-to-run-a-one-day-tournament",
+    ],
+  },
 ];
