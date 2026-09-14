@@ -45,8 +45,8 @@ func New(app core.App) *WhistleMCP {
 		"Whistle.day",
 		"1.0.0",
 		server.WithToolCapabilities(true),
-		server.WithResourceCapabilities(true, true),
 		server.WithPromptCapabilities(false),
+		server.WithCacheHints(60_000, mcp.CacheScopePublic),
 		server.WithLogging(),
 	)
 
