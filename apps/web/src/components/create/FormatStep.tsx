@@ -1,11 +1,14 @@
 import { estimate, formatDuration, PRESETS, type PresetId } from "../../lib/presets";
 import type { LaunchStep } from "../../api/launch";
+import { courtsKeys, courtsUnitFor } from "../../lib/courts";
 import { useT, type MessageKey } from "../../lib/i18n";
+import type { SportId } from "../../lib/scoring";
 import { WizardShell } from "./WizardShell";
 
 interface Props {
   teams: number;
   courts: number;
+  sport: SportId;
   value: PresetId;
   launching: LaunchStep | null;
   onChange: (id: PresetId) => void;
@@ -32,6 +35,7 @@ const PROGRESS: Record<LaunchStep, MessageKey> = {
 export function FormatStep({
   teams,
   courts,
+  sport,
   value,
   launching,
   onChange,
@@ -39,6 +43,7 @@ export function FormatStep({
   onStart,
 }: Props) {
   const t = useT();
+  const keys = courtsKeys(courtsUnitFor(sport));
 
   return (
     <WizardShell
@@ -46,7 +51,7 @@ export function FormatStep({
       title={t("wizard.formatTitle")}
       hint={t("wizard.formatHint", {
         teams: t("count.teams", { count: teams }),
-        courts: t("count.courtsOn", { count: courts }),
+        courts: t(keys.on, { count: courts }),
       })}
       onBack={launching ? undefined : onBack}
       footer={

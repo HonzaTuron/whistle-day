@@ -1,4 +1,5 @@
 import type { DisplayPanel, DisplayPayload } from "@whistleday/engine";
+import { courtsKeys, courtsUnitForSportName } from "../../lib/courts";
 import { bracketStages, tablePools } from "../../lib/format";
 import type { Translate } from "../../lib/i18n";
 import { renderLabel } from "../../lib/labels";
@@ -29,6 +30,7 @@ export interface Panel {
 export function buildPanels(t: Translate, payload: DisplayPayload): Panel[] {
   const mode = payload.display.mode;
   const panels: Panel[] = [];
+  const courtsWord = courtsKeys(courtsUnitForSportName(payload.tournament.sport));
 
   const pools = tablePools(payload);
   const brackets = bracketStages(payload);
@@ -84,7 +86,7 @@ export function buildPanels(t: Translate, payload: DisplayPayload): Panel[] {
       ),
     );
     if (scheduled) {
-      panels.push({ kind: "court_schedule", title: t("panel.court_schedule"), index: 0 });
+      panels.push({ kind: "court_schedule", title: t(courtsWord.schedule), index: 0 });
     }
   };
 

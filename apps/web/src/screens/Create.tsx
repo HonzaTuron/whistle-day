@@ -326,6 +326,7 @@ export function Create({ initialPreset }: Props = {}) {
       {step === "courts" ? (
         <CourtsStep
           initial={courts}
+          sport={sport}
           busy={busy}
           onBack={() => setStep("teams")}
           onNext={submitCourts}
@@ -336,6 +337,7 @@ export function Create({ initialPreset }: Props = {}) {
         <FormatStep
           teams={teams.length}
           courts={courts.length}
+          sport={sport}
           value={preset}
           launching={launching}
           onChange={setPreset}

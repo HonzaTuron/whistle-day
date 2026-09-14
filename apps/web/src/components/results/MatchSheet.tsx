@@ -16,12 +16,15 @@ import {
   type BoardRow,
 } from "../../lib/board";
 import { canAddSet, matchIsDecided, scoreFault, setsToWin } from "../../lib/bestof";
+import { courtsKeys, courtsUnitForSportName } from "../../lib/courts";
 import { useT, type Translate } from "../../lib/i18n";
 import { MatchHistory } from "./MatchHistory";
 
 interface Props {
   row: BoardRow;
   courts: Court[];
+  /** The tournament's sport, which decides what a court is called here. */
+  sport: string;
   /** How the day is scored, which is where the match format lives. */
   scoring: ScoringConfig | null;
   allFixtures: BoardFixture[];
@@ -59,6 +62,7 @@ const POINTS_DEBOUNCE_MS = 700;
 export function MatchSheet({
   row,
   courts,
+  sport,
   scoring,
   allFixtures,
   entries,
@@ -72,6 +76,7 @@ export function MatchSheet({
   onClose,
 }: Props) {
   const t = useT();
+  const keys = courtsKeys(courtsUnitForSportName(sport));
   const [home, setHome] = useState(row.fixture.home_score ?? 0);
   const [away, setAway] = useState(row.fixture.away_score ?? 0);
   /** The points set by set. `null` until they have been read back. */
@@ -354,7 +359,7 @@ export function MatchSheet({
         ) : (
           <>
             {courts.length > 0 ? (
-              <div className="chips" role="group" aria-label={t("match.court")}>
+              <div className="chips" role="group" aria-label={t(keys.label)}>
                 {courts.map((court) => (
                   <button
                     key={court.id}
@@ -381,9 +386,9 @@ export function MatchSheet({
             {courts.length > 0 ? (
               <p className="sheet__hint">
                 {onCourt
-                  ? t("match.onCourtSaved", { court: onCourt.name })
-                  : t("match.noCourtYet")}{" "}
-                {t("match.savesOnTap")}
+                  ? t(keys.onSaved, { court: onCourt.name })
+                  : t(keys.noneYet)}{" "}
+                {t(keys.savesOnTap)}
               </p>
             ) : null}
 
@@ -407,7 +412,7 @@ export function MatchSheet({
                   disabled={saving}
                   onClick={() => onLive(!row.live)}
                 >
-                  {t(row.live ? "match.takeOff" : "match.onCourtNow")}
+                  {t(row.live ? keys.takeOff : keys.onNow)}
                 </button>
               )}
             </div>
@@ -421,7 +426,7 @@ export function MatchSheet({
                       code: clash.code,
                       time: clash.time,
                       court: clash.court
-                        ? t("match.clashCourt", { court: clash.court })
+                        ? t(keys.clash, { court: clash.court })
                         : "",
                     })}
                   </p>

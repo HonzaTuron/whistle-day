@@ -54,6 +54,16 @@ export const cs: Record<keyof Catalog, Message> = {
     few: "na {count} kurtech",
     other: "na {count} kurtech",
   },
+  "count.courtsOn.pitches": {
+    one: "na {count} hřišti",
+    few: "na {count} hřištích",
+    other: "na {count} hřištích",
+  },
+  "count.courtsOn.tables": {
+    one: "na {count} stole",
+    few: "na {count} stolech",
+    other: "na {count} stolech",
+  },
 
   // Z V R P B — the columns of a Czech table, in the order they are read.
   "table.played": "Z",
@@ -340,14 +350,26 @@ export const cs: Record<keyof Catalog, Message> = {
   },
 
   "wizard.courtsTitle": "Kolik kurtů?",
+  "wizard.courtsTitle.pitches": "Kolik hřišť?",
+  "wizard.courtsTitle.tables": "Kolik stolů?",
   "wizard.courtsHint":
     "Na všech se hraje současně, takže tohle rozhoduje o tom, jak dlouho den potrvá.",
   "wizard.courtsNext": "Jak se to hraje",
   "wizard.courtsDefaultName": "Kurt {number}",
+  "wizard.courtsDefaultName.pitches": "Hřiště {number}",
+  "wizard.courtsDefaultName.tables": "Stůl {number}",
   "wizard.courtsFewer": "O kurt méně",
+  "wizard.courtsFewer.pitches": "O hřiště méně",
+  "wizard.courtsFewer.tables": "O stůl méně",
   "wizard.courtsMore": "O kurt více",
+  "wizard.courtsMore.pitches": "O hřiště více",
+  "wizard.courtsMore.tables": "O stůl více",
   "wizard.courtsDuplicate": "Dva kurty se jmenují stejně.",
+  "wizard.courtsDuplicate.pitches": "Dvě hřiště se jmenují stejně.",
+  "wizard.courtsDuplicate.tables": "Dva stoly se jmenují stejně.",
   "wizard.courtsBlank": "Každý kurt potřebuje název.",
+  "wizard.courtsBlank.pitches": "Každé hřiště potřebuje název.",
+  "wizard.courtsBlank.tables": "Každý stůl potřebuje název.",
 
   "wizard.formatTitle": "Jak se to má hrát?",
   "wizard.formatHint": "{teams} {courts}.",
@@ -574,17 +596,37 @@ export const cs: Record<keyof Catalog, Message> = {
   "match.waiting": "Čeká",
   "match.unsent": "V tomhle mobilu, zatím neodesláno",
   "match.court": "Kurt",
+  "match.court.pitches": "Hřiště",
+  "match.court.tables": "Stůl",
   "match.starts": "Začátek",
   "match.onCourtNow": "Právě na kurtu",
+  "match.onCourtNow.pitches": "Právě na hřišti",
+  "match.onCourtNow.tables": "Právě na stole",
   "match.takeOff": "Stáhnout z kurtu",
+  "match.takeOff.pitches": "Stáhnout z hřiště",
+  "match.takeOff.tables": "Stáhnout ze stolu",
   "match.onCourtSaved":
     "Na kurtu {court} — uloženo. Dalším klepnutím ho z kurtu stáhnete.",
+  "match.onCourtSaved.pitches":
+    "Na hřišti {court} — uloženo. Dalším klepnutím ho z hřiště stáhnete.",
+  "match.onCourtSaved.tables":
+    "Na stole {court} — uloženo. Dalším klepnutím ho ze stolu stáhnete.",
   "match.noCourtYet":
     "Zatím na žádném kurtu. Klepněte na některý a hned se to uloží.",
+  "match.noCourtYet.pitches":
+    "Zatím na žádném hřišti. Klepněte na některé a hned se to uloží.",
+  "match.noCourtYet.tables":
+    "Zatím na žádném stole. Klepněte na některý a hned se to uloží.",
   "match.savesOnTap":
     "Kurt, čas i míče níž se ukládají hned při klepnutí. Jediné, co čeká na Uložit, je výsledek.",
+  "match.savesOnTap.pitches":
+    "Hřiště, čas i míče níž se ukládají hned při klepnutí. Jediné, co čeká na Uložit, je výsledek.",
+  "match.savesOnTap.tables":
+    "Stůl, čas i míče níž se ukládají hned při klepnutí. Jediné, co čeká na Uložit, je výsledek.",
   "match.clash": "{team} má ve stejnou dobu i {code} v {time}{court}.",
   "match.clashCourt": " na kurtu {court}",
+  "match.clashCourt.pitches": " na hřišti {court}",
+  "match.clashCourt.tables": " na stole {court}",
   "match.save": "Uložit výsledek",
   "match.noShow": "Někdo se nedostavil",
   "match.clear": "Smazat výsledek",
@@ -732,10 +774,16 @@ export const cs: Record<keyof Catalog, Message> = {
   "screen.everyStage": "Všechny fáze",
   "screen.everyGroup": "Všechny skupiny",
   "screen.everyCourt": "Všechny kurty",
+  "screen.everyCourt.pitches": "Všechna hřiště",
+  "screen.everyCourt.tables": "Všechny stoly",
   "screen.stage": "Fáze",
   "screen.group": "Skupina",
   "screen.scopeNote":
     "Přesně na tohle je druhá obrazovka u dveří s jedním kurtem. Hlavní zeď chce všechno.",
+  "screen.scopeNote.pitches":
+    "Přesně na tohle je druhá obrazovka u dveří s jedním hřištěm. Hlavní zeď chce všechno.",
+  "screen.scopeNote.tables":
+    "Přesně na tohle je druhá obrazovka u dveří s jedním stolem. Hlavní zeď chce všechno.",
   "screen.colour": "Barva",
   "screen.accent": "Doplňková barva",
   "screen.reset": "Výchozí",
@@ -750,7 +798,11 @@ export const cs: Record<keyof Catalog, Message> = {
   "panel.stage_progress": "Průběh fáze",
   "panel.stage_progress.hint": "Kam se den dostal.",
   "panel.court_schedule": "Rozpis kurtů",
+  "panel.court_schedule.pitches": "Rozpis hřišť",
+  "panel.court_schedule.tables": "Rozpis stolů",
   "panel.court_schedule.hint": "Co je na kterém kurtu.",
+  "panel.court_schedule.hint.pitches": "Co je na kterém hřišti.",
+  "panel.court_schedule.hint.tables": "Co je na kterém stole.",
   "panel.stage_table": "Tabulka napříč skupinami",
   "panel.stage_table.hint": "Všechny skupiny seřazené dohromady.",
   "panel.standings": "Tabulky skupin",

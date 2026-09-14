@@ -1,4 +1,5 @@
 import type { ScoringConfig, Tiebreaker } from "@whistleday/engine";
+import type { CourtsUnit } from "./courts";
 import type { MessageKey } from "./i18n";
 
 /**
@@ -42,6 +43,8 @@ export interface Sport {
    * sets, football and basketball are never sets at all.
    */
   setChoices?: number[];
+  /** What this sport calls the place a match happens — see `lib/courts.ts`. */
+  courtsUnit: CourtsUnit;
 }
 
 /**
@@ -74,6 +77,7 @@ export const SPORTS: Sport[] = [
       // is what score_diff and sub_diff are here: sets, then rally points.
       tiebreakers: ["points", "head_to_head", "score_diff", "sub_diff", "score_for", "seed"],
     },
+    courtsUnit: "courts",
   },
   {
     id: "football",
@@ -89,6 +93,7 @@ export const SPORTS: Sport[] = [
       walkoverScore: 3,
       tiebreakers: GENERIC_TIEBREAKERS,
     },
+    courtsUnit: "pitches",
   },
   {
     id: "basketball",
@@ -106,6 +111,7 @@ export const SPORTS: Sport[] = [
       walkoverScore: 20,
       tiebreakers: GENERIC_TIEBREAKERS,
     },
+    courtsUnit: "courts",
   },
   {
     id: "tennis",
@@ -122,6 +128,7 @@ export const SPORTS: Sport[] = [
       tiebreakers: ["points", "head_to_head", "score_diff", "sub_diff", "score_for", "seed"],
     },
     setChoices: [3, 5],
+    courtsUnit: "courts",
   },
   {
     id: "padel",
@@ -138,6 +145,7 @@ export const SPORTS: Sport[] = [
       tiebreakers: ["points", "head_to_head", "score_diff", "sub_diff", "score_for", "seed"],
     },
     setChoices: [3, 5],
+    courtsUnit: "courts",
   },
   {
     id: "badminton",
@@ -154,6 +162,7 @@ export const SPORTS: Sport[] = [
       tiebreakers: ["points", "head_to_head", "score_diff", "sub_diff", "score_for", "seed"],
     },
     setChoices: [3, 5],
+    courtsUnit: "courts",
   },
   {
     id: "table_tennis",
@@ -170,6 +179,7 @@ export const SPORTS: Sport[] = [
       tiebreakers: ["points", "head_to_head", "score_diff", "sub_diff", "score_for", "seed"],
     },
     setChoices: [3, 5, 7],
+    courtsUnit: "tables",
   },
   {
     id: "handball",
@@ -185,6 +195,7 @@ export const SPORTS: Sport[] = [
       walkoverScore: 2,
       tiebreakers: GENERIC_TIEBREAKERS,
     },
+    courtsUnit: "courts",
   },
   {
     id: "other",
@@ -201,6 +212,7 @@ export const SPORTS: Sport[] = [
       tiebreakers: GENERIC_TIEBREAKERS,
     },
     setChoices: [1, 3, 5],
+    courtsUnit: "courts",
   },
 ];
 

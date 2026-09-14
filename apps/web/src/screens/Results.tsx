@@ -441,6 +441,7 @@ export function Results({ id }: { id: string }) {
       {settings && displayBoard.screen ? (
         <ScreenSheet
           screen={displayBoard.screen}
+          sport={displayBoard.tournament.sport}
           stages={displayBoard.stages}
           pools={displayBoard.pools}
           courts={displayBoard.courts}
@@ -464,6 +465,7 @@ export function Results({ id }: { id: string }) {
         <MatchSheet
           row={open}
           courts={displayBoard.courts}
+          sport={displayBoard.tournament.sport}
           scoring={displayBoard.tournament.scoring}
           allFixtures={fixtures}
           entries={entries}

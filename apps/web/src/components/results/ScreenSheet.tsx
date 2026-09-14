@@ -9,6 +9,7 @@ import type {
   Stage,
 } from "@whistleday/engine";
 import { useEffect, useState } from "react";
+import { courtsKeys, courtsUnitForSportName, type CourtsKeys } from "../../lib/courts";
 import { useT, type MessageKey, type Translate } from "../../lib/i18n";
 import { renderLabel } from "../../lib/labels";
 import { useReorder } from "../../lib/reorder";
@@ -16,6 +17,8 @@ import { Grip, Group } from "./SheetParts";
 
 interface Props {
   screen: Display;
+  /** The tournament's sport, which decides what a court is called here. */
+  sport: string;
   stages: Stage[];
   pools: Pool[];
   courts: Court[];
@@ -86,6 +89,7 @@ const GROUND_ACCENT: Record<DisplayThemeMode, string> = {
 
 export function ScreenSheet({
   screen,
+  sport,
   stages,
   pools,
   courts,
@@ -94,6 +98,7 @@ export function ScreenSheet({
   onClose,
 }: Props) {
   const t = useT();
+  const keys = courtsKeys(courtsUnitForSportName(sport));
 
   useEffect(() => {
     const escape = (event: KeyboardEvent) => {
@@ -201,14 +206,14 @@ export function ScreenSheet({
                       setRotation(rotation.filter((value) => value !== panel))
                     }
                   />
-                  <span className="rotation__name">{panelName(t, panel)}</span>
-                  <small className="rotation__hint">{panelHint(t, panel)}</small>
+                  <span className="rotation__name">{panelName(t, keys, panel)}</span>
+                  <small className="rotation__hint">{panelHint(t, keys, panel)}</small>
                 </label>
 
                 <button
                   type="button"
                   className="rotation__grip"
-                  aria-label={t("screen.move", { name: panelName(t, panel) })}
+                  aria-label={t("screen.move", { name: panelName(t, keys, panel) })}
                   {...drag.gripProps(index)}
                 >
                   <Grip />
@@ -241,7 +246,7 @@ export function ScreenSheet({
                     aria-pressed={false}
                     onClick={() => setRotation([...rotation, panel])}
                   >
-                    {panelName(t, panel)}
+                    {panelName(t, keys, panel)}
                   </button>
                 ))}
               </div>
@@ -308,9 +313,9 @@ export function ScreenSheet({
           ) : null}
 
           {courts.length > 0 ? (
-            <div className="chips chips--wrap" role="group" aria-label={t("match.court")}>
+            <div className="chips chips--wrap" role="group" aria-label={t(keys.label)}>
               <Filter
-                label={t("screen.everyCourt")}
+                label={t(keys.every)}
                 on={!scope.court}
                 onClick={() => onChange({ scope: { ...scope, court: "" } })}
               />
@@ -325,7 +330,7 @@ export function ScreenSheet({
             </div>
           ) : null}
 
-          <p className="sheet__hint">{t("screen.scopeNote")}</p>
+          <p className="sheet__hint">{t(keys.scopeNote)}</p>
         </Group>
 
         <Group label={t("screen.colour")}>
@@ -385,13 +390,20 @@ export function ScreenSheet({
   );
 }
 
-/** The rotation list and the "not shown" chips both name a panel this way. */
-const panelName = (t: Translate, panel: DisplayPanel) => {
+/**
+ * The rotation list and the "not shown" chips both name a panel this way.
+ *
+ * "court_schedule" is the one panel named after the courts/pitches/tables
+ * word itself, so it is the one exception to the static table above.
+ */
+const panelName = (t: Translate, keys: CourtsKeys, panel: DisplayPanel) => {
+  if (panel === "court_schedule") return t(keys.schedule);
   const key = NAMES.get(panel)?.label;
   return key ? t(key) : panel;
 };
 
-const panelHint = (t: Translate, panel: DisplayPanel) => {
+const panelHint = (t: Translate, keys: CourtsKeys, panel: DisplayPanel) => {
+  if (panel === "court_schedule") return t(keys.scheduleHint);
   const key = NAMES.get(panel)?.hint;
   return key ? t(key) : "";
 };

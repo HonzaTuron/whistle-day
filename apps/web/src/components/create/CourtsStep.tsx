@@ -1,10 +1,13 @@
 import { useState } from "react";
 import type { CourtRecord } from "../../api/organiser";
+import { courtsKeys, courtsUnitFor, type CourtsUnit } from "../../lib/courts";
 import { useT, type Translate } from "../../lib/i18n";
+import type { SportId } from "../../lib/scoring";
 import { WizardShell } from "./WizardShell";
 
 interface Props {
   initial: CourtRecord[];
+  sport: SportId;
   busy: boolean;
   onBack: () => void;
   onNext: (names: string[]) => void;
@@ -12,8 +15,8 @@ interface Props {
 
 const MAX_COURTS = 12;
 
-const defaultName = (t: Translate, index: number) =>
-  t("wizard.courtsDefaultName", { number: index + 1 });
+const defaultName = (t: Translate, unit: CourtsUnit, index: number) =>
+  t(courtsKeys(unit).defaultName, { number: index + 1 });
 
 /**
  * How many places matches can happen at once.
@@ -26,13 +29,15 @@ const defaultName = (t: Translate, index: number) =>
  * Three short strings behind a stepper are not worth a request per keystroke,
  * and there is nothing here anyone would mind retyping.
  */
-export function CourtsStep({ initial, busy, onBack, onNext }: Props) {
+export function CourtsStep({ initial, sport, busy, onBack, onNext }: Props) {
   const t = useT();
+  const unit = courtsUnitFor(sport);
+  const keys = courtsKeys(unit);
   // The first court is named once, when the screen opens. Renaming it under
   // somebody who has switched language mid-wizard would be worse than leaving
   // it: they may well have typed it.
   const [names, setNames] = useState<string[]>(() =>
-    initial.length > 0 ? initial.map((court) => court.name) : [defaultName(t, 0)],
+    initial.length > 0 ? initial.map((court) => court.name) : [defaultName(t, unit, 0)],
   );
 
   const setName = (index: number, value: string) =>
@@ -42,7 +47,7 @@ export function CourtsStep({ initial, busy, onBack, onNext }: Props) {
     setNames((current) =>
       current.length >= MAX_COURTS
         ? current
-        : [...current, defaultName(t, current.length)],
+        : [...current, defaultName(t, unit, current.length)],
     );
 
   const removeLast = () =>
@@ -57,7 +62,7 @@ export function CourtsStep({ initial, busy, onBack, onNext }: Props) {
   return (
     <WizardShell
       step="courts"
-      title={t("wizard.courtsTitle")}
+      title={t(keys.title)}
       hint={t("wizard.courtsHint")}
       onBack={onBack}
       footer={
@@ -77,7 +82,7 @@ export function CourtsStep({ initial, busy, onBack, onNext }: Props) {
           className="stepper__button"
           onClick={removeLast}
           disabled={names.length <= 1}
-          aria-label={t("wizard.courtsFewer")}
+          aria-label={t(keys.fewer)}
         >
           −
         </button>
@@ -87,7 +92,7 @@ export function CourtsStep({ initial, busy, onBack, onNext }: Props) {
           className="stepper__button"
           onClick={add}
           disabled={names.length >= MAX_COURTS}
-          aria-label={t("wizard.courtsMore")}
+          aria-label={t(keys.more)}
         >
           +
         </button>
@@ -102,7 +107,7 @@ export function CourtsStep({ initial, busy, onBack, onNext }: Props) {
               className="wiz__input wiz__input--row"
               value={name}
               onChange={(event) => setName(index, event.target.value)}
-              placeholder={defaultName(t, index)}
+              placeholder={defaultName(t, unit, index)}
               maxLength={60}
               autoComplete="off"
             />
@@ -111,9 +116,9 @@ export function CourtsStep({ initial, busy, onBack, onNext }: Props) {
       </ul>
 
       {duplicate ? (
-        <p className="wiz__warning">{t("wizard.courtsDuplicate")}</p>
+        <p className="wiz__warning">{t(keys.duplicate)}</p>
       ) : null}
-      {blank ? <p className="wiz__warning">{t("wizard.courtsBlank")}</p> : null}
+      {blank ? <p className="wiz__warning">{t(keys.blank)}</p> : null}
     </WizardShell>
   );
 }
