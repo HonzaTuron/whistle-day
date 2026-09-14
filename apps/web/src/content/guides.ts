@@ -688,6 +688,70 @@ export const GUIDE_PAGES: Page[] = [
       "7-team-single-elimination-bracket",
       "7-team-double-elimination-bracket",
       "guide/how-to-run-a-one-day-tournament",
+      "guide/how-to-organize-a-5-team-tournament",
+    ],
+  },
+
+  {
+    slug: "guide/how-to-organize-a-5-team-tournament",
+    kind: "guide",
+    title: "How to Organize a 5 Team Tournament — Formats Compared",
+    h1: "How to organize a 5 team tournament",
+    description:
+      "Five is short enough that round robin usually wins outright. Match and round counts for round robin, two thin groups, and a bracket where three of five teams start on a bye.",
+    lede:
+      "Five teams is small enough that the real question is not which format fits, it is whether to bother with anything other than round robin. Ten matches is already short, splitting into groups only saves four of them, and a bracket gives three of the five teams a bye straight to the semi-final. The case for anything but round robin is thinner here than at almost any other field size.",
+    generator: { preset: "everyone" },
+    facts: [
+      { label: "Round robin", value: "10 matches, 5 rounds" },
+      { label: "Two groups", value: "3 and 2, then a playoff" },
+      { label: "Bracket", value: "3 byes, 3 rounds" },
+    ],
+    sections: [
+      {
+        heading: "Round robin: ten matches, and it is over",
+        body: [
+          "Everyone plays everyone once — 10 matches, each team playing four. Odd field, so one team sits out each round rather than being eliminated, which takes it to five rounds. At 25 minutes a slot on two courts, that is a little over two hours — short enough that there is rarely a reason to reach for anything else.",
+          "This is also the fairest table of the three: every team has played every other team, so there is nothing left to argue about at the end.",
+        ],
+      },
+      {
+        heading: "Two groups of three and two — and why it rarely pays off at five",
+        body: [
+          "Split five into a group of three and a group of two and the pool stage is 4 matches: 3 in the group of three, 1 in the group of two. That saves six matches against a full round robin, but a group of two is barely a group — one match decides who tops it, with no second match to correct a bad day.",
+          "At larger field sizes this trade is worth making. At five, it rarely is: the time saved is small and the table it produces is thinner than round robin's for that saving.",
+        ],
+      },
+      {
+        heading: "A bracket gives three of five teams a bye",
+        body: [
+          "Five does not fill an eight-team draw, and byeCount grows fast relative to a small field: three of the five teams skip straight to the semi-final, and only one first-round match is actually played, between the remaining two. Three rounds, five matches including third place.",
+          "That is the fastest route through five teams, and also the one where three-fifths of the field does not play until the final four. Fine for a short evening where the alternative is not playing at all; a poor choice for a field that turned up expecting more than one match.",
+        ],
+      },
+      {
+        heading: "Which one, in practice",
+        body: [
+          "Round robin, almost every time. Ten matches is short enough that the usual reasons to shorten a tournament — a hall booking, a limited window — rarely apply at five teams, and it is strictly the most matches and the fairest table for the time it costs.",
+          "Reach for groups or a bracket only when the day is genuinely constrained to under two hours, and know what each gives up: groups thin out the smaller pool to one deciding match, and a bracket leaves most of the field waiting until the semis.",
+        ],
+      },
+    ],
+    faq: [
+      {
+        q: "What is the best format for 5 teams?",
+        a: "Round robin, almost always. Ten matches over five rounds is short enough that there is rarely a reason to shorten it further, and it produces the fairest table of the three options.",
+      },
+      {
+        q: "How many byes does a 5-team bracket have?",
+        a: "Three. Five does not fill an eight-team draw, so three teams skip straight to the semi-final and only one match — between the other two — is played in round one.",
+      },
+    ],
+    related: [
+      "5-team-round-robin-schedule",
+      "5-team-single-elimination-bracket",
+      "5-team-double-elimination-bracket",
+      "guide/how-to-organize-a-7-team-tournament",
     ],
   },
 ];
