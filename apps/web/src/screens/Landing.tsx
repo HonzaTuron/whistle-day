@@ -89,144 +89,146 @@ export function Landing() {
     <div className="home">
       <SiteNav />
 
-      <header className="home__hero">
-        <div className="home__hero-bg" />
-        <div className="home__hero-content">
-          <p className="home__eyebrow">
-            <span className="home__eyebrow-dot" aria-hidden="true" />
-            {t("landing.eyebrow")}
-          </p>
-          <h1 className="home__logo">Whistle.day</h1>
-          <p className="home__tagline">{t("landing.tagline")}</p>
+      <main>
+        <header className="home__hero">
+          <div className="home__hero-bg" />
+          <div className="home__hero-content">
+            <p className="home__eyebrow">
+              <span className="home__eyebrow-dot" aria-hidden="true" />
+              {t("landing.eyebrow")}
+            </p>
+            <h1 className="home__logo">Whistle.day</h1>
+            <p className="home__tagline">{t("landing.tagline")}</p>
 
-          <div className="home__ctas">
-            {running ? (
-              <Link
-                to="/t/$id"
-                params={{ id: running.id }}
-                className="btn btn--primary btn--block"
-              >
-                {t("landing.resume", { name: running.name })}
+            <div className="home__ctas">
+              {running ? (
+                <Link
+                  to="/t/$id"
+                  params={{ id: running.id }}
+                  className="btn btn--primary btn--block"
+                >
+                  {t("landing.resume", { name: running.name })}
+                </Link>
+              ) : (
+                <Link to="/new" className="btn btn--primary btn--block">
+                  {t("landing.setUp")}
+                </Link>
+              )}
+              <Link to="/account" className="btn btn--quiet btn--block">
+                {t("landing.signIn")}
               </Link>
-            ) : (
-              <Link to="/new" className="btn btn--primary btn--block">
-                {t("landing.setUp")}
-              </Link>
-            )}
-            <Link to="/account" className="btn btn--quiet btn--block">
-              {t("landing.signIn")}
-            </Link>
+            </div>
+
+            <Scoreboard />
           </div>
+        </header>
 
-          <Scoreboard />
-        </div>
-      </header>
-
-      <ul className="home__stats">
-        {STATS.map((stat) => (
-          <li className="home__stat" key={stat.label}>
-            <span className="home__stat-value">{t(stat.value)}</span>
-            <span className="home__stat-label">{t(stat.label)}</span>
-          </li>
-        ))}
-      </ul>
-
-      <section className="home__section">
-        <h2 className="home__section-title">{t("landing.howTitle")}</h2>
-        <div className="home__steps">
-          <div className="home__step">
-            <span className="home__step-icon">1</span>
-            <h3>{t("landing.step1Title")}</h3>
-            <p>{t("landing.step1Body")}</p>
-          </div>
-          <div className="home__step">
-            <span className="home__step-icon">2</span>
-            <h3>{t("landing.step2Title")}</h3>
-            <p>{t("landing.step2Body")}</p>
-          </div>
-          <div className="home__step">
-            <span className="home__step-icon">3</span>
-            <h3>{t("landing.step3Title")}</h3>
-            <p>{t("landing.step3Body")}</p>
-          </div>
-        </div>
-      </section>
-
-      <section className="home__section">
-        <h2 className="home__section-title">{t("landing.formatsTitle")}</h2>
-        <div className="home__formats">
-          {LINKED_FORMATS.map((format) => (
-            <Link
-              key={format.slug}
-              to="/$"
-              params={{ _splat: format.slug }}
-              className="home__format"
-            >
-              <h3>{t(format.title)}</h3>
-              <p>{t(format.body)}</p>
-              <span className="home__format-more" aria-hidden="true">
-                {t("landing.formatMore")}
-              </span>
-            </Link>
-          ))}
-        </div>
-      </section>
-
-      <section className="home__section home__section--sports">
-        <h2 className="home__section-title">{t("landing.sportsTitle")}</h2>
-        <p className="home__section-note">{t("landing.sportsNote")}</p>
-        <ul className="home__sports">
-          {LINKED_SPORTS.map((sport) => (
-            <li key={sport.slug}>
-              <Link
-                to="/$"
-                params={{ _splat: sport.slug }}
-                className="home__sport"
-              >
-                {t(sport.key)}
-              </Link>
+        <ul className="home__stats">
+          {STATS.map((stat) => (
+            <li className="home__stat" key={stat.label}>
+              <span className="home__stat-value">{t(stat.value)}</span>
+              <span className="home__stat-label">{t(stat.label)}</span>
             </li>
           ))}
         </ul>
-      </section>
 
-      <section className="home__section home__section--center">
-        <h2 className="home__section-title">{t("landing.screenTitle")}</h2>
-        <p className="home__section-note">{t("landing.screenNote")}</p>
-        <input
-          className="home__token"
-          value={token}
-          onChange={(event) => setToken(event.target.value)}
-          placeholder={t("landing.tokenPlaceholder")}
-          onKeyDown={(event) => event.key === "Enter" && open("/display/$token")}
-        />
-        <div className="home__token-actions">
-          <button
-            type="button"
-            className="btn btn--primary"
-            disabled={!token.trim()}
-            onClick={() => open("/display/$token")}
-          >
-            {t("landing.projector")}
-          </button>
-          <button
-            type="button"
-            className="btn"
-            disabled={!token.trim()}
-            onClick={() => open("/m/$token")}
-          >
-            {t("landing.phone")}
-          </button>
-        </div>
-      </section>
+        <section className="home__section">
+          <h2 className="home__section-title">{t("landing.howTitle")}</h2>
+          <div className="home__steps">
+            <div className="home__step">
+              <span className="home__step-icon">1</span>
+              <h3>{t("landing.step1Title")}</h3>
+              <p>{t("landing.step1Body")}</p>
+            </div>
+            <div className="home__step">
+              <span className="home__step-icon">2</span>
+              <h3>{t("landing.step2Title")}</h3>
+              <p>{t("landing.step2Body")}</p>
+            </div>
+            <div className="home__step">
+              <span className="home__step-icon">3</span>
+              <h3>{t("landing.step3Title")}</h3>
+              <p>{t("landing.step3Body")}</p>
+            </div>
+          </div>
+        </section>
 
-      <section className="home__section home__section--center">
-        <h2 className="home__section-title">{t("landing.agentsTitle")}</h2>
-        <p className="home__section-note">{t("landing.agentsNote")}</p>
-        <Link to="/$" params={{ _splat: "mcp" }} className="btn btn--quiet">
-          {t("landing.agentsLink")}
-        </Link>
-      </section>
+        <section className="home__section">
+          <h2 className="home__section-title">{t("landing.formatsTitle")}</h2>
+          <div className="home__formats">
+            {LINKED_FORMATS.map((format) => (
+              <Link
+                key={format.slug}
+                to="/$"
+                params={{ _splat: format.slug }}
+                className="home__format"
+              >
+                <h3>{t(format.title)}</h3>
+                <p>{t(format.body)}</p>
+                <span className="home__format-more" aria-hidden="true">
+                  {t("landing.formatMore")}
+                </span>
+              </Link>
+            ))}
+          </div>
+        </section>
+
+        <section className="home__section home__section--sports">
+          <h2 className="home__section-title">{t("landing.sportsTitle")}</h2>
+          <p className="home__section-note">{t("landing.sportsNote")}</p>
+          <ul className="home__sports">
+            {LINKED_SPORTS.map((sport) => (
+              <li key={sport.slug}>
+                <Link
+                  to="/$"
+                  params={{ _splat: sport.slug }}
+                  className="home__sport"
+                >
+                  {t(sport.key)}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+
+        <section className="home__section home__section--center">
+          <h2 className="home__section-title">{t("landing.screenTitle")}</h2>
+          <p className="home__section-note">{t("landing.screenNote")}</p>
+          <input
+            className="home__token"
+            value={token}
+            onChange={(event) => setToken(event.target.value)}
+            placeholder={t("landing.tokenPlaceholder")}
+            onKeyDown={(event) => event.key === "Enter" && open("/display/$token")}
+          />
+          <div className="home__token-actions">
+            <button
+              type="button"
+              className="btn btn--primary"
+              disabled={!token.trim()}
+              onClick={() => open("/display/$token")}
+            >
+              {t("landing.projector")}
+            </button>
+            <button
+              type="button"
+              className="btn"
+              disabled={!token.trim()}
+              onClick={() => open("/m/$token")}
+            >
+              {t("landing.phone")}
+            </button>
+          </div>
+        </section>
+
+        <section className="home__section home__section--center">
+          <h2 className="home__section-title">{t("landing.agentsTitle")}</h2>
+          <p className="home__section-note">{t("landing.agentsNote")}</p>
+          <Link to="/$" params={{ _splat: "mcp" }} className="btn btn--quiet">
+            {t("landing.agentsLink")}
+          </Link>
+        </section>
+      </main>
 
       <footer className="home__footer">
         <p>{t("landing.footer")}</p>

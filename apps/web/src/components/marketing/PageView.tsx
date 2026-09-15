@@ -27,88 +27,90 @@ export function PageView({ page }: { page: Page }) {
     <>
       <SiteNav />
 
-      <article className="doc">
-        <header className="doc__head">
-          <h1 className="doc__title">{page.h1}</h1>
-          <p className="doc__lede">{renderInlineMarkdown(page.lede)}</p>
-        </header>
+      <main>
+        <article className="doc">
+          <header className="doc__head">
+            <h1 className="doc__title">{page.h1}</h1>
+            <p className="doc__lede">{renderInlineMarkdown(page.lede)}</p>
+          </header>
 
-        {page.facts && page.facts.length > 0 && (
-          <dl className="doc__facts">
-            {page.facts.map((fact) => (
-              <div className="doc__fact" key={fact.label}>
-                <dt className="doc__fact-label">{fact.label}</dt>
-                <dd className="doc__fact-value">{fact.value}</dd>
-                {fact.note && (
-                  <dd className="doc__fact-note">{renderInlineMarkdown(fact.note)}</dd>
-                )}
-              </div>
-            ))}
-          </dl>
-        )}
+          {page.facts && page.facts.length > 0 && (
+            <dl className="doc__facts">
+              {page.facts.map((fact) => (
+                <div className="doc__fact" key={fact.label}>
+                  <dt className="doc__fact-label">{fact.label}</dt>
+                  <dd className="doc__fact-value">{fact.value}</dd>
+                  {fact.note && (
+                    <dd className="doc__fact-note">{renderInlineMarkdown(fact.note)}</dd>
+                  )}
+                </div>
+              ))}
+            </dl>
+          )}
 
-        {page.kind === "printable" && page.generator?.teams ? (
-          <PrintableSheet
-            request={{
-              format: FORMAT_OF[page.generator.preset],
-              teams: page.generator.teams,
-              config: { thirdPlace: true },
-            }}
-            teams={page.generator.teams}
-          />
-        ) : null}
+          {page.kind === "printable" && page.generator?.teams ? (
+            <PrintableSheet
+              request={{
+                format: FORMAT_OF[page.generator.preset],
+                teams: page.generator.teams,
+                config: { thirdPlace: true },
+              }}
+              teams={page.generator.teams}
+            />
+          ) : null}
 
-        {page.generator && <Cta page={page} />}
+          {page.generator && <Cta page={page} />}
 
-        {page.sections?.map((section) => (
-          <section className="doc__section" key={section.heading}>
-            <h2 className="doc__heading">{section.heading}</h2>
-            {section.body.map((paragraph) => (
-              <p className="doc__para" key={paragraph.slice(0, 48)}>
-                {renderInlineMarkdown(paragraph)}
-              </p>
-            ))}
-            {section.code?.map((block) => <CodeBlockView block={block} key={block.code} />)}
-          </section>
-        ))}
+          {page.sections?.map((section) => (
+            <section className="doc__section" key={section.heading}>
+              <h2 className="doc__heading">{section.heading}</h2>
+              {section.body.map((paragraph) => (
+                <p className="doc__para" key={paragraph.slice(0, 48)}>
+                  {renderInlineMarkdown(paragraph)}
+                </p>
+              ))}
+              {section.code?.map((block) => <CodeBlockView block={block} key={block.code} />)}
+            </section>
+          ))}
 
-        {page.faq && page.faq.length > 0 && (
-          <section className="doc__section">
-            <h2 className="doc__heading">Common questions</h2>
-            {page.faq.map((item) => (
-              <div className="doc__faq" key={item.q}>
-                <h3 className="doc__faq-q">{item.q}</h3>
-                <p className="doc__para">{renderInlineMarkdown(item.a)}</p>
-              </div>
-            ))}
-          </section>
-        )}
+          {page.faq && page.faq.length > 0 && (
+            <section className="doc__section">
+              <h2 className="doc__heading">Common questions</h2>
+              {page.faq.map((item) => (
+                <div className="doc__faq" key={item.q}>
+                  <h3 className="doc__faq-q">{item.q}</h3>
+                  <p className="doc__para">{renderInlineMarkdown(item.a)}</p>
+                </div>
+              ))}
+            </section>
+          )}
 
-        <Related page={page} />
+          <Related page={page} />
 
-        <footer className="doc__foot">
-          <Link to="/" className="doc__foot-link">
-            Whistle.day
-          </Link>
-          <span className="doc__foot-note">
-            Free tournament organiser. No account, no ads, no cap.
-          </span>
-          <div className="doc__foot-legal">
-            <a href="mailto:info@whistle.day" className="doc__foot-sublink">
-              info@whistle.day
-            </a>
-            <Link to="/$" params={{ _splat: "privacy" }} className="doc__foot-sublink">
-              Privacy
+          <footer className="doc__foot">
+            <Link to="/" className="doc__foot-link">
+              Whistle.day
             </Link>
-            <Link to="/$" params={{ _splat: "terms" }} className="doc__foot-sublink">
-              Terms
-            </Link>
-            <Link to="/$" params={{ _splat: "user-deletion" }} className="doc__foot-sublink">
-              Data deletion
-            </Link>
-          </div>
-        </footer>
-      </article>
+            <span className="doc__foot-note">
+              Free tournament organiser. No account, no ads, no cap.
+            </span>
+            <div className="doc__foot-legal">
+              <a href="mailto:info@whistle.day" className="doc__foot-sublink">
+                info@whistle.day
+              </a>
+              <Link to="/$" params={{ _splat: "privacy" }} className="doc__foot-sublink">
+                Privacy
+              </Link>
+              <Link to="/$" params={{ _splat: "terms" }} className="doc__foot-sublink">
+                Terms
+              </Link>
+              <Link to="/$" params={{ _splat: "user-deletion" }} className="doc__foot-sublink">
+                Data deletion
+              </Link>
+            </div>
+          </footer>
+        </article>
+      </main>
     </>
   );
 }

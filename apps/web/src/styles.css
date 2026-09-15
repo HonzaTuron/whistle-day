@@ -1528,6 +1528,13 @@ th,
   background: color-mix(in srgb, var(--accent) 16%, var(--surface-2));
 }
 
+/* The accent tint darkens the row enough that --muted's usual contrast
+   (4.8:1 on --surface-2) drops under 4.5:1 on it — pull the sets column
+   toward --text just far enough to clear the tinted background too. */
+.board__row.is-ahead .board__sets {
+  color: color-mix(in srgb, var(--text) 20%, var(--muted));
+}
+
 .board__team {
   min-width: 0;
   overflow: hidden;
