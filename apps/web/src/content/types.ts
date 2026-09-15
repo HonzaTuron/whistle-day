@@ -72,6 +72,12 @@ export interface Faq {
   a: string;
 }
 
+/** One step of an on-page procedure. Only for pages that are actually a sequence to follow. */
+export interface HowToStep {
+  name: string;
+  text: string;
+}
+
 /**
  * What the page's call to action should hand the wizard.
  *
@@ -99,6 +105,8 @@ export interface Page {
   facts?: Fact[];
   sections?: Section[];
   faq?: Faq[];
+  /** In order. Only set this on a page whose sections are actually a procedure to follow, not a list of facts about one. */
+  howTo?: HowToStep[];
   generator?: GeneratorDefaults;
   /** Slugs of pages worth offering next. Rendered as links; must resolve. */
   related?: string[];

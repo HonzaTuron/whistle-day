@@ -556,6 +556,36 @@ export const GUIDE_PAGES: Page[] = [
       "Everything from picking a format to the trophy presentation: timings, court allocation, results, and the things that actually go wrong.",
     lede:
       "The format is the easy decision. What makes or breaks a one-day tournament is the schedule, who enters the results, and having somewhere everybody can see what is happening without asking you.",
+    howTo: [
+      {
+        name: "Work backwards from when you have to be out",
+        text: "Take your finish time, subtract the presentation, subtract a buffer of at least half an hour, and that is the tournament. Matches available equals hours × courts × slots per hour — that number decides your format.",
+      },
+      {
+        name: "Pick a format that guarantees matches",
+        text: "Groups then a playoff for most fields — it guarantees every team three matches before anybody is knocked out. Swiss if the field is large, everyone-plays-everyone if it's small and the morning is long. Avoid a straight knockout unless the day is genuinely short.",
+      },
+      {
+        name: "Build in slack you will need",
+        text: "Something will overrun — a long match, a first-aid stop, a late arrival. Schedule a gap in the middle, such as lunch or the break before the playoff, so it can absorb whatever the morning lost.",
+      },
+      {
+        name: "Decide who enters results, before the day",
+        text: "Either one person enters everything from a phone as it comes in, or each court reports to a single point. Deciding this in advance avoids results piling up on paper and the tables falling an hour behind.",
+      },
+      {
+        name: "Put it on a wall",
+        text: "A screen showing what is live, the tables and what's on next cuts down the questions people ask the organiser. A QR code on the door does the same job for phones.",
+      },
+      {
+        name: "Set the tiebreakers before you need them",
+        text: "Decide the order — head-to-head or score difference first — and publish it with the fixtures, before two teams finish level and it looks like the tiebreaker was picked to favour somebody.",
+      },
+      {
+        name: "The last half hour",
+        text: "Have the trophies out and the results checked before the final finishes, since the presentation is what people remember and it is invariably rushed.",
+      },
+    ],
     sections: [
       {
         heading: "Work backwards from when you have to be out",

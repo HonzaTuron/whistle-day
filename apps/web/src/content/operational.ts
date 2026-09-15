@@ -238,6 +238,28 @@ export const OPERATIONAL_PAGES: Page[] = [
     lede:
       "Name it, add the teams one at a time, say how many courts and how long you have. That is the setup. Then run the day from the same phone: put matches on courts, mark what is being played, enter results as they come in.",
     generator: { preset: "groups", teams: 12 },
+    howTo: [
+      {
+        name: "Name the tournament and add the teams",
+        text: "Every team is saved the moment it is typed, so a locked screen or an incoming call can't lose the list. Leaving and coming back picks up where you left off.",
+      },
+      {
+        name: "Say how many courts and how long you have",
+        text: "The format screen quotes the ways to run the day in matches and hours against the teams and courts you entered — \"28 matches, about four hours on two courts\" — rather than asking about pools or Swiss rounds directly.",
+      },
+      {
+        name: "Put matches on courts as you decide",
+        text: "Court and start time save on tap, separately from the result, since assigning a court is a decision that happens before the score does.",
+      },
+      {
+        name: "Enter results as they come in",
+        text: "A result is a status and two numbers, with points by set optional underneath. Tables, brackets and the next round are rebuilt from every fixture at once as results land.",
+      },
+      {
+        name: "Hand a court to a referee, if you want a second phone scoring",
+        text: "A referee scans a QR code and runs their own court from their own phone — proximity to the code is the only authentication, and there's nothing to type or sign up for.",
+      },
+    ],
     sections: [
       {
         heading: "It writes as you go",

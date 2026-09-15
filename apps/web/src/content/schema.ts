@@ -58,6 +58,21 @@ export function structuredData(page: Page, site: string): ScriptTag[] {
     }),
   );
 
+  if (page.howTo && page.howTo.length > 0) {
+    tags.push(
+      json({
+        "@context": "https://schema.org",
+        "@type": "HowTo",
+        name: page.h1,
+        step: page.howTo.map((step) => ({
+          "@type": "HowToStep",
+          name: step.name,
+          text: step.text,
+        })),
+      }),
+    );
+  }
+
   if (page.faq && page.faq.length > 0) {
     tags.push(
       json({
