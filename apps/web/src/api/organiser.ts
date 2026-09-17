@@ -788,6 +788,27 @@ export const setLive = (
       : { status: "ready", started_at: "" });
 
 /**
+ * Push the score while the match is still on court, without ending it.
+ *
+ * `saveGames` is how a set-scored match reaches the wall mid-match; a match
+ * with no sets has nothing else that writes before the final `saveResult`, so
+ * without this its score sits at whatever it was when it went live until
+ * somebody taps Save — a scoreboard that only ever shows the final score.
+ * Status is left alone: only `saveResult` ends a match, the same way only a
+ * completed set's row does under `saveGames`.
+ */
+export const saveOngoingScore = (
+  session: Session,
+  fixture: Id,
+  homeScore: number,
+  awayScore: number,
+) =>
+  update<Fixture>(session, "fixtures", fixture, {
+      home_score: homeScore,
+      away_score: awayScore,
+    });
+
+/**
  * The tournament this device is running, kept so the landing page can offer to
  * go back to it. The name is stored too — the whole point is to render that
  * offer without waiting for a request first.

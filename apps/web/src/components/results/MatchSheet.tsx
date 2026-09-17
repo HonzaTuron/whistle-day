@@ -4,6 +4,7 @@ import {
   ensureOrganiser,
   loadGames,
   saveGames,
+  saveOngoingScore,
   type BoardFixture,
   type SetScore,
 } from "../../api/organiser";
@@ -46,6 +47,72 @@ const MAX_SCORE = 999;
 const POINTS_DEBOUNCE_MS = 700;
 
 /**
+ * A value pushed to the server a moment after the last change rather than on
+ * every one, kept alongside the state it renders from so two taps inside one
+ * frame are both drawn against what the first one wrote rather than the value
+ * the row started the frame with.
+ *
+ * Both the points and the plain score on this sheet are written this way —
+ * somebody tapping a point per rally, or a goal at the side of a pitch, is not
+ * going to press Save between them, and the reason to enter either live is the
+ * wall: the projector polls every four seconds, so a tap here is a scoreline
+ * in the hall a moment later. Saving the *result* stays a separate, deliberate
+ * act — the one that ends the match.
+ */
+function useLiveWrite<T>(
+  initial: T,
+  save: (next: T) => Promise<void>,
+  setState: (state: "idle" | "saving" | "failed") => void,
+) {
+  const latest = useRef(initial);
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const flush = useRef<(() => void) | null>(null);
+
+  const write = (next: T) => {
+    latest.current = next;
+    if (timer.current) clearTimeout(timer.current);
+
+    const send = () => {
+      timer.current = null;
+      flush.current = null;
+      setState("saving");
+      void (async () => {
+        try {
+          await save(next);
+          setState("idle");
+        } catch {
+          setState("failed");
+        }
+      })();
+    };
+
+    flush.current = send;
+    timer.current = setTimeout(send, POINTS_DEBOUNCE_MS);
+  };
+
+  /**
+   * Drop a pending write instead of sending it. Recording a result, a
+   * walkover or a clear writes the same field itself, and knows something
+   * this timer does not: whether the match is over. A write landing after
+   * would put a finished match's last set back to unfinished, or a cleared
+   * one's score back on it.
+   */
+  const forget = () => {
+    if (timer.current) clearTimeout(timer.current);
+    timer.current = null;
+    flush.current = null;
+  };
+
+  /** Send now instead of waiting: closing the sheet must not lose it. */
+  const flushNow = () => {
+    if (timer.current) clearTimeout(timer.current);
+    flush.current?.();
+  };
+
+  return { latest, write, forget, flushNow };
+}
+
+/**
  * Everything you can do to one match, as a sheet over the list.
  *
  * An expanding row pushes everything below it, which on a phone means the
@@ -84,16 +151,20 @@ export function MatchSheet({
   const [pointsState, setPointsState] = useState<"idle" | "saving" | "failed">(
     "idle",
   );
-  /**
-   * The points as they stand, kept alongside the state they render from.
-   *
-   * Two taps on + inside one frame both read the same rendered value, so the
-   * second overwrites the first and a point goes missing — which is precisely
-   * what happens when somebody catches up after two quick rallies. The ref is
-   * updated in the handler rather than after the render, so the second tap
-   * reads what the first one wrote.
-   */
-  const latest = useRef<SetScore[]>([]);
+  const pointsWriter = useLiveWrite<SetScore[]>(
+    [],
+    async (next) => {
+      await saveGames(await ensureOrganiser(), row.fixture.id, next, row.settled);
+    },
+    setPointsState,
+  );
+  const scoreWriter = useLiveWrite(
+    { home, away },
+    async (next) => {
+      await saveOngoingScore(await ensureOrganiser(), row.fixture.id, next.home, next.away);
+    },
+    setPointsState,
+  );
   /**
    * "score" is the sheet; the other two are questions it steps aside for.
    * Both are one tap from destroying a result, so neither happens on the tap
@@ -119,7 +190,7 @@ export function MatchSheet({
           home: game.home_score ?? 0,
           away: game.away_score ?? 0,
         }));
-        latest.current = loaded;
+        pointsWriter.latest.current = loaded;
         setSets(loaded);
       } catch {
         // Sets are the detail under the score, not the score. A match whose
@@ -132,65 +203,18 @@ export function MatchSheet({
     };
   }, [row.fixture.id]);
 
-  /**
-   * Points are written as they are entered, not when the sheet is saved.
-   *
-   * Somebody standing at the net tapping a point per rally is not going to
-   * press Save between rallies, and the reason to enter them at all is the
-   * wall: the projector polls every four seconds, so a tap here is a scoreline
-   * in the hall a moment later. Saving the *result* is still a separate,
-   * deliberate act — that is the one that ends the match and moves the tables.
-   *
-   * It does not go through the board's write-then-reload: the board shows the
-   * fixture's score, which these do not change, so reloading seven collections
-   * per rally would buy nothing. The delay is there so that holding + writes
-   * once rather than nine times, and the write is flushed on the way out —
-   * closing the sheet a moment after the last tap must not lose it.
-   */
-  const flush = useRef<(() => void) | null>(null);
-  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const writePoints = (next: SetScore[]) => {
-    if (timer.current) clearTimeout(timer.current);
-
-    const send = () => {
-      timer.current = null;
-      flush.current = null;
-      setPointsState("saving");
-      void (async () => {
-        try {
-          await saveGames(await ensureOrganiser(), row.fixture.id, next, row.settled);
-          setPointsState("idle");
-        } catch {
-          setPointsState("failed");
-        }
-      })();
-    };
-
-    flush.current = send;
-    timer.current = setTimeout(send, POINTS_DEBOUNCE_MS);
+  /** Neither writer should land after a result, walkover or clear. */
+  const forgetLiveWrites = () => {
+    pointsWriter.forget();
+    scoreWriter.forget();
   };
 
-  /**
-   * Drop a pending write instead of sending it.
-   *
-   * Recording a result, a walkover or a clear writes these same rows itself,
-   * and it knows something this timer does not: whether the match is over. A
-   * debounced write landing a moment later would put the last set back to
-   * unfinished, or — after a clear — recreate the rows that were just deleted.
-   */
-  const forgetPoints = () => {
-    if (timer.current) clearTimeout(timer.current);
-    timer.current = null;
-    flush.current = null;
-  };
-
-  // Anything still pending goes on the way out: closing the sheet a moment
-  // after the last tap must not lose it.
+  // Anything still pending goes out on the way out: closing the sheet a
+  // moment after the last tap must not lose it.
   useEffect(
     () => () => {
-      if (timer.current) clearTimeout(timer.current);
-      flush.current?.();
+      pointsWriter.flushNow();
+      scoreWriter.flushNow();
     },
     [],
   );
@@ -238,10 +262,9 @@ export function MatchSheet({
 
   /** Every change to the points is a change on the wall, so it is written. */
   const changeSets = (update: (previous: SetScore[]) => SetScore[]) => {
-    const next = update(latest.current);
-    latest.current = next;
+    const next = update(pointsWriter.latest.current);
     setSets(next);
-    writePoints(next);
+    pointsWriter.write(next);
   };
 
   const editSet = (index: number, side: "home" | "away", value: number) =>
@@ -265,6 +288,21 @@ export function MatchSheet({
         i === index ? { ...set, [side]: clamp(set[side] + delta) } : set,
       ),
     );
+
+  /**
+   * The plain-score twin of `changeSets`.
+   *
+   * Only reaches the server while the match is live and has no sets: before
+   * that, or once `fromPoints` takes over, nobody but Save changes what the
+   * wall shows, and this would be writing a score that is not on it.
+   */
+  const changeScore = (side: "home" | "away", value: number) => {
+    const next = { ...scoreWriter.latest.current, [side]: value };
+    setHome(next.home);
+    setAway(next.away);
+    if (row.live && !fromPoints) scoreWriter.write(next);
+    else scoreWriter.latest.current = next;
+  };
 
   const onCourt = courts.find((court) => court.id === row.fixture.court);
 
@@ -305,7 +343,7 @@ export function MatchSheet({
                 className="btn btn--danger btn--block"
                 disabled={saving}
                 onClick={() => {
-                  forgetPoints();
+                  forgetLiveWrites();
                   onClear();
                 }}
               >
@@ -329,7 +367,7 @@ export function MatchSheet({
                 className="btn btn--block"
                 disabled={saving}
                 onClick={() => {
-                  forgetPoints();
+                  forgetLiveWrites();
                   onWalkover(row.home.entry?.id ?? "");
                 }}
               >
@@ -340,7 +378,7 @@ export function MatchSheet({
                 className="btn btn--block"
                 disabled={saving}
                 onClick={() => {
-                  forgetPoints();
+                  forgetLiveWrites();
                   onWalkover(row.away.entry?.id ?? "");
                 }}
               >
@@ -440,7 +478,7 @@ export function MatchSheet({
               value={homeScore}
               counted={fromPoints}
               max={need > 0 ? need : MAX_SCORE}
-              onChange={(value) => setHome(clamp(value))}
+              onChange={(value) => changeScore("home", clamp(value))}
             />
             <Score
               t={t}
@@ -448,7 +486,7 @@ export function MatchSheet({
               value={awayScore}
               counted={fromPoints}
               max={need > 0 ? need : MAX_SCORE}
-              onChange={(value) => setAway(clamp(value))}
+              onChange={(value) => changeScore("away", clamp(value))}
             />
 
             {/* What the format is, said once, above the sets it governs. The
@@ -521,7 +559,7 @@ export function MatchSheet({
                 className="btn btn--primary btn--block"
                 disabled={saving || fault !== null}
                 onClick={() => {
-                  forgetPoints();
+                  forgetLiveWrites();
                   onSave(savedScore.home, savedScore.away, points);
                 }}
               >
