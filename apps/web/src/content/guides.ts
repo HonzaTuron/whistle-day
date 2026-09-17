@@ -784,4 +784,87 @@ export const GUIDE_PAGES: Page[] = [
       "guide/how-to-organize-a-7-team-tournament",
     ],
   },
+
+  {
+    slug: "guide/how-to-find-sponsors-for-a-tournament",
+    kind: "guide",
+    title: "How to Find Sponsors for a Club Tournament",
+    h1: "How to find sponsors for a tournament",
+    description:
+      "Who actually sponsors a one-day club tournament, what to offer them, roughly what to charge, and a message that gets a reply.",
+    lede:
+      "The businesses that say yes to sponsoring a club tournament are the ones already selling to the people in the hall — a sports shop, a physio, a café near the venue, a business run by someone's parent — not a national brand asked for \"exposure\".",
+    facts: [
+      { label: "Logo slot", value: "£50–150", note: "One sponsor, one day." },
+      { label: "Title sponsor", value: "£150–400", note: "Logo, naming rights, and a banner." },
+      { label: "Ask this far out", value: "4–6 weeks", note: "Sponsors budget in advance." },
+    ],
+    sections: [
+      {
+        heading: "Who actually says yes",
+        body: [
+          "Clubs overestimate how much a business needs to \"get\" sports to sponsor a one-day tournament. The realistic list starts with anyone already selling to the same crowd: the shop that strings rackets, the physio or gym up the road, the café or pub closest to the venue — an easy pitch when forty players are eating lunch there anyway.",
+          "The highest conversion rate by far is a business run by a club member or a player's parent, and it's the one most clubs skip because asking feels like trading on the relationship. It isn't — it's the easiest sale on the list, because the trust is already there.",
+          "After that: local trade services that already sponsor kids' teams for visibility — estate agents, insurance and financial advisors, car dealers, tradespeople. Weakest is a national brand asked for \"exposure\" — they want reach across many events, not one hall for one Saturday, and that ask mostly wastes the time spent on it.",
+        ],
+      },
+      {
+        heading: "What you're actually selling",
+        body: [
+          "\"Exposure\" has no price a business can act on. Break it into assets instead: a logo on the projector's closing screen, rotating in front of everyone in the hall all day; a logo on the printed draw sheet or results board; one line in the pre-event and results social posts; a named mention at the trophy presentation.",
+          "Tiering these gives a business a reason to pay more without forcing a negotiation over price. A \"title\" tier — the tournament takes the sponsor's name, plus a banner at the venue — sits above a \"supporting\" tier that is the logo alone. Anchoring on the title price makes the logo-only tier read as the cheap option.",
+        ],
+      },
+      {
+        heading: "What to charge",
+        body: [
+          "For a single club day — not a multi-day or televised event — local sponsors are used to figures like £50–150 for a logo slot and £150–400 for a title sponsorship. Those numbers are low enough that one person at a small business can say yes without asking anyone above them, which matters: a sponsorship that needs approval from someone who isn't in the room rarely closes in time for the event.",
+        ],
+      },
+      {
+        heading: "Timing and who asks matters more than the pitch",
+        body: [
+          "Ask four to six weeks before the event, not the week before — sponsors budget this in advance, and a rushed ask reads as low-value regardless of what's offered.",
+          "Whoever already has a relationship with the business should make the ask, even briefly. A cold message signed \"the club\" converts far worse than one that opens with a first name and a reason the sender already knows the person.",
+        ],
+      },
+      {
+        heading: "A message that gets a reply",
+        body: [
+          "Lead with the number, not the pitch. A sponsor can say yes or no to a price in one read; a paragraph about the club's history makes them stop and decide whether to keep reading at all.",
+        ],
+        code: [
+          {
+            label: "Email or message",
+            code: 'Subject: Sponsor [Tournament name] — [date]\n\nHi [name], we\'re running [tournament] on [date] at [venue] — [N] teams, runs all day. We\'ve got a sponsor slot on the screen everyone in the hall sees between matches, plus a mention on the results post after. £[X] for the day. Happy to send a photo from last year\'s event if that helps. Would you like the [logo] or [title] slot?',
+          },
+        ],
+      },
+      {
+        heading: "The renewal is easier than the first sale",
+        body: [
+          "Send the sponsor a photo of their logo on the actual screen or banner, plus how many people were there, within a few days of the event — proof the money did something, not just a thank-you.",
+          "Ask for next season right after this one, while the event is still recent, rather than months later when it has to be re-pitched from scratch.",
+        ],
+      },
+    ],
+    faq: [
+      {
+        q: "How much should I charge a sponsor for a one-day tournament?",
+        a: "Local sponsors are used to £50–150 for a logo slot and £150–400 for a title sponsorship of a small club tournament. Price low enough that one person at the business can say yes without approval from someone who isn't in the room.",
+      },
+      {
+        q: "When should I start asking for sponsors?",
+        a: "Four to six weeks before the event. Sponsors budget it in advance, and a late ask reads as low-value even at the same price.",
+      },
+      {
+        q: "Who should send the sponsorship ask?",
+        a: "Whoever already has a relationship with the business — a club member, a player's parent — rather than a generic message from \"the club\". It's the single biggest factor in whether the ask converts.",
+      },
+    ],
+    related: [
+      "tournament-projector-display",
+      "guide/how-to-run-a-one-day-tournament",
+    ],
+  },
 ];

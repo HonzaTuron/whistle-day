@@ -76,6 +76,7 @@ export const OPERATIONAL_PAGES: Page[] = [
       "tournament-bracket-on-a-tv",
       "qr-code-tournament-results",
       "tournament-generator",
+      "guide/how-to-find-sponsors-for-a-tournament",
     ],
   },
 
