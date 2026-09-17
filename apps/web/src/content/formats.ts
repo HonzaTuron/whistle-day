@@ -13,7 +13,7 @@ import type { Page } from "./types";
 export const HUB: Page = {
   slug: "tournament-generator",
   kind: "hub",
-  title: "Free Tournament Generator — Brackets, Groups and Swiss",
+  title: "Free Tournament Generator: Brackets, Groups and Swiss",
   h1: "Tournament generator",
   description:
     "Make a bracket, a group stage or a Swiss draw, run the day from your phone, and put the results on a projector. Free, no account.",
@@ -33,13 +33,13 @@ export const HUB: Page = {
       heading: "The day, not just the draw",
       body: [
         "A bracket image is the easy half. The hard half is the four hours afterwards: which match is on which court, what is being played right now, who won the one that just finished, and what that does to the table.",
-        "Whistle.day is built for the second half. Results go in from a phone at the side of a court, one match at a time. Everything downstream is the server's job — the winner, the bracket, the tables, the playoff slots waiting on a final position. A result tapped in at the net is on the wall about a fifth of a second later.",
+        "Whistle.day is built for the second half. Results go in from a phone at the side of a court, one match at a time. Everything downstream is the server's job: the winner, the bracket, the tables, the playoff slots waiting on a final position. A result tapped in at the net is on the wall about a fifth of a second later.",
       ],
     },
     {
       heading: "Free, and no account until you want one",
       body: [
-        "There is no signup in front of the wizard. An account is created behind the scenes when you start a tournament, and you are offered the chance to put an email on it later — once there is something worth keeping. Nothing is capped, nothing is watermarked, and the projector view has no ads on it.",
+        "There is no signup in front of the wizard. An account is created behind the scenes when you start a tournament, and you are offered the chance to put an email on it later, once there is something worth keeping. Nothing is capped, nothing is watermarked, and the projector view has no ads on it.",
       ],
     },
   ],
@@ -54,7 +54,7 @@ export const HUB: Page = {
     },
     {
       q: "Can spectators follow along?",
-      a: "Yes — every tournament gets a link and a QR code for a phone-sized results view, and a separate one for a projector or a TV.",
+      a: "Yes. Every tournament gets a link and a QR code for a phone-sized results view, and a separate one for a projector or a TV.",
     },
   ],
   related: [
@@ -70,7 +70,7 @@ export const FORMAT_PAGES: Page[] = [
   {
     slug: "round-robin-generator",
     kind: "format",
-    title: "Round Robin Generator — Every Team Plays Every Team",
+    title: "Round Robin Generator: Every Team Plays Every Team",
     h1: "Round robin generator",
     description:
       "Generate a round robin schedule where every team plays every other, with a live league table and tiebreakers that explain themselves. Free, no account.",
@@ -82,7 +82,7 @@ export const FORMAT_PAGES: Page[] = [
       {
         heading: "What you get",
         body: [
-          "A full fixture list — every pair, once — spread across however many courts you have. A league table that rebuilds itself every time a result goes in. And a projector view that shows the table to the hall without anybody having to stand at a laptop.",
+          "A full fixture list (every pair, once) spread across however many courts you have. A league table that rebuilds itself every time a result goes in. And a projector view that shows the table to the hall without anybody having to stand at a laptop.",
           "The numbers above are for six teams; change the count in the wizard and everything re-quotes. A round robin is the one format where the size of the day grows fast: doubling the field roughly quadruples the matches.",
         ],
       },
@@ -95,14 +95,14 @@ export const FORMAT_PAGES: Page[] = [
       {
         heading: "Ties are explained, not just broken",
         body: [
-          "Two teams level on points are separated by head-to-head first, then score difference, then points scored — and when a table needs more than points to rank, the criteria that actually did the separating are printed underneath it.",
+          "Two teams level on points are separated by head-to-head first, then score difference, then points scored, and when a table needs more than points to rank, the criteria that actually did the separating are printed underneath it.",
           "Head-to-head is computed among the tied teams only, from the fixtures those teams played against each other, which is why ranking is recursive rather than one comparator chain. That sentence under the table is the difference between a table and an argument in a sports hall.",
         ],
       },
       {
         heading: "Odd numbers of teams",
         body: [
-          "An odd field means somebody sits out every round, and the schedule handles it — each team gets one bye across the tournament and the fixture count is unaffected, because a bye is not a match. The round count goes up by one compared to an even field of the same size.",
+          "An odd field means somebody sits out every round, and the schedule handles it: each team gets one bye across the tournament and the fixture count is unaffected, because a bye is not a match. The round count goes up by one compared to an even field of the same size.",
         ],
       },
     ],
@@ -113,7 +113,7 @@ export const FORMAT_PAGES: Page[] = [
       },
       {
         q: "Can teams play each other twice?",
-        a: "Yes — a two-leg round robin doubles the fixture list, home and away. It is a stage setting rather than a separate format.",
+        a: "Yes. A two-leg round robin doubles the fixture list, home and away. It is a stage setting rather than a separate format.",
       },
       {
         q: "What if I want a knockout at the end?",
@@ -132,40 +132,40 @@ export const FORMAT_PAGES: Page[] = [
   {
     slug: "single-elimination-bracket-generator",
     kind: "format",
-    title: "Single Elimination Bracket Generator — Free, No Account",
+    title: "Single Elimination Bracket Generator: Free, No Account",
     h1: "Single elimination bracket generator",
     description:
       "Make a knockout bracket for any number of teams, byes worked out for you, and put it on a projector that fills itself in. Free, no signup.",
     lede:
-      "Lose once and you are out. The quickest way to a winner, and the least playing time for whoever draws badly. Any number of teams — the bracket is sized up to the next power of two and the byes are handed out for you.",
+      "Lose once and you are out. The quickest way to a winner, and the least playing time for whoever draws badly. Any number of teams: the bracket is sized up to the next power of two and the byes are handed out for you.",
     generator: { preset: "knockout", teams: 8 },
     facts: factsFor("knockout", 8),
     sections: [
       {
         heading: "Byes, without the arithmetic",
         body: [
-          "A knockout bracket holds a power of two — 4, 8, 16, 32 — and hardly any tournament has exactly that many teams. The difference is made up with byes: teams that skip the first round and enter in the second.",
+          "A knockout bracket holds a power of two (4, 8, 16, 32), and hardly any tournament has exactly that many teams. The difference is made up with byes: teams that skip the first round and enter in the second.",
           "You do not have to work out how many. Enter twelve teams and the bracket is drawn at sixteen with four byes, placed so the seeded teams get them, which is the convention and also the only placement that does not distort the draw.",
         ],
       },
       {
         heading: "Every cell is readable before it is played",
         body: [
-          "A bracket drawn on Monday for a tournament played on Saturday is mostly empty, and the empty half is what people look at. Every unfilled position carries the label the server wrote for it — \"Winner QF1\", \"1. A\", \"Bye\" — so the bracket reads as a plan rather than as a grid of blanks.",
+          "A bracket drawn on Monday for a tournament played on Saturday is mostly empty, and the empty half is what people look at. Every unfilled position carries the label the server wrote for it: \"Winner QF1\", \"1. A\", \"Bye\". The bracket reads as a plan rather than as a grid of blanks.",
           "The same is true on the projector and on the phone view. A match with an unresolved side renders as text with those labels and no affordance at all, because it is waiting for somebody rather than refusing to work.",
         ],
       },
       {
         heading: "Third place, if you want it",
         body: [
-          "A third-place match shares a round with the final but is not part of the tree, which is why it is counted separately in the match total above. It is on by default because most one-day tournaments play it — one more match, and two teams who would otherwise have finished their day on a loss get another game.",
+          "A third-place match shares a round with the final but is not part of the tree, which is why it is counted separately in the match total above. It is on by default because most one-day tournaments play it: one more match, and two teams who would otherwise have finished their day on a loss get another game.",
         ],
       },
     ],
     faq: [
       {
         q: "How many matches in a single elimination bracket?",
-        a: "One per team eliminated, so teams − 1, plus one more if you play a third-place match. Byes do not add matches — a team that skips round one simply has not played yet.",
+        a: "One per team eliminated, so teams − 1, plus one more if you play a third-place match. Byes do not add matches: a team that skips round one simply has not played yet.",
       },
       {
         q: "What if I do not have a power-of-two number of teams?",
@@ -173,7 +173,7 @@ export const FORMAT_PAGES: Page[] = [
       },
       {
         q: "Can I seed the bracket?",
-        a: "Yes. Teams carry a seed number and the draw lays them out so the top seeds cannot meet before the final — and so the byes go to the top of the draw.",
+        a: "Yes. Teams carry a seed number and the draw lays them out so the top seeds cannot meet before the final, and so the byes go to the top of the draw.",
       },
     ],
     related: [
@@ -188,7 +188,7 @@ export const FORMAT_PAGES: Page[] = [
   {
     slug: "double-elimination-bracket-generator",
     kind: "format",
-    title: "Double Elimination Bracket Generator — Losers Bracket Included",
+    title: "Double Elimination Bracket Generator: Losers Bracket Included",
     h1: "Double elimination bracket generator",
     description:
       "Generate a double elimination bracket with a winners bracket, a losers bracket and a grand final. Any team count, byes handled, free.",
@@ -208,13 +208,13 @@ export const FORMAT_PAGES: Page[] = [
         heading: "Why it is worth the extra time",
         body: [
           "A straight knockout can send the second-best team home in the first round because of one bad draw. Double elimination is the cheapest fix for that: it costs about twice the matches and it almost never produces a winner nobody believes in.",
-          "It is the default in esports for exactly this reason, and it works just as well in a hall — the losers bracket keeps courts busy and keeps teams in the building.",
+          "It is the default in esports for exactly this reason, and it works just as well in a hall: the losers bracket keeps courts busy and keeps teams in the building.",
         ],
       },
       {
         heading: "Byes here mean something different",
         body: [
-          "A bye in a bracket is not a match and scores nothing — it is a free pass to the next round. A bye in a Swiss round is the opposite: it takes the points for a win, because otherwise sitting out sends whoever was the odd one out to the bottom of the table for something that was not their fault. They are the same record in the database and they mean opposite things, which is worth knowing if you ever look at the raw data.",
+          "A bye in a bracket is not a match and scores nothing. It is a free pass to the next round. A bye in a Swiss round is the opposite: it takes the points for a win, because otherwise sitting out sends whoever was the odd one out to the bottom of the table for something that was not their fault. They are the same record in the database and they mean opposite things, which is worth knowing if you ever look at the raw data.",
         ],
       },
     ],
@@ -244,26 +244,26 @@ export const FORMAT_PAGES: Page[] = [
   {
     slug: "swiss-tournament-generator",
     kind: "format",
-    title: "Swiss Tournament Generator — Pairings That Draw Themselves",
+    title: "Swiss Tournament Generator: Pairings That Draw Themselves",
     h1: "Swiss tournament generator",
     description:
       "Run a Swiss tournament where each round pairs teams on the same record and the next round draws itself when the last one finishes. Free.",
     lede:
-      "No groups and nobody knocked out. Everyone plays the same number of rounds, each one against somebody on the same record — win and you meet a winner, lose and you meet somebody who lost. The table sorts itself out.",
+      "No groups and nobody knocked out. Everyone plays the same number of rounds, each one against somebody on the same record: win and you meet a winner, lose and you meet somebody who lost. The table sorts itself out.",
     generator: { preset: "swiss", teams: 16 },
     facts: factsFor("swiss", 16),
     sections: [
       {
         heading: "The next round draws itself",
         body: [
-          "Only round one is written up front, because the rest of them are not knowable yet. When the last result of a round goes in, the next round is paired from the table as it stood at that moment — and never from the round being drawn, which is the mistake that produces a pairing depending on its own result.",
+          "Only round one is written up front, because the rest of them are not knowable yet. When the last result of a round goes in, the next round is paired from the table as it stood at that moment, never from the round being drawn, which is the mistake that produces a pairing depending on its own result.",
           "There is nothing to press. Finishing a round is what draws the next one. There is a manual pairing endpoint, but it is the repair path rather than the normal one.",
         ],
       },
       {
         heading: "How many rounds",
         body: [
-          "The default is ceil(log2(teams)) — the fewest rounds that can still leave exactly one team unbeaten — with a floor of three and a ceiling of however many opponents there actually are. Sixteen teams is four rounds; thirty-two is five; sixty-four is six.",
+          "The default is ceil(log2(teams)), the fewest rounds that can still leave exactly one team unbeaten, with a floor of three and a ceiling of however many opponents there actually are. Sixteen teams is four rounds; thirty-two is five; sixty-four is six.",
           "You can set it higher for a longer day. Run it long enough against a small field and the draw will run out of fresh opponents and start repeating a meeting; nothing is wrong when that happens, but you are told about it rather than left to notice.",
         ],
       },
@@ -276,7 +276,7 @@ export const FORMAT_PAGES: Page[] = [
       {
         heading: "Correcting a result redraws what it fed",
         body: [
-          "Fix a score and the round it fed is redrawn — but only while nothing from that round onwards has been played. Matches cannot be unplayed to match a corrected table, so past that point the correction updates the standings and leaves the pairings alone.",
+          "Fix a score and the round it fed is redrawn, but only while nothing from that round onwards has been played. Matches cannot be unplayed to match a corrected table, so past that point the correction updates the standings and leaves the pairings alone.",
         ],
       },
     ],
@@ -291,7 +291,7 @@ export const FORMAT_PAGES: Page[] = [
       },
       {
         q: "How does the tournament end?",
-        a: "Either on the table after the last round, or with a playoff — the default carries the top four into semi-finals and a third-place match.",
+        a: "Either on the table after the last round, or with a playoff: the default carries the top four into semi-finals and a third-place match.",
       },
     ],
     related: [
@@ -306,7 +306,7 @@ export const FORMAT_PAGES: Page[] = [
   {
     slug: "group-stage-knockout-generator",
     kind: "format",
-    title: "Group Stage and Knockout Generator — Pools Then Playoff",
+    title: "Group Stage and Knockout Generator: Pools Then Playoff",
     h1: "Group stage and knockout generator",
     description:
       "Draw groups, then a playoff that seeds itself from the final group tables. The World Cup format for any number of teams. Free, no account.",
@@ -325,14 +325,14 @@ export const FORMAT_PAGES: Page[] = [
       {
         heading: "A provisional table never promotes anybody",
         body: [
-          "A group table is provisional until every fixture in it is settled, and a playoff position waiting on that group will not fill until it is. Promoting a provisionally-first team into a bracket would be the worst bug this system could have — a team told they are through, playing a quarter-final, while a group match that changes the order is still being played on the next court.",
+          "A group table is provisional until every fixture in it is settled, and a playoff position waiting on that group will not fill until it is. Promoting a provisionally-first team into a bracket would be the worst bug this system could have: a team told they are through, playing a quarter-final, while a group match that changes the order is still being played on the next court.",
         ],
       },
       {
         heading: "The best third-placed teams",
         body: [
           "When the number of group winners and runners-up does not fill the bracket, the gap is closed by taking the best teams from the next place down, chosen across the groups rather than within one. That needs a table the group tables cannot produce: which of the third-placed teams were actually best.",
-          "It runs tier by tier — every group's winner, then every runner-up, then every third — so a runner-up never outranks a winner. Within a tier, results against anyone finishing below the smallest group's last place are disregarded, so teams out of a group of four and a group of three are compared over the same number of matches.",
+          "It runs tier by tier: every group's winner, then every runner-up, then every third. That way a runner-up never outranks a winner. Within a tier, results against anyone finishing below the smallest group's last place are disregarded, so teams out of a group of four and a group of three are compared over the same number of matches.",
         ],
       },
     ],
@@ -362,12 +362,12 @@ export const FORMAT_PAGES: Page[] = [
   {
     slug: "league-table-generator",
     kind: "format",
-    title: "League Table Generator — Standings With Explained Tiebreakers",
+    title: "League Table Generator: Standings With Explained Tiebreakers",
     h1: "League table generator",
     description:
       "A live league table that rebuilds after every result, with head-to-head tiebreakers that print the reason a tie was separated. Free.",
     lede:
-      "Enter results, get a table. Played, won, drawn, lost, score for and against, points — recomputed from scratch every time so a correction lands where it should have been the first time.",
+      "Enter results, get a table. Played, won, drawn, lost, score for and against, points, recomputed from scratch every time so a correction lands where it should have been the first time.",
     generator: { preset: "everyone", teams: 8 },
     sections: [
       {
@@ -385,7 +385,7 @@ export const FORMAT_PAGES: Page[] = [
       {
         heading: "Walkovers do not invent a score",
         body: [
-          "A team that does not turn up concedes the match, and the winner is credited whatever the rulebook says — zero by default, so an absence never flatters a score difference. The table shows it as a walkover rather than as a scoreline for a match nobody played.",
+          "A team that does not turn up concedes the match, and the winner is credited whatever the rulebook says: zero by default, so an absence never flatters a score difference. The table shows it as a walkover rather than as a scoreline for a match nobody played.",
         ],
       },
     ],
@@ -396,7 +396,7 @@ export const FORMAT_PAGES: Page[] = [
       },
       {
         q: "Does it handle a two-leg league?",
-        a: "Yes — home and away doubles the fixture list and the table treats it as one competition.",
+        a: "Yes. Home and away doubles the fixture list and the table treats it as one competition.",
       },
     ],
     related: [
@@ -409,7 +409,7 @@ export const FORMAT_PAGES: Page[] = [
   {
     slug: "multi-stage-tournament-builder",
     kind: "format",
-    title: "Multi-Stage Tournament Builder — Any Order of Formats",
+    title: "Multi-Stage Tournament Builder: Any Order of Formats",
     h1: "Multi-stage tournament builder",
     description:
       "Groups then Swiss then a playoff, or any other order. Build a tournament out of stages that feed each other, and run it from a phone.",
@@ -434,7 +434,7 @@ export const FORMAT_PAGES: Page[] = [
         heading: "A team who turns up late",
         body: [
           "Somebody arriving after the draw is the normal case rather than the exception, and it is handled: a late team can be added to a group or a Swiss field, and a bracket nobody has played yet is redrawn around them.",
-          "The one case with no answer is a knockout that has already started. The ninth team is not one of eight positions decided on Friday, and rewriting the draw around them would rewrite a match that has been played — so at that point they are genuinely too late.",
+          "The one case with no answer is a knockout that has already started. The ninth team is not one of eight positions decided on Friday, and rewriting the draw around them would rewrite a match that has been played, so at that point they are genuinely too late.",
         ],
       },
       {
@@ -447,7 +447,7 @@ export const FORMAT_PAGES: Page[] = [
     faq: [
       {
         q: "Can I run Swiss and then a knockout?",
-        a: "Yes. That is the default Swiss setup — Swiss rounds for the whole field, then semi-finals and a third-place match for the top four.",
+        a: "Yes. That is the default Swiss setup: Swiss rounds for the whole field, then semi-finals and a third-place match for the top four.",
       },
       {
         q: "How many stages can a tournament have?",

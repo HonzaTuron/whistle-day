@@ -6,7 +6,7 @@
  * yet, and answering it properly is how you become the page that gets cited.
  *
  * Each one answers the question in the first paragraph. The tool comes after,
- * not before — a guide that makes somebody scroll past a signup box to find
+ * not before: a guide that makes somebody scroll past a signup box to find
  * the answer is an advert, and it will be treated as one.
  */
 
@@ -22,17 +22,17 @@ export const GUIDE_PAGES: Page[] = [
   {
     slug: "guide/how-swiss-pairing-works",
     kind: "guide",
-    title: "How Swiss Pairing Works — Explained With an Example",
+    title: "How Swiss Pairing Works: A Worked Example",
     h1: "How Swiss pairing works",
     description:
       "A Swiss tournament pairs players on the same score each round, avoids rematches, and eliminates nobody. Worked example and round counts.",
     lede:
-      "In a Swiss tournament everybody plays every round and nobody is knocked out. Each round pairs people on the same record — win and you meet a winner, lose and you meet somebody who lost — so the field sorts itself into order without anybody going home.",
+      "In a Swiss tournament everybody plays every round and nobody is knocked out. Each round pairs people on the same record: win and you meet a winner, lose and you meet somebody who lost, so the field sorts itself into order without anybody going home.",
     sections: [
       {
         heading: "Round one is the only one drawn in advance",
         body: [
-          "Round one is paired at random, or by seed if you have one. Every round after it is paired from the standings as they stand when the previous round finishes — which means it cannot be drawn in advance, because it depends on results that have not happened.",
+          "Round one is paired at random, or by seed if you have one. Every round after it is paired from the standings as they stand when the previous round finishes, which means it cannot be drawn in advance because it depends on results that have not happened.",
           "This is the property that makes Swiss work and the one that trips people up: you cannot publish the whole schedule on the morning of the tournament. You can publish round one and the number of rounds, and that is it.",
         ],
       },
@@ -40,8 +40,8 @@ export const GUIDE_PAGES: Page[] = [
         heading: "A worked example: eight players, three rounds",
         body: [
           "Round one pairs the eight at random. Four win and four lose.",
-          "Round two pairs the four winners against each other and the four losers against each other. After it there are two players on 2–0, four on 1–1, and two on 0–2.",
-          "Round three pairs within those groups: the two unbeaten play each other, the four on 1–1 pair off, and the two winless play each other. After three rounds exactly one player can be 3–0, which is the point — that is why three rounds is the right number for eight players.",
+          "Round two pairs the four winners against each other and the four losers against each other. After it there are two players on 2-0, four on 1-1, and two on 0-2.",
+          "Round three pairs within those groups: the two unbeaten play each other, the four on 1-1 pair off, and the two winless play each other. After three rounds exactly one player can be 3-0, which is why three rounds is the right number for eight players.",
           "Nobody has been eliminated. Everybody has played three matches. The table is ordered by points, and the tiebreakers sort out the players who finished level.",
         ],
       },
@@ -49,14 +49,14 @@ export const GUIDE_PAGES: Page[] = [
         heading: "Rematches, and what happens when it runs out",
         body: [
           "The pairing avoids putting two players together twice. On a small field over a long tournament it will eventually run out of fresh opponents at the right score, and at that point it has to either pair somebody against a different score or repeat a meeting.",
-          "Neither is wrong — it is what happens when a Swiss runs long against a small field — but it should be surfaced rather than silently done. Whistle.day reports a rematch when it has to make one.",
+          "Neither is wrong (it is what happens when a Swiss runs long against a small field), but it should be surfaced rather than silently done. Whistle.day reports a rematch when it has to make one.",
         ],
       },
       {
         heading: "Byes score a point",
         body: [
           "An odd field means one player sits out each round. In a Swiss that bye takes the points for a win, which surprises people who are used to brackets, where a bye scores nothing and is simply a free pass.",
-          "The reason is that a Swiss bye is a lost opportunity to gain points. Scoring it zero would send whoever happened to be the odd one out to the bottom of the table for something they had no part in. In a bracket the same record means the opposite thing — the round itself, skipped — so it scores nothing. Same word, opposite meaning, which is worth knowing if you ever look at the underlying data.",
+          "The reason is that a Swiss bye is a lost opportunity to gain points. Scoring it zero would send whoever happened to be the odd one out to the bottom of the table for something they had no part in. In a bracket the same record means the opposite thing: the round itself was skipped, so it scores nothing. Same word, opposite meaning, worth knowing if you ever look at the underlying data.",
         ],
       },
       {
@@ -70,7 +70,7 @@ export const GUIDE_PAGES: Page[] = [
     faq: [
       {
         q: "Can I publish the whole schedule in advance?",
-        a: "No — only round one and the number of rounds. Every later round depends on results that have not happened yet.",
+        a: "No, only round one and the number of rounds. Every later round depends on results that have not happened yet.",
       },
       {
         q: "Is Swiss only for chess?",
@@ -93,7 +93,7 @@ export const GUIDE_PAGES: Page[] = [
     description:
       "The standard answer is ceil(log2(players)): 8 players → 3 rounds, 16 → 4, 32 → 5, 64 → 6. Why that is the rule, and when to break it.",
     lede:
-      "The rule is ceil(log2(players)) — the fewest rounds that can still leave exactly one player unbeaten. Eight players is three rounds, sixteen is four, thirty-two is five, sixty-four is six.",
+      "The rule is ceil(log2(players)): the fewest rounds that can still leave exactly one player unbeaten. Eight players is three rounds, sixteen is four, thirty-two is five, sixty-four is six.",
     facts: [
       { label: "The rule", value: "ceil(log2(players))", note: "Rounded up." },
       { label: "16 players", value: "4 rounds" },
@@ -155,24 +155,24 @@ export const GUIDE_PAGES: Page[] = [
   {
     slug: "guide/group-stage-tiebreakers-explained",
     kind: "guide",
-    title: "Group Stage Tiebreakers Explained — Head-to-Head and the Rest",
+    title: "Group Stage Tiebreakers Explained: Head-to-Head and More",
     h1: "Group stage tiebreakers explained",
     description:
       "How teams level on points are separated: head-to-head among the tied teams only, then score difference. Why order matters, and the three-way tie.",
     lede:
-      "Two teams level on points are separated by a list of criteria applied in order. Which criteria, and in which order, is a decision — and it is the decision that determines who goes through, so it is worth making before the tournament rather than during the argument.",
+      "Two teams level on points are separated by a list of criteria applied in order. Which criteria, and in which order, is a decision, and it is the decision that determines who goes through, so it is worth making before the tournament rather than during the argument.",
     sections: [
       {
         heading: "The usual order",
         body: [
           "Points, then head-to-head, then score difference, then points scored. That is the common default and it is what Whistle.day ships with.",
-          "The other common order puts score difference before head-to-head — this is what most football leagues do, including the Premier League. Neither is more correct; they answer different questions. Head-to-head first says \"you beat them, so you finish above them\". Score difference first says \"you had a better tournament overall\".",
+          "The other common order puts score difference before head-to-head: this is what most football leagues do, including the Premier League. Neither is more correct; they answer different questions. Head-to-head first says \"you beat them, so you finish above them\". Score difference first says \"you had a better tournament overall\".",
         ],
       },
       {
         heading: "Head-to-head is computed among the tied teams only",
         body: [
-          "This is the part that is most often got wrong. When three teams are level on points, head-to-head means a mini-table built only from the matches those three played against each other — not their full records.",
+          "This is the part that is most often got wrong. When three teams are level on points, head-to-head means a mini-table built only from the matches those three played against each other, not their full records.",
           "It matters because a team can have a great overall record and a poor one against the specific teams it is tied with. Building the mini-table from the full fixture list would just re-derive the points they were already tied on.",
         ],
       },
@@ -180,22 +180,22 @@ export const GUIDE_PAGES: Page[] = [
         heading: "The three-way tie, and why ranking is recursive",
         body: [
           "Three teams level on points, and the mini-table between them separates one but leaves two still level. What now?",
-          "The correct answer is to apply the whole criteria list again, from the top, to the two that remain — and to rebuild the head-to-head mini-table from just those two, which is now simply the match they played against each other.",
-          "That is why ranking is recursive rather than one comparator chain. A single sort function comparing pairs cannot express \"first separate the group of three, then re-run the whole thing on whatever is still tied\". Getting this wrong produces tables that are subtly inconsistent — A above B, B above C, C above A — which is exactly the sort of thing that gets noticed at a trophy presentation.",
+          "The correct answer is to apply the whole criteria list again, from the top, to the two that remain, and to rebuild the head-to-head mini-table from just those two, which is now simply the match they played against each other.",
+          "That is why ranking is recursive rather than one comparator chain. A single sort function comparing pairs cannot express \"first separate the group of three, then re-run the whole thing on whatever is still tied\". Getting this wrong produces tables that are subtly inconsistent (A above B, B above C, C above A), exactly the sort of thing that gets noticed at a trophy presentation.",
         ],
       },
       {
         heading: "Print the reason",
         body: [
           "Whatever order you choose, the table should say which criterion actually separated a tie. \"Why are they above us\" is the question that starts arguments in a hall, and a table that cannot answer it is a table somebody will dispute.",
-          "Whistle.day records which criteria were applied to place each row and prints them under any table that needed more than points. That sentence is the difference between a table and an argument.",
+          "Whistle.day records which criteria were applied to place each row and prints them under any table that needed more than points, the difference between a table and an argument.",
         ],
       },
       {
         heading: "Comparing across groups is a different problem",
         body: [
-          "When you need the best third-placed teams across several groups — to top up a bracket — you cannot just compare their raw records, because a team in a group of five played four matches and a team in a group of four played three.",
-          "The standard fix, and the one Whistle.day uses, is to disregard results against whoever finished below the smallest group's last place. Everybody is then compared over the same number of matches. It runs tier by tier as well — every group's winner, then every runner-up, then every third — so a runner-up can never outrank a winner.",
+          "When you need the best third-placed teams across several groups, to top up a bracket, you cannot just compare their raw records, because a team in a group of five played four matches and a team in a group of four played three.",
+          "The standard fix, and the one Whistle.day uses, is to disregard results against whoever finished below the smallest group's last place. Everybody is then compared over the same number of matches. It also runs tier by tier: every group's winner, then every runner-up, then every third, so a runner-up can never outrank a winner.",
         ],
       },
     ],
@@ -224,7 +224,7 @@ export const GUIDE_PAGES: Page[] = [
   {
     slug: "guide/how-to-seed-a-bracket",
     kind: "guide",
-    title: "How to Seed a Bracket — Snake Seeding and Bye Placement",
+    title: "How to Seed a Bracket: Snake Seeding and Bye Placement",
     h1: "How to seed a bracket",
     description:
       "Seeding puts the best teams on opposite sides so they meet last. How the standard bracket positions work, and where the byes go.",
@@ -234,15 +234,15 @@ export const GUIDE_PAGES: Page[] = [
       {
         heading: "The standard positions",
         body: [
-          "In an eight-team bracket the first-round pairings are 1 v 8, 4 v 5, 3 v 6, 2 v 7 — in that order down the sheet. Seeds 1 and 2 are in opposite halves, 1 and 4 in opposite quarters, and so on.",
+          "In an eight-team bracket the first-round pairings are 1 v 8, 4 v 5, 3 v 6, 2 v 7, in that order down the sheet. Seeds 1 and 2 are in opposite halves, 1 and 4 in opposite quarters, and so on.",
           "The property this produces: assuming no upsets, the quarter-finals are 1v8, 2v7, 3v6, 4v5; the semi-finals are 1v4 and 2v3; and the final is 1v2. Every round is the best remaining against the worst remaining.",
         ],
       },
       {
         heading: "Where byes go",
         body: [
-          "A bracket holds a power of two and entry lists rarely are one. The difference is made up with byes, and they go to the top seeds — seed 1 first, then 2, then 3.",
-          "This is not just convention. It is the only placement that does not distort the draw: a bye handed to a random position gives a free round to whoever happened to be next to it, which is a bigger advantage than any seeding decision you might make elsewhere.",
+          "A bracket holds a power of two and entry lists rarely are one. The difference is made up with byes, and they go to the top seeds: seed 1 first, then 2, then 3.",
+          "This is not just convention: it is the only placement that does not distort the draw. A bye handed to a random position gives a free round to whoever happened to be next to it, a bigger advantage than any seeding decision you might make elsewhere.",
           "So twelve teams in a bracket of sixteen means the top four seeds skip round one, and the other eight play for the right to meet them.",
         ],
       },
@@ -250,8 +250,8 @@ export const GUIDE_PAGES: Page[] = [
         heading: "Seeding from a group stage",
         body: [
           "When the bracket is fed by groups, the seeding is already decided: group winners are seeded above runners-up, and the layout puts winners against runners-up from different groups.",
-          "The thing to get right is that two teams from the same group should not meet again in the first knockout round — they have just played each other. The standard cross-pairing (winner of A against runner-up of B, winner of B against runner-up of A) handles this for an even number of groups.",
-          "It breaks down when the bracket is topped up with the best third-placed teams, because which groups those come from is not known until the groups have been played, and the bracket is drawn before that. Competitions that care about this — the Euros, for one — solve it with a published table of every possible combination.",
+          "The thing to get right is that two teams from the same group should not meet again in the first knockout round: they have just played each other. The standard cross-pairing (winner of A against runner-up of B, winner of B against runner-up of A) handles this for an even number of groups.",
+          "It breaks down when the bracket is topped up with the best third-placed teams, because which groups those come from is not known until the groups have been played, and the bracket is drawn before that. Competitions that care about this, the Euros for one, solve it with a published table of every possible combination.",
         ],
       },
       {
@@ -264,7 +264,7 @@ export const GUIDE_PAGES: Page[] = [
     faq: [
       {
         q: "What are the first-round pairings for 16 teams?",
-        a: "1v16, 8v9, 5v12, 4v13, 3v14, 6v11, 7v10, 2v15 — which puts 1 and 2 in opposite halves and pairs the best remaining against the worst remaining in every round.",
+        a: "1v16, 8v9, 5v12, 4v13, 3v14, 6v11, 7v10, 2v15, which puts 1 and 2 in opposite halves and pairs the best remaining against the worst remaining in every round.",
       },
       {
         q: "Who gets the byes?",
@@ -286,7 +286,7 @@ export const GUIDE_PAGES: Page[] = [
   {
     slug: "guide/byes-in-a-round-robin",
     kind: "guide",
-    title: "Byes in a Round Robin — Handling an Odd Number of Teams",
+    title: "Byes in a Round Robin: Handling an Odd Number of Teams",
     h1: "Byes in a round robin",
     description:
       "An odd number of teams means one sits out each round. How the rotation works, why it takes an extra round, and why a bye is not a match.",
@@ -301,21 +301,21 @@ export const GUIDE_PAGES: Page[] = [
       {
         heading: "The rotation",
         body: [
-          "The standard method is to add a phantom team — call it \"bye\" — making the field even, and then run the normal circle rotation. Whoever is drawn against the phantom that round sits out.",
+          "The standard method is to add a phantom team (call it \"bye\") to make the field even, then run the normal circle rotation. Whoever is drawn against the phantom that round sits out.",
           "Because the rotation moves every team through every position, each team meets the phantom exactly once, which is why everybody gets exactly one bye and no one gets two.",
         ],
       },
       {
         heading: "Why the fixture count does not change",
         body: [
-          "A bye is not a match. Seven teams still play 21 matches — every pair once — and every team still plays six. The only thing that changes is that it takes seven rounds instead of six, because one of the seven slots in each round is empty.",
+          "A bye is not a match. Seven teams still play 21 matches, every pair once, and every team still plays six. The only thing that changes is that it takes seven rounds instead of six, because one of the seven slots in each round is empty.",
           "So an odd field costs you time, not fairness. Everybody plays the same number of matches against the same opponents.",
         ],
       },
       {
         heading: "A round robin bye is not a bracket bye and not a Swiss bye",
         body: [
-          "Three different things share the word. In a round robin, a bye is a rest — it scores nothing and affects nothing, because everybody gets one.",
+          "Three different things share the word. In a round robin, a bye is a rest: it scores nothing and affects nothing, because everybody gets one.",
           "In a bracket it is a free pass to the next round, and it scores nothing because the round itself was skipped.",
           "In a Swiss it takes the points for a win, because not everybody gets one and the team that did should not be punished in the table for having been the odd one out. Same word, three meanings, and the difference matters when you are looking at why a table came out the way it did.",
         ],
@@ -330,7 +330,7 @@ export const GUIDE_PAGES: Page[] = [
     faq: [
       {
         q: "How many rounds for 7 teams?",
-        a: "Seven — one more than the six an eight-team field would need — because one team sits out each round.",
+        a: "Seven, one more than the six an eight-team field would need, because one team sits out each round.",
       },
       {
         q: "Does a bye count as a win?",
@@ -352,14 +352,14 @@ export const GUIDE_PAGES: Page[] = [
   {
     slug: "guide/group-stage-vs-swiss",
     kind: "guide",
-    title: "Group Stage vs Swiss — Which Format for Your Tournament",
+    title: "Group Stage vs Swiss: Which Format for Your Tournament",
     h1: "Group stage or Swiss?",
     description:
       "Groups guarantee a fixed number of matches and a clean bracket. Swiss handles bigger fields in less time. A decision table and the trade-offs.",
     lede:
       "Groups if the field is small enough to split into pools of four or five and you want a clean bracket afterwards. Swiss if the field is too big for that and you still want nobody knocked out.",
     facts: [
-      { label: "Groups suit", value: "8–32 teams", note: "Pools of four or five, then a playoff." },
+      { label: "Groups suit", value: "8-32 teams", note: "Pools of four or five, then a playoff." },
       { label: "Swiss suits", value: "16+ teams", note: "Where a round robin would be too long." },
       { label: "Groups give", value: "A fixed schedule", note: "Publishable in advance." },
       { label: "Swiss gives", value: "Fewer matches", note: "For the same field size." },
@@ -376,7 +376,7 @@ export const GUIDE_PAGES: Page[] = [
       {
         heading: "The case for Swiss",
         body: [
-          "It scales. Thirty-two teams in groups of four is eight groups and 48 group matches; thirty-two teams in a Swiss is five rounds of sixteen, which is 80 matches — but each team plays five rather than three, and you do not need eight groups' worth of separate tables.",
+          "It scales. Thirty-two teams in groups of four is eight groups and 48 group matches; thirty-two teams in a Swiss is five rounds of sixteen, which is 80 matches, but each team plays five rather than three, and you do not need eight groups' worth of separate tables.",
           "More importantly, it produces a meaningful ranking of the whole field rather than eight separate small ones. If you need to know who finished 12th, groups cannot tell you and Swiss can.",
           "And it self-balances: a team that wins early meets harder opponents, so the record at the end means something in a way a group record does not when one group was much stronger than another.",
         ],
@@ -385,14 +385,14 @@ export const GUIDE_PAGES: Page[] = [
         heading: "The group-of-death problem",
         body: [
           "The main weakness of groups is that the draw decides a lot. Four strong teams in one group means two of them go home while a weaker team advances from elsewhere. Everybody accepts this in football and it is still unfair.",
-          "Swiss does not have this problem by construction, because there is no draw to be unlucky in — you are paired against whoever is on your record.",
+          "Swiss does not have this problem by construction, because there is no draw to be unlucky in: you are paired against whoever is on your record.",
         ],
       },
       {
         heading: "The Swiss weaknesses",
         body: [
           "You cannot publish the schedule. Only round one and the round count, which is a real problem for a tournament where people want to know when they are playing.",
-          "It needs a round to finish before the next can be paired, so a slow court holds up the whole field. Groups do not care — every match in a group can be played whenever a court is free.",
+          "It needs a round to finish before the next can be paired, so a slow court holds up the whole field. Groups do not care: every match in a group can be played whenever a court is free.",
           "And it is less familiar. You will explain it.",
         ],
       },
@@ -407,7 +407,7 @@ export const GUIDE_PAGES: Page[] = [
     faq: [
       {
         q: "Can I run groups and then Swiss?",
-        a: "Yes — stages are an ordered list and any order works. It is unusual but there is nothing stopping it.",
+        a: "Yes, stages are an ordered list and any order works. It is unusual but there is nothing stopping it.",
       },
       {
         q: "Which is faster?",
@@ -425,7 +425,7 @@ export const GUIDE_PAGES: Page[] = [
   {
     slug: "guide/single-vs-double-elimination",
     kind: "guide",
-    title: "Single vs Double Elimination — Which Bracket to Run",
+    title: "Single vs Double Elimination: Which Bracket to Run",
     h1: "Single or double elimination?",
     description:
       "Double elimination costs about twice the matches and almost never produces a winner nobody believes in. When the extra time is worth it.",
@@ -457,7 +457,7 @@ export const GUIDE_PAGES: Page[] = [
         heading: "The middle option nobody considers",
         body: [
           "Groups then a single-elimination playoff usually beats both. It guarantees everybody three matches, the group stage parallelises perfectly across courts, and the bracket at the end is short because only the top teams are in it.",
-          "Eight teams in two groups of four then semi-finals is 16 matches — the same as an eight-team double elimination minus two — and it gives every team three guaranteed games instead of two.",
+          "Eight teams in two groups of four then semi-finals is 16 matches, the same as an eight-team double elimination minus two, and it gives every team three guaranteed games instead of two.",
           "Double elimination is the right answer mainly when the field cannot be split into groups sensibly, or when the convention of the sport expects it, which in esports it does.",
         ],
       },
@@ -473,7 +473,7 @@ export const GUIDE_PAGES: Page[] = [
       },
       {
         q: "What about groups then a knockout?",
-        a: "Usually the best answer for a one-day tournament — more guaranteed matches than double elimination, in less time.",
+        a: "Usually the best answer for a one-day tournament: more guaranteed matches than double elimination, in less time.",
       },
     ],
     related: [
@@ -492,7 +492,7 @@ export const GUIDE_PAGES: Page[] = [
     description:
       "Work out court requirements from your team count and format. Why round robins parallelise and knockouts do not, with worked numbers.",
     lede:
-      "Take the number of matches, divide by the number of courts, multiply by how long a match takes including changeover. That is the floor — and for a knockout it is an optimistic one, because each round has to wait for the one before it.",
+      "Take the number of matches, divide by the number of courts, multiply by how long a match takes including changeover. That is the floor, and for a knockout it is an optimistic one, because each round has to wait for the one before it.",
     generator: { preset: "groups" },
     facts: [
       { label: "Rule of thumb", value: "matches ÷ courts × 25 min" },
@@ -504,14 +504,14 @@ export const GUIDE_PAGES: Page[] = [
         heading: "The arithmetic",
         body: [
           "Twelve teams in three groups of four is 18 group matches plus a playoff. On two courts at 25 minutes a slot that is about four hours; on four courts, about two and a half.",
-          "The 25 minutes is not the match — it is the match plus getting the next pair on, finding the referee and writing the score down. Estimating on match length alone is the single most common way a tournament overruns.",
+          "The 25 minutes is not the match: it is the match plus getting the next pair on, finding the referee, and writing the score down. Estimating on match length alone is the single most common way a tournament overruns.",
         ],
       },
       {
         heading: "Round robins parallelise, knockouts do not",
         body: [
           "In a round robin any match can be played whenever a court is free, so four courts really is about a quarter of the time of one. Doubling the courts genuinely halves the day.",
-          "A knockout cannot do this. The quarter-finals cannot start until the round of sixteen has finished, so the last few rounds run on fewer and fewer courts however many you have. An eight-team knockout on eight courts still takes three rounds — you cannot go faster than the tree.",
+          "A knockout cannot do this. The quarter-finals cannot start until the round of sixteen has finished, so the last few rounds run on fewer and fewer courts however many you have. An eight-team knockout on eight courts still takes three rounds: you cannot go faster than the tree.",
           "The practical consequence: more courts than half your team count is wasted on a knockout, and never wasted on a round robin.",
         ],
       },
@@ -533,11 +533,11 @@ export const GUIDE_PAGES: Page[] = [
     faq: [
       {
         q: "How long does a tournament match take?",
-        a: "Allow 25 minutes per slot for most indoor court sports — the match plus getting the next pair on. Adjust for your sport and check it against last year.",
+        a: "Allow 25 minutes per slot for most indoor court sports: the match plus getting the next pair on. Adjust for your sport and check it against last year.",
       },
       {
         q: "Do more courts always help?",
-        a: "For a round robin or a group stage, yes, almost linearly. For a knockout, no — past half your team count the extra courts sit empty.",
+        a: "For a round robin or a group stage, yes, almost linearly. For a knockout, no: past half your team count the extra courts sit empty.",
       },
     ],
     related: [
@@ -550,7 +550,7 @@ export const GUIDE_PAGES: Page[] = [
   {
     slug: "guide/how-to-run-a-one-day-tournament",
     kind: "guide",
-    title: "How to Run a One-Day Tournament — A Practical Walkthrough",
+    title: "How to Run a One-Day Tournament: A Practical Walkthrough",
     h1: "How to run a one-day tournament",
     description:
       "Everything from picking a format to the trophy presentation: timings, court allocation, results, and the things that actually go wrong.",
@@ -559,15 +559,15 @@ export const GUIDE_PAGES: Page[] = [
     howTo: [
       {
         name: "Work backwards from when you have to be out",
-        text: "Take your finish time, subtract the presentation, subtract a buffer of at least half an hour, and that is the tournament. Matches available equals hours × courts × slots per hour — that number decides your format.",
+        text: "Take your finish time, subtract the presentation, subtract a buffer of at least half an hour, and that is the tournament. Matches available equals hours × courts × slots per hour, and that number decides your format.",
       },
       {
         name: "Pick a format that guarantees matches",
-        text: "Groups then a playoff for most fields — it guarantees every team three matches before anybody is knocked out. Swiss if the field is large, everyone-plays-everyone if it's small and the morning is long. Avoid a straight knockout unless the day is genuinely short.",
+        text: "Groups then a playoff for most fields: it guarantees every team three matches before anybody is knocked out. Swiss if the field is large, everyone-plays-everyone if it's small and the morning is long. Avoid a straight knockout unless the day is genuinely short.",
       },
       {
         name: "Build in slack you will need",
-        text: "Something will overrun — a long match, a first-aid stop, a late arrival. Schedule a gap in the middle, such as lunch or the break before the playoff, so it can absorb whatever the morning lost.",
+        text: "Something will overrun: a long match, a first-aid stop, a late arrival. Schedule a gap in the middle, such as lunch or the break before the playoff, so it can absorb whatever the morning lost.",
       },
       {
         name: "Decide who enters results, before the day",
@@ -579,7 +579,7 @@ export const GUIDE_PAGES: Page[] = [
       },
       {
         name: "Set the tiebreakers before you need them",
-        text: "Decide the order — head-to-head or score difference first — and publish it with the fixtures, before two teams finish level and it looks like the tiebreaker was picked to favour somebody.",
+        text: "Decide the order (head-to-head or score difference first) and publish it with the fixtures, before two teams finish level and it looks like the tiebreaker was picked to favour somebody.",
       },
       {
         name: "The last half hour",
@@ -606,7 +606,7 @@ export const GUIDE_PAGES: Page[] = [
         heading: "Build in slack you will need",
         body: [
           "Something will overrun. A five-set match, a first-aid stop, a team stuck in traffic. If your schedule has no slack, the overrun compounds all day and you finish an hour late.",
-          "The usual fix is a scheduled gap in the middle — lunch, or a break between the group stage and the playoff — which absorbs whatever the morning lost. It also gives you the moment to redraw if you have to.",
+          "The usual fix is a scheduled gap in the middle (lunch, or a break between the group stage and the playoff) that absorbs whatever the morning lost. It also gives you the moment to redraw if you have to.",
         ],
       },
       {
@@ -626,7 +626,7 @@ export const GUIDE_PAGES: Page[] = [
       {
         heading: "The tiebreakers, before you need them",
         body: [
-          "Decide the order — head-to-head or score difference first — and publish it with the fixtures. Deciding it after two teams have finished level is how a tournament ends in an argument, because whichever you pick will look like it was picked to favour somebody.",
+          "Decide the order (head-to-head or score difference first) and publish it with the fixtures. Deciding it after two teams have finished level is how a tournament ends in an argument, because whichever you pick will look like it was picked to favour somebody.",
         ],
       },
       {
@@ -661,10 +661,10 @@ export const GUIDE_PAGES: Page[] = [
   {
     slug: "guide/how-to-organize-a-7-team-tournament",
     kind: "guide",
-    title: "How to Organize a 7 Team Tournament — Formats Compared",
+    title: "How to Organize a 7 Team Tournament: Formats Compared",
     h1: "How to organize a 7 team tournament",
     description:
-      "Seven doesn't halve and doesn't group evenly. Round robin, two uneven groups or a bracket with one bye — match and round counts for each, and which to pick.",
+      "Seven doesn't halve and doesn't group evenly. Round robin, two uneven groups or a bracket with one bye: match and round counts for each, and which to pick.",
     lede:
       "Seven is the field size that exposes what every format assumes. It is not a power of two, so a bracket needs a bye; it does not split in half, so groups come out uneven. Three formats actually work for seven teams, and which is right depends on how much time there is, not on a rule about sevens.",
     generator: { preset: "groups" },
@@ -677,21 +677,21 @@ export const GUIDE_PAGES: Page[] = [
       {
         heading: "Round robin: every team plays six matches",
         body: [
-          "Everyone plays everyone once — 21 matches. With an odd number of teams, one team sits out each round rather than being eliminated, so it takes seven rounds rather than six, and everybody still plays six matches by the end.",
+          "Everyone plays everyone once: 21 matches. With an odd number of teams, one team sits out each round rather than being eliminated, so it takes seven rounds rather than six, and everybody still plays six matches by the end.",
           "This is the format that produces the fairest table, because it is the only one where the ranking is not affected by who happened to meet whom. It is also the most matches by a wide margin, so it needs the most time: at 25 minutes a slot and two courts, that is close to four and a half hours.",
         ],
       },
       {
         heading: "Two groups of four and three, then a playoff",
         body: [
-          "Split seven into two groups — one of four, one of three — and it plays out as 9 pool matches (6 in the group of four, 3 in the group of three) before a playoff seeded from where each team finished. That is under half the matches of a full round robin.",
+          "Split seven into two groups, one of four and one of three, and it plays out as 9 pool matches (6 in the group of four, 3 in the group of three) before a playoff seeded from where each team finished. That is under half the matches of a full round robin.",
           "The uneven split is worth saying out loud before the day starts: the group of three plays two matches each, the group of four plays three, and a team in the smaller group reaches the same playoff on less evidence. Nobody minds this if it is mentioned in advance; it reads as unfair if it is discovered on the table.",
         ],
       },
       {
         heading: "A single-elimination bracket, if the day is short",
         body: [
-          "Seven does not fill a bracket — the nearest size is eight, so one team gets a bye straight into round two while the other six play three first-round matches. Three rounds, seven matches in total including third place.",
+          "Seven does not fill a bracket: the nearest size is eight, so one team gets a bye straight into round two while the other six play three first-round matches. Three rounds, seven matches in total including third place.",
           "This is the fastest option and the one where most teams play once and go home. It is the right call for a short evening, and the wrong one for a field that has driven over expecting more than one match each.",
         ],
       },
@@ -699,7 +699,7 @@ export const GUIDE_PAGES: Page[] = [
         heading: "Which one, in practice",
         body: [
           "If the day has the time, round robin: it is the most matches, the fairest table, and there is no bracket seeding to argue about afterwards.",
-          "If the day is tighter, two groups of four and three with a playoff — flag the uneven split up front and it is not a problem. Save a straight knockout for when there genuinely is not time for anything else; a field of seven that drove over to play one match is the outcome worth avoiding.",
+          "If the day is tighter, two groups of four and three with a playoff. Flag the uneven split up front and it is not a problem. Save a straight knockout for when there genuinely is not time for anything else; a field of seven that drove over to play one match is the outcome worth avoiding.",
         ],
       },
     ],
@@ -710,7 +710,7 @@ export const GUIDE_PAGES: Page[] = [
       },
       {
         q: "Does a team get a bye with 7 teams?",
-        a: "In a round robin, one team sits out each round in rotation — nobody is eliminated, everybody still plays six matches. In a bracket, one team skips straight to round two because seven does not fill an eight-team draw.",
+        a: "In a round robin, one team sits out each round in rotation: nobody is eliminated, everybody still plays six matches. In a bracket, one team skips straight to round two because seven does not fill an eight-team draw.",
       },
     ],
     related: [
@@ -725,7 +725,7 @@ export const GUIDE_PAGES: Page[] = [
   {
     slug: "guide/how-to-organize-a-5-team-tournament",
     kind: "guide",
-    title: "How to Organize a 5 Team Tournament — Formats Compared",
+    title: "How to Organize a 5 Team Tournament: Formats Compared",
     h1: "How to organize a 5 team tournament",
     description:
       "Five is short enough that round robin usually wins outright. Match and round counts for round robin, two thin groups, and a bracket where three of five teams start on a bye.",
@@ -741,28 +741,28 @@ export const GUIDE_PAGES: Page[] = [
       {
         heading: "Round robin: ten matches, and it is over",
         body: [
-          "Everyone plays everyone once — 10 matches, each team playing four. Odd field, so one team sits out each round rather than being eliminated, which takes it to five rounds. At 25 minutes a slot on two courts, that is a little over two hours — short enough that there is rarely a reason to reach for anything else.",
+          "Everyone plays everyone once: 10 matches, each team playing four. Odd field, so one team sits out each round rather than being eliminated, which takes it to five rounds. At 25 minutes a slot on two courts, that is a little over two hours, short enough that there is rarely a reason to reach for anything else.",
           "This is also the fairest table of the three: every team has played every other team, so there is nothing left to argue about at the end.",
         ],
       },
       {
-        heading: "Two groups of three and two — and why it rarely pays off at five",
+        heading: "Two groups of three and two, and why it rarely pays off at five",
         body: [
-          "Split five into a group of three and a group of two and the pool stage is 4 matches: 3 in the group of three, 1 in the group of two. That saves six matches against a full round robin, but a group of two is barely a group — one match decides who tops it, with no second match to correct a bad day.",
+          "Split five into a group of three and a group of two and the pool stage is 4 matches: 3 in the group of three, 1 in the group of two. That saves six matches against a full round robin, but a group of two is barely a group: one match decides who tops it, with no second match to correct a bad day.",
           "At larger field sizes this trade is worth making. At five, it rarely is: the time saved is small and the table it produces is thinner than round robin's for that saving.",
         ],
       },
       {
         heading: "A bracket gives three of five teams a bye",
         body: [
-          "Five does not fill an eight-team draw, and byeCount grows fast relative to a small field: three of the five teams skip straight to the semi-final, and only one first-round match is actually played, between the remaining two. Three rounds, five matches including third place.",
+          "Five does not fill an eight-team draw, and the bye count grows fast relative to a small field: three of the five teams skip straight to the semi-final, and only one first-round match is actually played, between the remaining two. Three rounds, five matches including third place.",
           "That is the fastest route through five teams, and also the one where three-fifths of the field does not play until the final four. Fine for a short evening where the alternative is not playing at all; a poor choice for a field that turned up expecting more than one match.",
         ],
       },
       {
         heading: "Which one, in practice",
         body: [
-          "Round robin, almost every time. Ten matches is short enough that the usual reasons to shorten a tournament — a hall booking, a limited window — rarely apply at five teams, and it is strictly the most matches and the fairest table for the time it costs.",
+          "Round robin, almost every time. Ten matches is short enough that the usual reasons to shorten a tournament (a hall booking, a limited window) rarely apply at five teams, and it is strictly the most matches and the fairest table for the time it costs.",
           "Reach for groups or a bracket only when the day is genuinely constrained to under two hours, and know what each gives up: groups thin out the smaller pool to one deciding match, and a bracket leaves most of the field waiting until the semis.",
         ],
       },
@@ -774,7 +774,7 @@ export const GUIDE_PAGES: Page[] = [
       },
       {
         q: "How many byes does a 5-team bracket have?",
-        a: "Three. Five does not fill an eight-team draw, so three teams skip straight to the semi-final and only one match — between the other two — is played in round one.",
+        a: "Three. Five does not fill an eight-team draw, so three teams skip straight to the semi-final and only one match, between the other two, is played in round one.",
       },
     ],
     related: [
@@ -793,38 +793,38 @@ export const GUIDE_PAGES: Page[] = [
     description:
       "Who actually sponsors a one-day club tournament, what to offer them, roughly what to charge, and a message that gets a reply.",
     lede:
-      "The businesses that say yes to sponsoring a club tournament are the ones already selling to the people in the hall — a sports shop, a physio, a café near the venue, a business run by someone's parent — not a national brand asked for \"exposure\".",
+      "The businesses that say yes to sponsoring a club tournament are the ones already selling to the people in the hall: a sports shop, a physio, a café near the venue, a business run by someone's parent, not a national brand asked for \"exposure\".",
     facts: [
-      { label: "Logo slot", value: "£50–150", note: "One sponsor, one day." },
-      { label: "Title sponsor", value: "£150–400", note: "Logo, naming rights, and a banner." },
-      { label: "Ask this far out", value: "4–6 weeks", note: "Sponsors budget in advance." },
+      { label: "Logo slot", value: "£50-150", note: "One sponsor, one day." },
+      { label: "Title sponsor", value: "£150-400", note: "Logo, naming rights, and a banner." },
+      { label: "Ask this far out", value: "4-6 weeks", note: "Sponsors budget in advance." },
     ],
     sections: [
       {
         heading: "Who actually says yes",
         body: [
-          "Clubs overestimate how much a business needs to \"get\" sports to sponsor a one-day tournament. The realistic list starts with anyone already selling to the same crowd: the shop that strings rackets, the physio or gym up the road, the café or pub closest to the venue — an easy pitch when forty players are eating lunch there anyway.",
-          "The highest conversion rate by far is a business run by a club member or a player's parent, and it's the one most clubs skip because asking feels like trading on the relationship. It isn't — it's the easiest sale on the list, because the trust is already there.",
-          "After that: local trade services that already sponsor kids' teams for visibility — estate agents, insurance and financial advisors, car dealers, tradespeople. Weakest is a national brand asked for \"exposure\" — they want reach across many events, not one hall for one Saturday, and that ask mostly wastes the time spent on it.",
+          "Clubs overestimate how much a business needs to \"get\" sports to sponsor a one-day tournament. The realistic list starts with anyone already selling to the same crowd: the shop that strings rackets, the physio or gym up the road, the café or pub closest to the venue, an easy pitch when forty players are eating lunch there anyway.",
+          "The highest conversion rate by far is a business run by a club member or a player's parent, and it's the one most clubs skip because asking feels like trading on the relationship. It isn't: it's the easiest sale on the list, because the trust is already there.",
+          "After that come local trade services that already sponsor kids' teams for visibility: estate agents, insurance and financial advisors, car dealers, tradespeople. Weakest is a national brand asked for \"exposure\": they want reach across many events, not one hall for one Saturday, and that ask mostly wastes the time spent on it.",
         ],
       },
       {
         heading: "What you're actually selling",
         body: [
           "\"Exposure\" has no price a business can act on. Break it into assets instead: a logo on the projector's closing screen, rotating in front of everyone in the hall all day; a logo on the printed draw sheet or results board; one line in the pre-event and results social posts; a named mention at the trophy presentation.",
-          "Tiering these gives a business a reason to pay more without forcing a negotiation over price. A \"title\" tier — the tournament takes the sponsor's name, plus a banner at the venue — sits above a \"supporting\" tier that is the logo alone. Anchoring on the title price makes the logo-only tier read as the cheap option.",
+          "Tiering these gives a business a reason to pay more without forcing a negotiation over price. A \"title\" tier (the tournament takes the sponsor's name, plus a banner at the venue) sits above a \"supporting\" tier that is the logo alone. Anchoring on the title price makes the logo-only tier read as the cheap option.",
         ],
       },
       {
         heading: "What to charge",
         body: [
-          "For a single club day — not a multi-day or televised event — local sponsors are used to figures like £50–150 for a logo slot and £150–400 for a title sponsorship. Those numbers are low enough that one person at a small business can say yes without asking anyone above them, which matters: a sponsorship that needs approval from someone who isn't in the room rarely closes in time for the event.",
+          "For a single club day, not a multi-day or televised event, local sponsors are used to figures like £50-150 for a logo slot and £150-400 for a title sponsorship. Those numbers are low enough that one person at a small business can say yes without asking anyone above them, which matters: a sponsorship that needs approval from someone who isn't in the room rarely closes in time for the event.",
         ],
       },
       {
         heading: "Timing and who asks matters more than the pitch",
         body: [
-          "Ask four to six weeks before the event, not the week before — sponsors budget this in advance, and a rushed ask reads as low-value regardless of what's offered.",
+          "Ask four to six weeks before the event, not the week before: sponsors budget this in advance, and a rushed ask reads as low-value regardless of what's offered.",
           "Whoever already has a relationship with the business should make the ask, even briefly. A cold message signed \"the club\" converts far worse than one that opens with a first name and a reason the sender already knows the person.",
         ],
       },
@@ -843,7 +843,7 @@ export const GUIDE_PAGES: Page[] = [
       {
         heading: "The renewal is easier than the first sale",
         body: [
-          "Send the sponsor a photo of their logo on the actual screen or banner, plus how many people were there, within a few days of the event — proof the money did something, not just a thank-you.",
+          "Send the sponsor a photo of their logo on the actual screen or banner, plus how many people were there, within a few days of the event, proof the money did something and not just a thank-you.",
           "Ask for next season right after this one, while the event is still recent, rather than months later when it has to be re-pitched from scratch.",
         ],
       },
@@ -851,7 +851,7 @@ export const GUIDE_PAGES: Page[] = [
     faq: [
       {
         q: "How much should I charge a sponsor for a one-day tournament?",
-        a: "Local sponsors are used to £50–150 for a logo slot and £150–400 for a title sponsorship of a small club tournament. Price low enough that one person at the business can say yes without approval from someone who isn't in the room.",
+        a: "Local sponsors are used to £50-150 for a logo slot and £150-400 for a title sponsorship of a small club tournament. Price low enough that one person at the business can say yes without approval from someone who isn't in the room.",
       },
       {
         q: "When should I start asking for sponsors?",
@@ -859,7 +859,7 @@ export const GUIDE_PAGES: Page[] = [
       },
       {
         q: "Who should send the sponsorship ask?",
-        a: "Whoever already has a relationship with the business — a club member, a player's parent — rather than a generic message from \"the club\". It's the single biggest factor in whether the ask converts.",
+        a: "Whoever already has a relationship with the business (a club member, a player's parent) rather than a generic message from \"the club\". It's the single biggest factor in whether the ask converts.",
       },
     ],
     related: [

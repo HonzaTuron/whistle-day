@@ -31,12 +31,12 @@ export const COMPARISON_PAGES: Page[] = [
   {
     slug: "vs/challonge",
     kind: "comparison",
-    title: "Whistle.day vs Challonge — Free Alternative, No Ads, No Account",
+    title: "Whistle.day vs Challonge: Free Alternative, No Ads, No Account",
     h1: "Whistle.day vs Challonge",
     description:
       "A free Challonge alternative with no ads and no signup, built to run the day rather than just draw the bracket. An honest comparison.",
     lede:
-      "Challonge is the default answer for \"free bracket maker\" and it is good at that job. Whistle.day is aimed at the four hours after the bracket is drawn — courts, live scores, a projector in the hall — and it does not put ads or a signup wall in front of any of it.",
+      "Challonge is the default answer for \"free bracket maker\" and it is good at that job. Whistle.day is aimed at the four hours after the bracket is drawn: courts, live scores, a projector in the hall. It does not put ads or a signup wall in front of any of it.",
     sections: [
       {
         heading: "Where Whistle.day is different",
@@ -44,9 +44,9 @@ export const COMPARISON_PAGES: Page[] = [
           "No account to start. The wizard works immediately; an email can be attached afterwards if you want to open the tournament on another device.",
           "No ads anywhere, including on the public views. This is the reason most people go looking for a Challonge alternative in the first place.",
           "A projector view built for a hall. A screen that rotates through live matches, group tables, the bracket and each court's schedule, sized to be read from across a room, that nobody has to stand and drive.",
-          "Court scheduling. Matches are assigned to courts and times, and each court's upcoming matches go on the wall — which is the part of running a physical tournament that a bracket image does not help with at all.",
+          "Court scheduling. Matches are assigned to courts and times, and each court's upcoming matches go on the wall, which is the part of running a physical tournament that a bracket image does not help with at all.",
           "Staged formats that seed themselves. Groups feeding a playoff, with the bracket drawn in advance and filling itself in as each group's table becomes final.",
-          "A phone per court. A referee scans a QR code and runs their own court — no account, no name typed into a form — so results arrive from the courts rather than queueing at one person's desk.",
+          "A phone per court. A referee scans a QR code and runs their own court (no account, no name typed into a form), so results arrive from the courts rather than queueing at one person's desk.",
           "It keeps scoring with no signal. Results queue on the device and send themselves when the wifi comes back, which in a sports hall is not a hypothetical.",
         ],
       },
@@ -86,7 +86,7 @@ export const COMPARISON_PAGES: Page[] = [
       },
       {
         q: "Does Whistle.day have an API?",
-        a: "Yes — it is a PocketBase backend with a documented REST API, plus a public read-only endpoint for the display view.",
+        a: "Yes. It is a PocketBase backend with a documented REST API, plus a public read-only endpoint for the display view.",
       },
     ],
     related: [
@@ -100,7 +100,7 @@ export const COMPARISON_PAGES: Page[] = [
   {
     slug: "vs/toornament",
     kind: "comparison",
-    title: "Whistle.day vs Toornament — Simpler, Free, Built for a Hall",
+    title: "Whistle.day vs Toornament: Simpler, Free, Built for a Hall",
     h1: "Whistle.day vs Toornament",
     description:
       "Toornament is a full esports platform with registration and permissions. Whistle.day is a smaller tool for running a physical tournament day.",
@@ -111,7 +111,7 @@ export const COMPARISON_PAGES: Page[] = [
         heading: "Different scopes, not different quality",
         body: [
           "If you are running a competition with a registration period, an entry list to approve, staff with different permissions and a public tournament page, Toornament is built for that and Whistle.day is not.",
-          "If you are running a hall on Saturday, most of that machinery is overhead — and setting it up is the thing that stops somebody using proper software at all and going back to a spreadsheet.",
+          "If you are running a hall on Saturday, most of that machinery is overhead, and setting it up is the thing that stops somebody using proper software at all and going back to a spreadsheet.",
         ],
       },
       {
@@ -119,7 +119,7 @@ export const COMPARISON_PAGES: Page[] = [
         body: [
           "Setup is four questions on a phone: a name, the teams, the courts, and how long the day should be. There is nothing to configure before the tournament exists.",
           "The format screen quotes matches and hours rather than asking about pool counts and advancement rules, which are answers to a question the organiser has not asked yet.",
-          "The projector view. A self-rotating screen for a hall, with court schedules, live scores and tables — the physical-venue half that an online-first platform does not need to solve.",
+          "The projector view. A self-rotating screen for a hall, with court schedules, live scores and tables: the physical-venue half that an online-first platform does not need to solve.",
           "No account before you start.",
         ],
       },
@@ -136,7 +136,7 @@ export const COMPARISON_PAGES: Page[] = [
     faq: [
       {
         q: "Can Whistle.day handle a multi-day tournament?",
-        a: "Yes in the sense that nothing expires, but there is no calendar or day-by-day scheduling — matches carry a time and that is it.",
+        a: "Yes in the sense that nothing expires, but there is no calendar or day-by-day scheduling. Matches carry a time and that is it.",
       },
       {
         q: "Can players register themselves?",
@@ -149,12 +149,12 @@ export const COMPARISON_PAGES: Page[] = [
   {
     slug: "vs/battlefy",
     kind: "comparison",
-    title: "Whistle.day vs Battlefy — Esports Platform or a Tool for the Room",
+    title: "Whistle.day vs Battlefy: Esports Platform or a Tool for the Room",
     h1: "Whistle.day vs Battlefy",
     description:
       "Battlefy hosts online esports competitions end to end. Whistle.day runs a tournament happening in a room, with a screen on the wall.",
     lede:
-      "Battlefy is an esports hosting platform — registration, brackets, match reporting, the public page. Whistle.day runs the day in front of you, including a LAN event, and stops well short of being a platform.",
+      "Battlefy is an esports hosting platform: registration, brackets, match reporting, the public page. Whistle.day runs the day in front of you, including a LAN event, and stops well short of being a platform.",
     sections: [
       {
         heading: "Online tournaments vs tournaments in a room",
@@ -196,12 +196,12 @@ export const COMPARISON_PAGES: Page[] = [
   {
     slug: "vs/brackethq",
     kind: "comparison",
-    title: "Whistle.day vs Bracket HQ — Beyond Drawing the Bracket",
+    title: "Whistle.day vs Bracket HQ: Beyond Drawing the Bracket",
     h1: "Whistle.day vs Bracket HQ",
     description:
       "Bracket HQ makes and shares a bracket quickly. Whistle.day draws it too, then schedules courts, takes scores and puts it on a screen.",
     lede:
-      "Bracket HQ is a fast, clean bracket maker — you want a bracket, you get a bracket. Whistle.day starts there and keeps going into the part where the tournament is actually played.",
+      "Bracket HQ is a fast, clean bracket maker: you want a bracket, you get a bracket. Whistle.day starts there and keeps going into the part where the tournament is actually played.",
     sections: [
       {
         heading: "If the bracket is all you need",
@@ -224,7 +224,7 @@ export const COMPARISON_PAGES: Page[] = [
     faq: [
       {
         q: "Is Whistle.day harder to set up?",
-        a: "Marginally — it asks for courts and how long the day should be as well as the teams. That is four questions rather than two.",
+        a: "Marginally. It asks for courts and how long the day should be as well as the teams, which is four questions rather than two.",
       },
     ],
     related: [
@@ -237,7 +237,7 @@ export const COMPARISON_PAGES: Page[] = [
   {
     slug: "vs/tournamentsoftware-com",
     kind: "comparison",
-    title: "Whistle.day vs Tournament Software — For Club Days, Not Federations",
+    title: "Whistle.day vs Tournament Software: For Club Days, Not Federations",
     h1: "Whistle.day vs tournamentsoftware.com",
     description:
       "Tournament Software runs federation-level racket sport competitions with rankings and licences. Whistle.day runs a club day off a phone.",
@@ -253,7 +253,7 @@ export const COMPARISON_PAGES: Page[] = [
       {
         heading: "When Whistle.day is the better tool",
         body: [
-          "A club tournament, a school event, a corporate day, an internal ladder — anything where nobody is checking a licence number. Setup is four questions rather than an event configuration, and it runs entirely from a phone.",
+          "A club tournament, a school event, a corporate day, an internal ladder: anything where nobody is checking a licence number. Setup is four questions rather than an event configuration, and it runs entirely from a phone.",
           "The draw sheet goes on a screen in the hall and fills itself in as the desk enters results, which saves the walk over to write a name into a box.",
         ],
       },
@@ -261,7 +261,7 @@ export const COMPARISON_PAGES: Page[] = [
         heading: "What Whistle.day does not have",
         body: [
           "Member licences, national rankings, sanctioning, or entry systems tied to a federation.",
-          "Multi-event days with entries across singles, doubles and mixed in one entry form — each event is a separate tournament.",
+          "Multi-event days with entries across singles, doubles and mixed in one entry form: each event is a separate tournament.",
           "Consolation draws and plate competitions.",
         ],
       },
@@ -283,7 +283,7 @@ export const COMPARISON_PAGES: Page[] = [
   {
     slug: "vs/rankedin",
     kind: "comparison",
-    title: "Whistle.day vs Rankedin — Club Platform or One-Day Tool",
+    title: "Whistle.day vs Rankedin: Club Platform or One-Day Tool",
     h1: "Whistle.day vs Rankedin",
     description:
       "Rankedin is a club and league platform for racket sports with player profiles and rankings. Whistle.day is a free tool for running one day.",
@@ -293,7 +293,7 @@ export const COMPARISON_PAGES: Page[] = [
       {
         heading: "The difference is whether players have accounts",
         body: [
-          "On a club platform, a player is a persistent identity — a profile, a history, a rating. That is what makes leagues and ladders work over a season, and it is genuinely valuable if you run a club.",
+          "On a club platform, a player is a persistent identity: a profile, a history, a rating. That is what makes leagues and ladders work over a season, and it is genuinely valuable if you run a club.",
           "In Whistle.day a team is a row in one tournament. Nobody signs up, nothing follows them to the next event, and there is no rating. That is a real limitation and it is also why the wizard takes a minute.",
         ],
       },
@@ -329,7 +329,7 @@ export const COMPARISON_PAGES: Page[] = [
   {
     slug: "vs/tournify",
     kind: "comparison",
-    title: "Whistle.day vs Tournify — Two Tools for the Same Kind of Day",
+    title: "Whistle.day vs Tournify: Two Tools for the Same Kind of Day",
     h1: "Whistle.day vs Tournify",
     description:
       "Both run one-day tournaments with a live screen for the venue. The differences are pricing, format flexibility and how setup works.",
@@ -340,17 +340,17 @@ export const COMPARISON_PAGES: Page[] = [
         heading: "Where Whistle.day is different",
         body: [
           "Free for everything except sponsor logos on the projector's closing panel. There is no team cap, no tournament cap and no feature behind a tier.",
-          "Stages in any order, with later stages seeded from earlier ones' tables — groups then Swiss then a playoff is expressible, not just groups then a playoff.",
+          "Stages in any order, with later stages seeded from earlier ones' tables: groups then Swiss then a playoff is expressible, not just groups then a playoff.",
           "Swiss as a first-class format, with the next round drawing itself when the previous one finishes.",
           "Setup asks how long the day should be rather than how many groups you want, and quotes matches and hours against the teams and courts you entered.",
-          "Self-hostable — the backend is a single Go binary.",
+          "Self-hostable: the backend is a single Go binary.",
         ],
       },
       {
         heading: "Where you should look at Tournify",
         body: [
           "It is a mature product with years of one-day tournaments behind it, and maturity is worth something on the day. Whistle.day is new; the smoke suite plays a full tournament out end to end on every change, but that is not the same as a thousand Saturdays.",
-          "If you need something specific — a particular sport's scoring rules, a particular kind of export — check whether it is there before switching.",
+          "If you need something specific (a particular sport's scoring rules, a particular kind of export), check whether it is there before switching.",
         ],
       },
       CHECK_FOR_YOURSELF,
@@ -374,24 +374,24 @@ export const COMPARISON_PAGES: Page[] = [
   {
     slug: "alternatives/free-tournament-bracket-software",
     kind: "roundup",
-    title: "Free Tournament Bracket Software — The Honest Roundup",
+    title: "Free Tournament Bracket Software: The Honest Roundup",
     h1: "Free tournament bracket software",
     description:
       "What the free tournament tools are actually good at, where each one fits, and which to pick for an online event or a day in a hall.",
     lede:
-      "Most of these tools are free at the size an amateur tournament runs at. The useful question is not which is cheapest but which is shaped like your day — and the biggest fork is whether the tournament is online or in a room.",
+      "Most of these tools are free at the size an amateur tournament runs at. The useful question is not which is cheapest but which is shaped like your day, and the biggest fork is whether the tournament is online or in a room.",
     sections: [
       {
         heading: "The first question: who enters the results?",
         body: [
-          "If the players do, because the tournament is spread across the internet, you want a platform with participant accounts and match reporting — Challonge, Toornament and Battlefy are all built this way.",
+          "If the players do, because the tournament is spread across the internet, you want a platform with participant accounts and match reporting. Challonge, Toornament and Battlefy are all built this way.",
           "If one person does, because everybody is in the same building, you want something that makes that person's afternoon fast: courts, a scoring screen that works on a phone, and a display for the room. That is a different tool, and there are far fewer of them.",
         ],
       },
       {
         heading: "The second question: is a bracket the whole job?",
         body: [
-          "Sometimes it genuinely is. You want sixteen names in a knockout and a link to share — a dedicated bracket maker like Bracket HQ does that in under a minute and anything more is overhead.",
+          "Sometimes it genuinely is. You want sixteen names in a knockout and a link to share, and a dedicated bracket maker like Bracket HQ does that in under a minute; anything more is overhead.",
           "It stops being the whole job the moment you have group stages feeding a playoff, more than one court running at once, or a table that people will argue about.",
         ],
       },
@@ -406,7 +406,7 @@ export const COMPARISON_PAGES: Page[] = [
         heading: "Where Whistle.day fits",
         body: [
           "A tournament in a building, run from a phone, with a screen on the wall. Groups, knockouts, double elimination, Swiss, and stages in any order. Free with no account, no ads and no cap.",
-          "Not the right choice if you need player registration, self-reported scores, ratings, or a public tournament directory — none of which exist.",
+          "Not the right choice if you need player registration, self-reported scores, ratings, or a public tournament directory. None of that exists.",
         ],
       },
       CHECK_FOR_YOURSELF,

@@ -27,19 +27,19 @@ function printableBracket(teams: number): Page {
   return {
     slug: `printable/${teams}-team-bracket`,
     kind: "printable",
-    title: `Printable ${teams} Team Bracket — Free PDF Sheet`,
+    title: `Printable ${teams} Team Bracket: Free PDF Sheet`,
     h1: `Printable ${teams} team bracket`,
     description:
       `A blank ${teams} team knockout bracket to print and fill in: ${matches} matches, ruled score boxes. Free, no signup.`,
     lede:
-      `A blank bracket for ${teams} teams — ${knockoutPath(teams).join(", then ")} — with ruled boxes to write scores into. Put your own team names on it first, or print it numbered and fill it in at the draw.`,
+      `A blank bracket for ${teams} teams (${knockoutPath(teams).join(", then ")}) with ruled boxes to write scores into. Put your own team names on it first, or print it numbered and fill it in at the draw.`,
     generator: { preset: "knockout", teams },
     facts: factsFor("knockout", teams),
     sections: [
       {
         heading: "Print it, or run it",
         body: [
-          `The sheet below is the same draw the software would produce for ${teams} teams, because it is drawn by the same generator rather than by a separate bit of code that makes brackets for pictures. ${byes > 0 ? `That includes the ${plural(byes, "bye")} — the bracket holds ${bracketSize(teams)}, and the spare positions go to the top seeds.` : `${teams} is a power of two, so the bracket is exactly full.`}`,
+          `The sheet below is the same draw the software would produce for ${teams} teams, because it is drawn by the same generator rather than by a separate bit of code that makes brackets for pictures. ${byes > 0 ? `That includes the ${plural(byes, "bye")}: the bracket holds ${bracketSize(teams)}, and the spare positions go to the top seeds.` : `${teams} is a power of two, so the bracket is exactly full.`}`,
           "Paper is the right answer more often than software people admit: it does not need wifi, it does not need a charger, and it can be pinned to a wall where everybody walks past. What it cannot do is rebuild a table when somebody corrects a score two hours later, which is the point at which this stops being enough.",
         ],
       },
@@ -54,7 +54,7 @@ function printableBracket(teams: number): Page {
     faq: [
       {
         q: `How many matches in a ${teams} team bracket?`,
-        a: `${matches} — one per eliminated team${teams >= 4 ? ", plus a third-place match" : ""}.`,
+        a: `${matches}, one per eliminated team${teams >= 4 ? ", plus a third-place match" : ""}.`,
       },
       {
         q: "Can I put my own team names on it?",
@@ -62,7 +62,7 @@ function printableBracket(teams: number): Page {
       },
       {
         q: "Is there a PDF?",
-        a: "Print to PDF from your browser — the sheet has a print stylesheet, so what comes out is the bracket and nothing else.",
+        a: "Print to PDF from your browser. The sheet has a print stylesheet, so what comes out is the bracket and nothing else.",
       },
     ],
     related: [
@@ -85,7 +85,7 @@ function printableRoundRobin(teams: number): Page {
     description:
       `A blank ${teams} team round robin schedule to print: all ${matches} fixtures, grouped by round, with score boxes. Free.`,
     lede:
-      `Every pair, once — ${plural(matches, "fixture")} laid out round by round with ruled boxes for the scores. Print it, pin it up, and fill it in as the day goes.`,
+      `Every pair, once: ${plural(matches, "fixture")} laid out round by round with ruled boxes for the scores. Print it, pin it up, and fill it in as the day goes.`,
     generator: { preset: "everyone", teams },
     facts: factsFor("everyone", teams),
     sections: [
@@ -94,14 +94,14 @@ function printableRoundRobin(teams: number): Page {
         body: [
           `The fixtures come out in rounds rather than as one list of ${matches}, because a round is what you actually run: everybody plays, then everybody plays again. A list sorted by team is a list somebody has to cross-reference to find out what happens next.`,
           teams % 2 === 1
-            ? `${teams} is odd, so one team sits out each round — over the schedule everybody gets exactly one bye, and a bye is not a fixture, so there is no line to write on.`
+            ? `${teams} is odd, so one team sits out each round. Over the schedule everybody gets exactly one bye, and a bye is not a fixture, so there is no line to write on.`
             : `${teams} is even, so every round pairs the whole field and nobody sits out.`,
         ],
       },
       {
         heading: "The table is the part paper is worst at",
         body: [
-          "A schedule prints fine. A league table does not, because it has to be rebuilt every time a result changes, and the tiebreakers — head-to-head among the tied teams only, then score difference — are the part people get wrong by hand and then argue about.",
+          "A schedule prints fine. A league table does not, because it has to be rebuilt every time a result changes, and the tiebreakers (head-to-head among the tied teams only, then score difference) are the part people get wrong by hand and then argue about.",
           "If the day is going to end in a close table, that is the point at which running it on a phone stops being a preference.",
         ],
       },
@@ -113,7 +113,7 @@ function printableRoundRobin(teams: number): Page {
       },
       {
         q: "Can I print it blank and draw the names at the venue?",
-        a: "Yes — leave the name boxes empty and it prints numbered places.",
+        a: "Yes. Leave the name boxes empty and it prints numbered places.",
       },
     ],
     related: [
@@ -131,12 +131,12 @@ export const PRINTABLE_PAGES: Page[] = [
   {
     slug: "printable/round-robin-schedule",
     kind: "printable",
-    title: "Printable Round Robin Schedule — Any Number of Teams",
+    title: "Printable Round Robin Schedule: Any Number of Teams",
     h1: "Printable round robin schedule",
     description:
       "Print a blank round robin schedule for any number of teams, grouped by round with score boxes. Free, no signup.",
     lede:
-      "Pick a field size and print the fixtures — every pair once, laid out round by round, with ruled boxes for the scores.",
+      "Pick a field size and print the fixtures: every pair once, laid out round by round, with ruled boxes for the scores.",
     generator: { preset: "everyone", teams: 8 },
     facts: factsFor("everyone", 8),
     sections: [

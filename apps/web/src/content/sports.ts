@@ -37,7 +37,7 @@ const SPORTS: SportSpec[] = [
   {
     slug: "volleyball-tournament-bracket",
     sport: "volleyball",
-    title: "Volleyball Tournament Generator — Pools, Playoff and a Wall Display",
+    title: "Volleyball Tournament Generator: Pools, Playoff and a Wall Display",
     h1: "Volleyball tournament generator",
     description:
       "Draw volleyball pools and a playoff, enter results set by set, and put the tables on a projector in the hall. Free, no account.",
@@ -57,14 +57,14 @@ const SPORTS: SportSpec[] = [
       {
         heading: "The match score is counted from the sets, not typed beside them",
         body: [
-          "Once a set exists the match-score steppers become a read-out. A screen that accepts 2–1 over three sets reading 25–20, 22–25, 19–25 is a screen that will eventually put a scoreline on a wall the hall can see is wrong.",
-          "And a set is won when it is over: 18–14 in the third is not a two-set lead, it is a third set somebody is ahead in, so the wall says 1–1 while it is being played.",
+          "Once a set exists the match-score steppers become a read-out. A screen that accepts 2-1 over three sets reading 25-20, 22-25, 19-25 is a screen that will eventually put a scoreline on a wall the hall can see is wrong.",
+          "And a set is won when it is over: 18-14 in the third is not a two-set lead, it is a third set somebody is ahead in, so the wall says 1-1 while it is being played.",
         ],
       },
       {
         heading: "The wall is the point",
         body: [
-          "A volleyball hall has a lot of people in it who are not playing, and a projector is how they find out what is happening without asking the organiser. The screen rotates itself — live matches, the pool tables, the bracket, what is on which court next — and is sized to be read from the far end of a hall.",
+          "A volleyball hall has a lot of people in it who are not playing, and a projector is how they find out what is happening without asking the organiser. The screen rotates itself through live matches, the pool tables, the bracket, and what is on which court next, and is sized to be read from the far end of a hall.",
           "Light is the default rather than dark. A projector has no black; an unlit pixel is the lamp's grey floor, so under sports-hall lighting a dark scoreboard washes out and takes its text with it.",
         ],
       },
@@ -76,7 +76,7 @@ const SPORTS: SportSpec[] = [
       },
       {
         q: "Can I record individual set scores?",
-        a: "Yes, and they feed the tiebreak. They are optional — a day run on match scores alone works fine.",
+        a: "Yes, and they feed the tiebreak. They are optional; a day run on match scores alone works fine.",
       },
       {
         q: "How do I show the tables in the hall?",
@@ -94,7 +94,7 @@ const SPORTS: SportSpec[] = [
   {
     slug: "beach-volleyball-tournament-generator",
     sport: "beach volleyball",
-    title: "Beach Volleyball Tournament Generator — Pools and Playoff",
+    title: "Beach Volleyball Tournament Generator: Pools and Playoff",
     h1: "Beach volleyball tournament generator",
     description:
       "Draw beach volleyball pools across your courts, run the day from a phone in the sand, and share results by QR code. Free.",
@@ -107,14 +107,14 @@ const SPORTS: SportSpec[] = [
       {
         heading: "A phone, because there is no desk",
         body: [
-          "Beach tournaments do not have a hall with a projector and a table for a laptop. They have somebody with a phone and a lot of sand. The whole organiser side runs on a phone — put a match on a court, mark it live, enter the result — and the wizard that sets the tournament up does too.",
+          "Beach tournaments do not have a hall with a projector and a table for a laptop. They have somebody with a phone and a lot of sand. The whole organiser side runs on a phone: put a match on a court, mark it live, enter the result. The wizard that sets the tournament up does too.",
           "The spectator side is a phone view rather than a wall: tabs, scrolling, one person looking for one thing. Print the QR code once and stick it on the desk.",
         ],
       },
       {
         heading: "Pools of four, across the courts you have",
         body: [
-          "Sixteen pairs draws as four pools of four — three guaranteed matches each and a quarter-final for the top two of every pool. The schedule spreads across your courts and the estimate on the format screen is quoted against the number you actually entered, which on a beach is usually the real constraint.",
+          "Sixteen pairs draws as four pools of four: three guaranteed matches each and a quarter-final for the top two of every pool. The schedule spreads across your courts and the estimate on the format screen is quoted against the number you actually entered, which on a beach is usually the real constraint.",
         ],
       },
     ],
@@ -125,7 +125,7 @@ const SPORTS: SportSpec[] = [
       },
       {
         q: "Can players see the draw on their phones?",
-        a: "Yes — a QR code opens a phone-sized view of the pools, the tables and what is on next.",
+        a: "Yes: a QR code opens a phone-sized view of the pools, the tables and what is on next.",
       },
     ],
     related: [
@@ -138,7 +138,7 @@ const SPORTS: SportSpec[] = [
   {
     slug: "padel-tournament-generator",
     sport: "padel",
-    title: "Padel Tournament Generator — Draws, Tables and a Live Screen",
+    title: "Padel Tournament Generator: Draws, Tables and a Live Screen",
     h1: "Padel tournament generator",
     description:
       "Generate a padel draw for any number of pairs, run it across your courts, and show live results on a screen at the club. Free.",
@@ -152,7 +152,7 @@ const SPORTS: SportSpec[] = [
         heading: "Pairs are teams",
         body: [
           "A padel pair is entered as one team with two members on it. The draw, the tables and the bracket all work on the pair, which is what a padel tournament actually competes.",
-          "Partner-rotating formats — americano and mexicano, where individuals score and partners change every round — are a different thing and Whistle.day does not generate them. If that is the day you are running, this is not the tool for it.",
+          "Partner-rotating formats, americano and mexicano, where individuals score and partners change every round, are a different thing and Whistle.day does not generate them. If that is the day you are running, this is not the tool for it.",
         ],
       },
       {
@@ -182,7 +182,7 @@ const SPORTS: SportSpec[] = [
   {
     slug: "pickleball-round-robin-generator",
     sport: "pickleball",
-    title: "Pickleball Round Robin Generator — Schedule and Standings",
+    title: "Pickleball Round Robin Generator: Schedule and Standings",
     h1: "Pickleball round robin generator",
     description:
       "Make a pickleball round robin schedule with a live standings table, spread across your courts. Free, no account, no ads.",
@@ -196,7 +196,7 @@ const SPORTS: SportSpec[] = [
         heading: "Round robin first, bracket only if you want one",
         body: [
           "Club pickleball is mostly round robin, because the point of the morning is playing rather than winning, and nobody wants to drive over to lose once and go home. Eight teams is 28 matches and everybody plays seven of them.",
-          "If you do want to finish with a final, the same field can run as pools with a playoff on top — same wizard, different answer on the format screen.",
+          "If you do want to finish with a final, the same field can run as pools with a playoff on top: same wizard, different answer on the format screen.",
         ],
       },
       {
@@ -209,7 +209,7 @@ const SPORTS: SportSpec[] = [
     faq: [
       {
         q: "How many matches for 8 teams?",
-        a: "28 — every pair meets once. Each team plays 7.",
+        a: "28. Every pair meets once, and each team plays 7.",
       },
       {
         q: "Can I run it across several courts?",
@@ -226,7 +226,7 @@ const SPORTS: SportSpec[] = [
   {
     slug: "badminton-tournament-draw",
     sport: "badminton",
-    title: "Badminton Tournament Draw — Free Generator and Live Draw Sheet",
+    title: "Badminton Tournament Draw: Free Generator and Live Draw Sheet",
     h1: "Badminton tournament draw",
     description:
       "Generate a badminton draw for any entry list, with byes placed on the seeds, and a live draw sheet on a screen in the hall. Free.",
@@ -239,7 +239,7 @@ const SPORTS: SportSpec[] = [
       {
         heading: "The draw sheet is readable before it is played",
         body: [
-          "A badminton draw is mostly empty on the morning of the tournament, and the empty half is what everybody stands and looks at. Every position that does not have a name yet carries its label — \"Winner QF1\" — so the sheet reads as a plan rather than a grid of blanks.",
+          "A badminton draw is mostly empty on the morning of the tournament, and the empty half is what everybody stands and looks at. Every position that does not have a name yet carries its label, \"Winner QF1\", so the sheet reads as a plan rather than a grid of blanks.",
           "It goes on a screen rather than on paper on a wall, and it updates as the desk enters results, which saves the walk over to write a name in a box.",
         ],
       },
@@ -253,7 +253,7 @@ const SPORTS: SportSpec[] = [
     faq: [
       {
         q: "Can I run several events on one day?",
-        a: "Each event is its own tournament — singles, doubles, mixed — and each gets its own link and screen. There is no cap on how many you run.",
+        a: "Each event (singles, doubles, mixed) is its own tournament, and each gets its own link and screen. There is no cap on how many you run.",
       },
       {
         q: "Does it handle byes automatically?",
@@ -271,7 +271,7 @@ const SPORTS: SportSpec[] = [
   {
     slug: "table-tennis-tournament-generator",
     sport: "table tennis",
-    title: "Table Tennis Tournament Generator — Groups and Knockout",
+    title: "Table Tennis Tournament Generator: Groups and Knockout",
     h1: "Table tennis tournament generator",
     description:
       "Draw table tennis groups and a knockout, run it across your tables, and show the results on a screen. Free, no account.",
@@ -297,7 +297,7 @@ const SPORTS: SportSpec[] = [
     faq: [
       {
         q: "Can I record individual games within a match?",
-        a: "Yes — game-by-game scores feed the tiebreak that separates two players level on matches and on games.",
+        a: "Yes: game-by-game scores feed the tiebreak that separates two players level on matches and on games.",
       },
       {
         q: "How many tables do I need for 16 players?",
@@ -314,7 +314,7 @@ const SPORTS: SportSpec[] = [
   {
     slug: "futsal-tournament-generator",
     sport: "futsal",
-    title: "Futsal Tournament Generator — Groups, Playoff and a Hall Screen",
+    title: "Futsal Tournament Generator: Groups, Playoff and a Hall Screen",
     h1: "Futsal tournament generator",
     description:
       "Draw futsal groups and a playoff, run the day from a phone, and put the tables on the hall screen. Free, no account.",
@@ -327,7 +327,7 @@ const SPORTS: SportSpec[] = [
       {
         heading: "Goal difference, and the argument about it",
         body: [
-          "Futsal groups end level on points more often than most sports, and goal difference is what separates them — except when head-to-head comes first, which depends on whose rules you are running under. Both are configurable, applied in the order you set, and the table prints which one actually did the separating.",
+          "Futsal groups end level on points more often than most sports, and goal difference is what separates them, except when head-to-head comes first, which depends on whose rules you are running under. Both are configurable, applied in the order you set, and the table prints which one actually did the separating.",
           "That sentence under the table is the difference between a table and an argument at the trophy presentation.",
         ],
       },
@@ -341,7 +341,7 @@ const SPORTS: SportSpec[] = [
     faq: [
       {
         q: "How do I split 12 teams?",
-        a: "Three groups of four — three guaranteed matches each, with the top two of each going through to a quarter-final round topped up from the best third-placed teams.",
+        a: "Three groups of four: three guaranteed matches each, with the top two of each going through to a quarter-final round topped up from the best third-placed teams.",
       },
       {
         q: "Can I set points for a win and a draw?",
@@ -359,7 +359,7 @@ const SPORTS: SportSpec[] = [
   {
     slug: "chess-swiss-tournament-generator",
     sport: "chess",
-    title: "Chess Swiss Tournament Generator — Pairings Draw Themselves",
+    title: "Chess Swiss Tournament Generator: Pairings Draw Themselves",
     h1: "Chess Swiss tournament generator",
     description:
       "Run a Swiss chess tournament where each round pairs players on the same score and the next round draws itself. Free, no account.",
@@ -372,14 +372,14 @@ const SPORTS: SportSpec[] = [
       {
         heading: "Pairings without a pairing program",
         body: [
-          "Finishing a round is what draws the next one, from the table as it stood at that moment — never from the round being drawn, which is the mistake that produces a pairing that depends on its own result. There is nothing to press and no file to import.",
+          "Finishing a round is what draws the next one, from the table as it stood at that moment, never from the round being drawn, which is the mistake that produces a pairing that depends on its own result. There is nothing to press and no file to import.",
           "The draw avoids rematches. On a small field over a long tournament it will eventually run out of fresh opponents and repeat a meeting; nothing is wrong when that happens, but you are told rather than left to spot it.",
         ],
       },
       {
         heading: "Byes score a point",
         body: [
-          "An odd field means somebody sits out each round, and that bye takes the point. Scoring it zero would send whoever happened to be the odd one out to the bottom of the table for something they had no part in — which is exactly the opposite of what a bye means in a knockout bracket, where it is a free pass and scores nothing.",
+          "An odd field means somebody sits out each round, and that bye takes the point. Scoring it zero would send whoever happened to be the odd one out to the bottom of the table for something they had no part in. That's exactly the opposite of what a bye means in a knockout bracket, where it is a free pass and scores nothing.",
         ],
       },
       {
@@ -392,7 +392,7 @@ const SPORTS: SportSpec[] = [
     faq: [
       {
         q: "How many rounds for 32 players?",
-        a: "Five — ceil(log2(32)) — which is the fewest that can still leave exactly one player unbeaten.",
+        a: "Five: ceil(log2(32)), the fewest that can still leave exactly one player unbeaten.",
       },
       {
         q: "Does it balance colours?",
@@ -400,7 +400,7 @@ const SPORTS: SportSpec[] = [
       },
       {
         q: "Does it calculate Buchholz?",
-        a: "No. Ranking is on points and the configurable tiebreakers — head-to-head, score difference, and so on.",
+        a: "No. Ranking is on points and the configurable tiebreakers: head-to-head, score difference, and so on.",
       },
     ],
     related: [
@@ -414,7 +414,7 @@ const SPORTS: SportSpec[] = [
   {
     slug: "esports-tournament-bracket",
     sport: "esports",
-    title: "Esports Tournament Bracket — Double Elimination, Free",
+    title: "Esports Tournament Bracket: Double Elimination, Free",
     h1: "Esports tournament bracket",
     description:
       "Generate a double elimination esports bracket with a losers bracket and a grand final, plus a live overlay-ready results screen. Free.",
@@ -428,13 +428,13 @@ const SPORTS: SportSpec[] = [
         heading: "Why double elimination is the default here",
         body: [
           "It is the esports convention for a reason: a single-elimination bracket can send the second-best team home in round one on a draw nobody chose. Double elimination costs about twice the matches and almost never produces a winner nobody believes in.",
-          "Sixteen teams is 30 matches against a straight knockout's 16. Worth knowing before you schedule the day.",
+          "Sixteen teams is 30 matches against a straight knockout's 16, worth knowing before you schedule the day.",
         ],
       },
       {
         heading: "A screen for the stream, and one for the players",
         body: [
-          "The projector view is a self-rotating screen showing what is live, the bracket and the recent results — sized to be read at a distance, which also makes it legible as a full-screen source in a stream. The phone view is the one to give the players.",
+          "The projector view is a self-rotating screen showing what is live, the bracket and the recent results, sized to be read at a distance, which also makes it legible as a full-screen source in a stream. The phone view is the one to give the players.",
           "Both read from one public endpoint with the token in the URL as the only credential, so no one needs an account to watch.",
         ],
       },
@@ -470,7 +470,7 @@ const SPORTS: SportSpec[] = [
   {
     slug: "spikeball-roundnet-tournament-bracket",
     sport: "roundnet",
-    title: "Spikeball / Roundnet Tournament Generator — Pools and Bracket",
+    title: "Spikeball / Roundnet Tournament Generator: Pools and Bracket",
     h1: "Spikeball and roundnet tournament generator",
     description:
       "Draw roundnet pools and a bracket across your nets, run it from a phone, and share the results by QR code. Free.",
@@ -489,14 +489,14 @@ const SPORTS: SportSpec[] = [
       {
         heading: "Pools of four, then a bracket",
         body: [
-          "Sixteen pairs draws as four pools of four — three guaranteed games each — with the top two of every pool going through to a quarter-final. The bracket is drawn at the same time and fills in as the pools finish.",
+          "Sixteen pairs draws as four pools of four: three guaranteed games each, with the top two of every pool going through to a quarter-final. The bracket is drawn at the same time and fills in as the pools finish.",
         ],
       },
     ],
     faq: [
       {
         q: "Does it work without signal?",
-        a: "Results, yes — they queue on the phone and send themselves when the signal comes back. The tables and the bracket stand still until the queue drains, because those are worked out from every fixture at once on the server. Setting the tournament up needs a signal.",
+        a: "Results, yes. They queue on the phone and send themselves when the signal comes back. The tables and the bracket stand still until the queue drains, because those are worked out from every fixture at once on the server. Setting the tournament up needs a signal.",
       },
       {
         q: "How many nets do I need?",
@@ -513,7 +513,7 @@ const SPORTS: SportSpec[] = [
   {
     slug: "kids-football-tournament-schedule",
     sport: "youth football",
-    title: "Kids Football Tournament Schedule — Everyone Plays, Free",
+    title: "Kids Football Tournament Schedule: Everyone Plays, Free",
     h1: "Kids football tournament schedule",
     description:
       "Make a youth football tournament schedule where every team gets the same number of games, on a phone, with results on a screen. Free.",
@@ -533,7 +533,7 @@ const SPORTS: SportSpec[] = [
       {
         heading: "Parents can follow it on their phones",
         body: [
-          "Every tournament gets a QR code that opens a phone-sized view — the fixtures, the tables, what is on which pitch next. Print it once and pin it to the clubhouse door and nobody has to come and ask when their child plays again.",
+          "Every tournament gets a QR code that opens a phone-sized view: the fixtures, the tables, what is on which pitch next. Print it once and pin it to the clubhouse door and nobody has to come and ask when their child plays again.",
         ],
       },
     ],
@@ -558,7 +558,7 @@ const SPORTS: SportSpec[] = [
   {
     slug: "school-sports-day-generator",
     sport: "school sport",
-    title: "School Sports Day Generator — Schedule, Tables and a Hall Screen",
+    title: "School Sports Day Generator: Schedule, Tables and a Hall Screen",
     h1: "School sports day generator",
     description:
       "Plan a school sports day: classes drawn into groups, matches spread across the courts you have, results on the hall screen. Free.",
@@ -584,7 +584,7 @@ const SPORTS: SportSpec[] = [
     faq: [
       {
         q: "Can several teachers enter results?",
-        a: "Yes. Each one scans a QR code and runs their court from their own phone — no accounts to create, no names to type in. Handing out the codes stays the organiser's.",
+        a: "Yes. Each one scans a QR code and runs their court from their own phone, with no accounts to create and no names to type in. Handing out the codes stays the organiser's.",
       },
       {
         q: "Do I need to install anything?",

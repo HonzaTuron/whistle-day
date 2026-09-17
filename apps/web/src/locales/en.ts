@@ -118,13 +118,13 @@ export const en = {
   "landing.howTitle": "How it works",
   "landing.step1Title": "Set it up",
   "landing.step1Body":
-    "Name your tournament, add the teams, pick the format. Done in under a minute — no account needed.",
+    "Name your tournament, add the teams, pick the format. Done in under a minute, no account needed.",
   "landing.step2Title": "Run the day",
   "landing.step2Body":
     "Put matches on courts, mark what is being played, enter results as they come in. All from your phone.",
   "landing.step3Title": "Put it on the wall",
   "landing.step3Body":
-    "A projector screen that updates itself — tables rebuild, the bracket fills in, the next Swiss round draws itself.",
+    "A projector screen that updates itself: tables rebuild, the bracket fills in, the next Swiss round draws itself.",
   "landing.demoCourt": "Court 2",
   "landing.demoLive": "Live",
   "landing.demoHome": "Harbour Hawks",
@@ -151,11 +151,11 @@ export const en = {
     "A second chance: drop into the losers bracket and fight your way back.",
   "landing.formatSwiss": "Swiss",
   "landing.formatSwissBody":
-    "Every round pairs like with like. No elimination — every team plays every round.",
+    "Every round pairs like with like. No elimination: every team plays every round.",
   "landing.formatMore": "See how it runs",
   "landing.sportsTitle": "Whatever is being played",
   "landing.sportsNote":
-    "A draw does not care what the ball is. Same day, same phone — here is the page for yours.",
+    "A draw does not care what the ball is. Same day, same phone. Here's the page for yours.",
   "landing.sportVolleyball": "Volleyball",
   "landing.sportBeach": "Beach volleyball",
   "landing.sportPadel": "Padel",
@@ -175,7 +175,7 @@ export const en = {
   "landing.agentsNote":
     "Whistle.day is also an MCP server — point Claude, ChatGPT or any MCP client at it and an agent can create a tournament, add teams and courts, draw a stage and settle matches on its own.",
   "landing.agentsLink": "See the MCP server",
-  "landing.footer": "Whistle.day — free tournament organiser.",
+  "landing.footer": "Whistle.day, a free tournament organiser.",
   "landing.smithery": "Whistle.day on Smithery",
 
   // -------------------------------------------------------------------------

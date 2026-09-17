@@ -63,13 +63,13 @@ function singleElim(teams: number): Page {
   return {
     slug: `${teams}-team-single-elimination-bracket`,
     kind: "parametric",
-    title: `${teams} Team Single Elimination Bracket — Free Generator`,
+    title: `${teams} Team Single Elimination Bracket: Free Generator`,
     h1: `${teams} team single elimination bracket`,
     description:
       `A ${teams} team knockout bracket: ${matches} matches over ${plural(rounds, "round")}` +
       `${byes > 0 ? `, with ${plural(byes, "bye")}` : ""}. Generate it free, no account.`,
     lede:
-      `${teams} teams, ${plural(matches, "match")}, ${plural(rounds, "round")} — ` +
+      `${teams} teams, ${plural(matches, "match")}, ${plural(rounds, "round")}: ` +
       `${path.join(", then ")}. ` +
       (byes > 0
         ? `${teams} is not a power of two, so the bracket is drawn at ${bracketSize(teams)} and ${plural(byes, "team")} skip the first round.`
@@ -83,32 +83,32 @@ function singleElim(teams: number): Page {
           byes > 0
             ? [
                 `A knockout bracket holds a power of two. ${teams} teams needs a bracket of ${bracketSize(teams)}, which leaves ${plural(byes, "position")} empty, and each empty position is a bye: a team that does not play in round one and enters in round two.`,
-                `The byes go to the top of the draw — to the seeded teams. That is the convention, and it is also the only placement that does not distort the bracket: scattering them at random would hand a free round to whoever happened to land next to one.`,
+                `The byes go to the top of the draw, to the seeded teams. That is the convention, and it is also the only placement that does not distort the bracket: scattering them at random would hand a free round to whoever happened to land next to one.`,
                 `Byes do not add matches. The ${matches} above is one match per eliminated team${teams >= 4 ? ", plus the third-place match" : ""}, and a team that skips round one has simply not played yet.`,
               ]
             : [
                 `${teams} is a power of two, so the bracket is exactly full: every team plays in round one and nobody is handed a free pass. It is the tidiest a knockout gets.`,
-                `${plural(matches, "match")} in total — one per eliminated team${teams >= 4 ? ", plus the third-place match" : ""} — over ${plural(rounds, "round")}.`,
+                `${plural(matches, "match")} in total (one per eliminated team${teams >= 4 ? ", plus the third-place match" : ""}) over ${plural(rounds, "round")}.`,
               ],
       },
       {
         heading: "How the day runs",
         body: [
           `${path.map((name, i) => `${name} (${matchesInRound(teams, i)} ${matchesInRound(teams, i) === 1 ? "match" : "matches"})`).join(", then ")}.`,
-          "A knockout round cannot start until the one before it has finished, so the finish time above is optimistic in a way a round robin's is not — the last few rounds run on fewer and fewer courts. Two courts is assumed; a single court roughly doubles it.",
+          "A knockout round cannot start until the one before it has finished, so the finish time above is optimistic in a way a round robin's is not: the last few rounds run on fewer and fewer courts. Two courts is assumed; a single court roughly doubles it.",
         ],
       },
       {
         heading: "Before it is played",
         body: [
-          `The whole bracket exists from the moment you draw it. Positions that do not have a team yet carry the label the server wrote — "Winner QF1" and so on — so it can go on a projector on the morning of the tournament and be read as a plan rather than a grid of blanks.`,
+          `The whole bracket exists from the moment you draw it. Positions that do not have a team yet carry the label the server wrote ("Winner QF1" and so on), so it can go on a projector on the morning of the tournament and be read as a plan rather than a grid of blanks.`,
         ],
       },
     ],
     faq: [
       {
         q: `How many matches is a ${teams} team knockout?`,
-        a: `${matches}. One for every team eliminated — ${teams - 1} of them${teams >= 4 ? " — plus a third-place match" : ""}.`,
+        a: `${matches}. One for every team eliminated: ${teams - 1} of them${teams >= 4 ? ", plus a third-place match" : ""}.`,
       },
       {
         q: `How many rounds for ${teams} teams?`,
@@ -152,12 +152,12 @@ function doubleElim(teams: number): Page {
   return {
     slug: `${teams}-team-double-elimination-bracket`,
     kind: "parametric",
-    title: `${teams} Team Double Elimination Bracket — Free Generator`,
+    title: `${teams} Team Double Elimination Bracket: Free Generator`,
     h1: `${teams} team double elimination bracket`,
     description:
       `A ${teams} team double elimination bracket: winners bracket, losers bracket and a grand final, ${matches} matches in total. Free.`,
     lede:
-      `${teams} teams and two lives each. ${plural(matches, "match")} in total — a winners bracket, the losers bracket that catches everyone it knocks out, and a grand final between the two survivors.`,
+      `${teams} teams and two lives each. ${plural(matches, "match")} in total: a winners bracket, the losers bracket that catches everyone it knocks out, and a grand final between the two survivors.`,
     generator: { preset: "double", teams },
     facts: factsFor("double", teams),
     sections: [
@@ -171,14 +171,14 @@ function doubleElim(teams: number): Page {
       {
         heading: "Everybody gets at least two matches",
         body: [
-          `Losing the first one drops a team into the losers bracket rather than out of the building. For a ${teams}-team field that is the cheapest guarantee of a real day out for everybody — the format is popular in esports for the fairness, and it works in a hall for the same reason plus one more: it keeps courts busy and teams in the building.`,
+          `Losing the first one drops a team into the losers bracket rather than out of the building. For a ${teams}-team field that is the cheapest guarantee of a real day out for everybody. The format is popular in esports for the fairness, and it works in a hall for the same reason plus one more: it keeps courts busy and teams in the building.`,
         ],
       },
     ],
     faq: [
       {
         q: `How many matches in a ${teams} team double elimination?`,
-        a: `${matches} — about 2 × ${teams} − 2, because everybody but the winner has to lose twice.`,
+        a: `${matches}, about 2 × ${teams} − 2, because everybody but the winner has to lose twice.`,
       },
       {
         q: "How many matches is everybody guaranteed?",
@@ -207,13 +207,13 @@ function roundRobin(teams: number): Page {
   return {
     slug: `${teams}-team-round-robin-schedule`,
     kind: "parametric",
-    title: `${teams} Team Round Robin Schedule — Free Generator`,
+    title: `${teams} Team Round Robin Schedule: Free Generator`,
     h1: `${teams} team round robin schedule`,
     description:
       `A ${teams} team round robin: ${matches} matches over ${plural(rounds, "round")}, ${each} each, with a live league table. Free, no account.`,
     lede:
       `Every team plays every other. ${plural(matches, "match")} in total, ${plural(each, "match")} each, over ${plural(rounds, "round")}` +
-      `${odd ? " — one more than an even field of this size, because somebody sits out every round." : "."}`,
+      `${odd ? ", one more than an even field of this size, because somebody sits out every round." : "."}`,
     generator: { preset: "everyone", teams },
     facts: factsFor("everyone", teams),
     sections: [
@@ -222,7 +222,7 @@ function roundRobin(teams: number): Page {
         body: odd
           ? [
               `With ${teams} teams there is no way to pair everybody at once: ${teams - 1} play and one sits out. Over the tournament each team gets exactly one bye, which is why it takes ${rounds} rounds rather than the ${teams - 1} an even field of this size would need.`,
-              `A bye is not a match and it is not scored — the fixture count stays at ${matches}, and everybody still plays ${each}. The table is unaffected by who happened to sit out when.`,
+              `A bye is not a match and it is not scored: the fixture count stays at ${matches}, and everybody still plays ${each}. The table is unaffected by who happened to sit out when.`,
             ]
           : [
               `${teams} is even, so every round pairs the whole field: ${teams / 2} matches at once, ${rounds} rounds, and nobody sits out.`,
@@ -233,13 +233,13 @@ function roundRobin(teams: number): Page {
         heading: "How long it takes",
         body: [
           `${plural(matches, "match")} is the number that decides your day. Spread across two courts at 25 minutes a slot that is the duration quoted above; on one court, double it; on four, halve it.`,
-          "Unlike a knockout, a round robin parallelises almost perfectly — there is no round that has to wait for the one before it — so the estimate is a good deal more honest here than it is for a bracket.",
+          "Unlike a knockout, a round robin parallelises almost perfectly. There is no round that has to wait for the one before it, so the estimate is a good deal more honest here than it is for a bracket.",
         ],
       },
       {
         heading: "The table, and the argument it prevents",
         body: [
-          `${teams} teams playing ${each} matches each will produce a tie somewhere near the top more often than not. Points first, then head-to-head among the tied teams only, then score difference, then points scored — and the table prints which of those actually did the separating.`,
+          `${teams} teams playing ${each} matches each will produce a tie somewhere near the top more often than not. Points first, then head-to-head among the tied teams only, then score difference, then points scored, and the table prints which of those actually did the separating.`,
         ],
       },
     ],
@@ -250,7 +250,7 @@ function roundRobin(teams: number): Page {
       },
       {
         q: `How many games does each team play?`,
-        a: `${each} — one against each of the others, the same for everybody however the results go.`,
+        a: `${each}, one against each of the others, the same for everybody however the results go.`,
       },
       {
         q: `How many rounds?`,
@@ -280,7 +280,7 @@ function swiss(teams: number): Page {
   return {
     slug: `${teams}-player-swiss-tournament`,
     kind: "parametric",
-    title: `${teams} Player Swiss Tournament — Rounds and Pairings`,
+    title: `${teams} Player Swiss Tournament: Rounds and Pairings`,
     h1: `${teams} player Swiss tournament`,
     description:
       `A ${teams} player Swiss: ${plural(rounds, "round")}, pairings drawn automatically after each one, nobody knocked out. Free generator.`,
@@ -292,7 +292,7 @@ function swiss(teams: number): Page {
       {
         heading: `Why ${rounds} rounds`,
         body: [
-          `ceil(log2(${teams})) is ${Math.ceil(Math.log2(teams))} — the fewest rounds that can still leave exactly one player unbeaten, which is the standard answer to "how long should a Swiss be". Whistle.day floors it at three, because a two-round Swiss has not sorted anything out.`,
+          `ceil(log2(${teams})) is ${Math.ceil(Math.log2(teams))}, the fewest rounds that can still leave exactly one player unbeaten, which is the standard answer to "how long should a Swiss be". Whistle.day floors it at three, because a two-round Swiss has not sorted anything out.`,
           `You can run it longer for a fuller table. Against a field of ${teams} there are ${teams - 1} possible opponents, so past that the draw would have nothing fresh left; well before then it will start having to repeat a meeting, and it tells you when it does.`,
         ],
       },
@@ -301,14 +301,14 @@ function swiss(teams: number): Page {
         body: [
           `Everybody plays all ${rounds} rounds. That is the reason to run a Swiss rather than a knockout for a field this size: ${teams} players in a straight bracket means half of them have finished by the end of round one, and a Swiss gives every one of them the same day.`,
           odd
-            ? `${teams} is odd, so one player sits out each round — and that bye takes the points for a win. Scoring it zero would send whoever happened to be the odd one out to the bottom of the table for something they had no part in.`
+            ? `${teams} is odd, so one player sits out each round, and that bye takes the points for a win. Scoring it zero would send whoever happened to be the odd one out to the bottom of the table for something they had no part in.`
             : `${teams} is even, so every round pairs the whole field with nobody sitting out.`,
         ],
       },
       {
         heading: "And then a playoff, if you want one",
         body: [
-          "The default carries the top four off the Swiss table into semi-finals and a third-place match, which is what the match total above includes. Ending on the table alone works too — it is a stage setting rather than a different format.",
+          "The default carries the top four off the Swiss table into semi-finals and a third-place match, which is what the match total above includes. Ending on the table alone works too. It is a stage setting rather than a different format.",
         ],
       },
     ],
@@ -352,7 +352,7 @@ function groups(teams: number): Page {
     kind: "parametric",
     title: even
       ? `${teams} Teams: ${shape}, Then a Playoff`
-      : `${teams} Team Group Stage and Playoff — Free Generator`,
+      : `${teams} Team Group Stage and Playoff: Free Generator`,
     h1: `${teams} teams: ${shape}, then a playoff`,
     description:
       `Draw ${teams} teams into ${shape} and a playoff that seeds itself from the tables. ${matches} matches, ${guaranteed}+ guaranteed each. Free.`,
@@ -365,17 +365,17 @@ function groups(teams: number): Page {
       {
         heading: `Why ${shape}`,
         body: [
-          `Pools of at most five, and never fewer than two pools — that is the rule, and for ${teams} teams it comes out at ${shape}. Groups of four or five are the sweet spot: three or four guaranteed matches each, and a table small enough to be final before the playoff needs it.`,
+          `Pools of at most five, and never fewer than two pools: that is the rule, and for ${teams} teams it comes out at ${shape}. Groups of four or five are the sweet spot: three or four guaranteed matches each, and a table small enough to be final before the playoff needs it.`,
           even
             ? `${teams} divides evenly, so every group is the same size and every team plays the same number of group matches. Nothing has to be adjusted for fairness.`
-            : `${teams} does not divide evenly, so the groups come out as ${sizes.join(", ")}. Teams in the smaller group play one fewer match, which matters when the best third-placed teams are compared across groups — results against anyone finishing below the smallest group's last place are disregarded, so the comparison is over the same number of matches either way.`,
+            : `${teams} does not divide evenly, so the groups come out as ${sizes.join(", ")}. Teams in the smaller group play one fewer match, which matters when the best third-placed teams are compared across groups. Results against anyone finishing below the smallest group's last place are disregarded, so the comparison is over the same number of matches either way.`,
         ],
       },
       {
         heading: "The playoff is drawn before the groups are played",
         body: [
-          `${qualifiers} teams qualify — the top two of each group — which fills ${roundWord(qualifiers)}. The bracket is drawn at the same time as the groups, with its positions labelled "1. A", "2. B" and so on, so the whole day is on the wall from the first whistle.`,
-          "As each group finishes, the positions waiting on it resolve and the real names appear. A group table is provisional until every fixture in it is settled, and a playoff position will not fill from a provisional table — a team told they are through while a match that changes the order is still on the next court is the worst thing this could get wrong.",
+          `${qualifiers} teams qualify (the top two of each group), which fills ${roundWord(qualifiers)}. The bracket is drawn at the same time as the groups, with its positions labelled "1. A", "2. B" and so on, so the whole day is on the wall from the first whistle.`,
+          "As each group finishes, the positions waiting on it resolve and the real names appear. A group table is provisional until every fixture in it is settled, and a playoff position will not fill from a provisional table. A team told they are through while a match that changes the order is still on the next court is the worst thing this could get wrong.",
         ],
       },
       {
@@ -392,7 +392,7 @@ function groups(teams: number): Page {
       },
       {
         q: "How many teams go through?",
-        a: `${qualifiers} — the top two of each group, which fills ${roundWord(qualifiers)} exactly.`,
+        a: `${qualifiers}, the top two of each group, which fills ${roundWord(qualifiers)} exactly.`,
       },
       {
         q: "How many matches is everybody guaranteed?",
