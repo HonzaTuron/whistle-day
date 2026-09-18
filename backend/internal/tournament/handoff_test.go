@@ -146,6 +146,78 @@ func TestFindHandoffRefusals(t *testing.T) {
 	})
 }
 
+// The two-step Google/Facebook claim: /oauth-session hands out a token for
+// the still-anonymous account, and /finish is what actually spends the
+// handoff — minus the HTTP, the same way TestHandoffTransfersTheAccount tests
+// the password path.
+func TestHandoffOAuthSession(t *testing.T) {
+	app := handoffApp(t)
+	defer app.Cleanup()
+	owner, tournament := unclaimed(t, app)
+
+	handoff, err := MintHandoff(app, owner, tournament)
+	if err != nil {
+		t.Fatalf("mint: %v", err)
+	}
+
+	// What /oauth-session does: a token for the account the link names,
+	// nothing about the account changed yet.
+	sessionToken, err := owner.NewAuthToken()
+	if err != nil {
+		t.Fatalf("oauth-session token: %v", err)
+	}
+	if live, err := findHandoff(app, handoff.GetString("token")); err != nil || live.GetBool("used") {
+		t.Fatal("minting a session token spent the handoff")
+	}
+
+	resolved, err := app.FindAuthRecordByToken(sessionToken, core.TokenTypeAuth)
+	if err != nil || resolved.Id != owner.Id {
+		t.Fatalf("the minted token does not authenticate as the handoff's account: %v", err)
+	}
+
+	// What /finish does once the browser has linked a provider through that
+	// session: the real email lands on the account, the handoff is spent, and
+	// the old device password and every token minted before this point stop
+	// working — including the one /oauth-session just handed out.
+	owner.SetEmail("organiser@example.test")
+	owner.SetVerified(true)
+	owner.SetRandomPassword()
+	owner.RefreshTokenKey()
+	if err := app.Save(owner); err != nil {
+		t.Fatalf("finish: %v", err)
+	}
+	handoff.Set("used", true)
+	if err := app.Save(handoff); err != nil {
+		t.Fatalf("burn: %v", err)
+	}
+	finishToken, err := owner.NewAuthToken()
+	if err != nil {
+		t.Fatalf("finish token: %v", err)
+	}
+
+	if _, err := findHandoff(app, handoff.GetString("token")); err == nil {
+		t.Fatal("a spent handoff still works")
+	}
+	if _, err := app.FindAuthRecordByToken(sessionToken, core.TokenTypeAuth); err == nil {
+		t.Fatal("the pre-finish session token still authenticates after RefreshTokenKey")
+	}
+	resolved, err = app.FindAuthRecordByToken(finishToken, core.TokenTypeAuth)
+	if err != nil || resolved.Id != owner.Id {
+		t.Fatalf("the token /finish hands back does not authenticate as the account: %v", err)
+	}
+
+	reloaded, err := app.FindRecordById("users", owner.Id)
+	if err != nil {
+		t.Fatalf("reload: %v", err)
+	}
+	if IsDeviceAccount(reloaded.Email()) {
+		t.Fatalf("still a device account: %q", reloaded.Email())
+	}
+	if !reloaded.Verified() {
+		t.Fatal("not marked verified")
+	}
+}
+
 // The tournament survives being given away, and the account that held it stops
 // being anonymous. This is the whole feature in one assertion.
 func TestHandoffTransfersTheAccount(t *testing.T) {

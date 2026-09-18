@@ -180,6 +180,125 @@ func RegisterHandoffRoutes(app core.App) {
 			})
 		})
 
+		// Claiming by Google or Facebook instead of a password is two
+		// requests either side of the provider's own redirect, not one — see
+		// the comment on /finish for why.
+		//
+		// This half hands the browser a session for the handoff's target
+		// account before it ever leaves for the provider, so that coming back
+		// and calling PocketBase's own OAuth2 endpoint claims that account
+		// rather than creating an unrelated one — the same "already
+		// authenticated as it" resolution api/oauth.ts leans on for a device
+		// account already sitting in this browser, except here the browser
+		// never had a session for it at all.
+		//
+		// Nothing about the account changes here. A token that never gets
+		// used past this point is exactly as harmless as the link itself
+		// sitting unopened in a chat log — the handoff is spent by /finish,
+		// not by this.
+		se.Router.POST("/api/organiser/handoff/{token}/oauth-session", func(e *core.RequestEvent) error {
+			handoff, err := findHandoff(e.App, e.Request.PathValue("token"))
+			if err != nil {
+				return e.NotFoundError("this link is not valid any more", err)
+			}
+
+			user, err := e.App.FindRecordById("users", handoff.GetString("user"))
+			if err != nil {
+				return e.NotFoundError("this link is not valid any more", err)
+			}
+			if !IsDeviceAccount(user.Email()) {
+				return e.BadRequestError("this tournament already belongs to somebody", nil)
+			}
+
+			token, err := user.NewAuthToken()
+			if err != nil {
+				return e.InternalServerError("could not start signing in", err)
+			}
+
+			return e.JSON(http.StatusOK, map[string]any{"token": token})
+		})
+
+		// The other half: the browser linked a provider to the session
+		// /oauth-session gave it, through PocketBase's own OAuth2 endpoint,
+		// and this is where that becomes the same commitment the password
+		// path makes in a single request — the handoff is spent and whatever
+		// the agent or the old device held stops working.
+		//
+		// `email` is optional and, when sent, is whatever the provider handed
+		// back — PocketBase's OAuth2 endpoint does not overwrite a device
+		// account's non-empty address on its own (see oauth2Submit's
+		// "existing record" branch), so this is the one place that can put
+		// the real one on the account.
+		//
+		// Authenticated rather than token-in-body: the caller has to be
+		// signed in as the exact account the link names, which the OAuth2
+		// exchange it just completed is what put it there. Anyone else's
+		// session is refused rather than allowed to spend somebody else's
+		// handoff.
+		se.Router.POST("/api/organiser/handoff/{token}/finish", func(e *core.RequestEvent) error {
+			data := struct {
+				Email string `json:"email"`
+			}{}
+			if err := e.BindBody(&data); err != nil {
+				return e.BadRequestError("could not read the request", err)
+			}
+
+			handoff, err := findHandoff(e.App, e.Request.PathValue("token"))
+			if err != nil {
+				return e.NotFoundError("this link is not valid any more", err)
+			}
+			if e.Auth == nil || e.Auth.Id != handoff.GetString("user") {
+				return e.ForbiddenError("this session did not come from that link", nil)
+			}
+
+			user := e.Auth
+			var newToken string
+
+			// One transaction, the same reason the password path uses one:
+			// the account write and the burn cannot come apart, or a request
+			// retried after a dropped response would finish twice.
+			err = e.App.RunInTransaction(func(tx core.App) error {
+				if data.Email != "" {
+					user.SetEmail(data.Email)
+				}
+				user.SetVerified(true)
+				// There was never a password to change, so the device's
+				// random one is rotated to another nobody knows rather than
+				// left live and simply unmentioned.
+				user.SetRandomPassword()
+				user.RefreshTokenKey()
+				if err := tx.Save(user); err != nil {
+					return err
+				}
+
+				handoff.Set("used", true)
+				if err := tx.Save(handoff); err != nil {
+					return err
+				}
+
+				// Minted after the rotation above, so it is the one token
+				// this exchange leaves valid — the request's own bearer
+				// token, minted before RefreshTokenKey, stops working the
+				// moment this transaction commits.
+				minted, err := user.NewAuthToken()
+				if err != nil {
+					return err
+				}
+				newToken = minted
+				return nil
+			})
+			if err != nil {
+				e.App.Logger().Error("could not complete an oauth handoff",
+					"handoff", handoff.Id, "error", err)
+				return e.BadRequestError(claimError(err), nil)
+			}
+
+			return e.JSON(http.StatusOK, map[string]any{
+				"token": newToken,
+				"email": user.Email(),
+			})
+		}).Bind(apis.RequireAuth())
+
 		return se.Next()
 	})
 }
