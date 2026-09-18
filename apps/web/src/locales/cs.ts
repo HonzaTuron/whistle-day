@@ -191,6 +191,8 @@ export const cs: Record<keyof Catalog, Message> = {
     "Jako {email}. Přihlaste se tím kdekoli jinde a své turnaje tam máte s sebou.",
   "account.keepBody":
     "Cesta zpátky k vašemu turnaji je uložená v tomhle prohlížeči a nikde jinde — ať už jste ho zakládali vy, nebo jste dostali kód u dveří. E-mail a heslo jí dají ještě jedno místo, kde může být.",
+  "account.keepBodyNamed":
+    "Cesta zpátky do turnaje „{name}“ je uložená v tomhle prohlížeči a nikde jinde — ať už jste ho zakládali vy, nebo jste dostali kód u dveří. E-mail a heslo jí dají ještě jedno místo, kde může být.",
   "account.signInBody":
     "Na tomhle zařízení nic založeného není. Přihlaste se a to, co řídíte odjinud, půjde s vámi.",
   "account.looking": "Hledá se…",

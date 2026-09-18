@@ -8,6 +8,7 @@ import {
   ensureOrganiser,
   isDeviceAccount,
   myTournaments,
+  rememberedTournament,
   rememberTournament,
   signIn,
   signOut,
@@ -39,6 +40,7 @@ export function Account({ next }: { next?: string } = {}) {
   const t = useT();
   const navigate = useNavigate();
   const [session, setSession] = useState<Session | null>(storedSession);
+  const [running] = useState(rememberedTournament);
   const [mode, setMode] = useState<Mode>(() =>
     storedSession() ? "claim" : "signin",
   );
@@ -222,8 +224,21 @@ export function Account({ next }: { next?: string } = {}) {
               ? t("account.signedInAs", { email: session?.email ?? "" })
               : mode === "forgot"
                 ? t("recover.forgotBody")
-                : t(canClaim ? "account.keepBody" : "account.signInBody")}
+                : canClaim
+                  ? running
+                    ? t("account.keepBodyNamed", { name: running.name })
+                    : t("account.keepBody")
+                  : t("account.signInBody")}
         </p>
+        {canClaim && running ? (
+          <Link
+            to="/t/$id"
+            params={{ id: running.id }}
+            className="account__link account__link--center"
+          >
+            {t("landing.resume", { name: running.name })}
+          </Link>
+        ) : null}
       </header>
 
       {deleted ? (

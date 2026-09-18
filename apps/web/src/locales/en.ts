@@ -188,6 +188,8 @@ export const en = {
     "As {email}. Sign in with that anywhere else to pick your tournaments up there.",
   "account.keepBody":
     "The way back into your tournament lives in this browser and nowhere else — whether you set it up or were handed a code at the door. An email and a password give it somewhere else to live.",
+  "account.keepBodyNamed":
+    "The way back into {name} lives in this browser and nowhere else — whether you set it up or were handed a code at the door. An email and a password give it somewhere else to live.",
   "account.signInBody":
     "Nothing has been set up on this device. Sign in and whatever you run from another one comes with you.",
   "account.looking": "Looking…",
