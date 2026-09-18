@@ -101,8 +101,17 @@ export function startOAuth(provider: OAuthProvider): void {
   window.location.assign(provider.authURL + encodeURIComponent(redirectURL()));
 }
 
-/** Whether the address we came back to is a provider handing us a result. */
+/**
+ * Whether the address we came back to is a provider handing us a result.
+ *
+ * `typeof window` rather than a try/catch: this is called from a `useState`
+ * initializer, which runs during the server render too, and a provider's
+ * redirect landing on `/account?code=...` is a hard, top-level navigation —
+ * exactly the request that gets server-rendered, not one that only ever
+ * happens after hydration.
+ */
 export function isOAuthReturn(): boolean {
+  if (typeof window === "undefined") return false;
   const params = new URLSearchParams(window.location.search);
   return params.has("code") || params.has("error");
 }
