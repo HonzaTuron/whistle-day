@@ -27,6 +27,7 @@ import {
 } from "../api/oauth";
 import { requestPasswordReset, resendVerification } from "../api/recovery";
 import { AccountLegal } from "../components/AccountLegal";
+import { GoogleIcon } from "../components/GoogleIcon";
 
 type Mode = "claim" | "signin" | "forgot";
 
@@ -470,6 +471,9 @@ export function Account({ next }: { next?: string } = {}) {
                   disabled={busy}
                   onClick={() => startOAuth(provider)}
                 >
+                  {provider.name === "google" ? (
+                    <GoogleIcon className="account__provider-icon" />
+                  ) : null}
                   {t("account.continueWith", {
                     provider: provider.displayName || provider.name,
                   })}

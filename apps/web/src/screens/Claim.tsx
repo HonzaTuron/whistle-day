@@ -9,6 +9,7 @@ import {
 import { claimHandoff, rememberTournament } from "../api/organiser";
 import { useT } from "../lib/i18n";
 import { AccountLegal } from "../components/AccountLegal";
+import { GoogleIcon } from "../components/GoogleIcon";
 
 /**
  * Being handed a tournament.
@@ -140,6 +141,9 @@ export function Claim({ token }: { token: string }) {
                 disabled={busy}
                 onClick={() => void acceptWithProvider(provider)}
               >
+                {provider.name === "google" ? (
+                  <GoogleIcon className="account__provider-icon" />
+                ) : null}
                 {t("account.continueWith", {
                   provider: provider.displayName || provider.name,
                 })}

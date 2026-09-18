@@ -3587,6 +3587,14 @@ th,
   gap: 0.5rem;
 }
 
+.account__providers .btn {
+  gap: 0.625rem;
+}
+
+.account__provider-icon {
+  flex-shrink: 0;
+}
+
 /* A rule with the word sitting in it, so the two ways in read as alternatives
    rather than as a list. */
 .account__or {

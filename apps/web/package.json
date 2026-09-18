@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite dev",
-    "build": "tsc --noEmit && vite build",
+    "build": "tsc --noEmit && NODE_OPTIONS=\"--dns-result-order=ipv4first\" vite build",
     "start": "node dist/server/server.js",
     "preview": "vite preview"
   },
