@@ -63,12 +63,13 @@ ssh deploy@<host> "sudo -u whistleday /srv/whistleday/pocketbase superuser \
 
 # 8. And the dashboard, over a tunnel — it is not on the internet.
 ssh -L 8090:127.0.0.1:8090 deploy@<host>
-#    then http://127.0.0.1:8090/_/ and set, in this order of importance:
+#    then http://127.0.0.1:8090/_/ and set:
 #      - Application URL      https://whistle.day   (handoff links use it)
-#      - OAuth2 on `users`    Google + Facebook, redirect
-#                             https://whistle.day/account
-#    Mail is not set here — the SMTP key goes in /srv/whistleday/.env
-#    (WHISTLEDAY_SMTP_PASS); RegisterMail wires the rest on every boot.
+#    Neither Mail nor Google are set here. The SMTP key and the Google client
+#    id/secret go in /srv/whistleday/.env (WHISTLEDAY_SMTP_PASS,
+#    WHISTLEDAY_GOOGLE_CLIENT_ID/SECRET); RegisterMail and RegisterSocialAuth
+#    wire the rest on every boot. Add Facebook here by hand if you want it —
+#    that one is not env-driven.
 ```
 
 Then check it from outside, which is the only version of "it works" that counts:
@@ -121,16 +122,19 @@ in: `ssh -L 8090:127.0.0.1:8090 deploy@<host>`, then `http://127.0.0.1:8090/_/`.
 - **Application URL → `https://whistle.day`.** It defaults to
   `http://localhost:8090`, and it is what handoff links are built from — every
   `/claim/…` link an agent mints would point at localhost.
-- **OAuth2 on the `users` collection** — the Google and Facebook client ids and
-  secrets, with the redirect URL `https://whistle.day/account`. The sign-in
-  screen asks the server what is configured and draws only what comes back, so
-  until this is done it is an email and a password and nothing else.
+- **Facebook on the `users` collection**, if you want it — the client id and
+  secret, with the redirect URL `https://whistle.day/account`. Google is not
+  set here; see below. The sign-in screen asks the server what is configured
+  and draws only what comes back, so until either is done it is an email and a
+  password and nothing else.
 - A superuser that is not `admin@whistleday.local` / `whistledayadmin1`.
 
-SMTP is **not** set here — `RegisterMail` (`backend/internal/tournament/mail.go`)
-points PocketBase at Brevo on every boot, reading the key from the env file
-below. The host, port and login are in that file in the repo; only the key is
-secret. A dashboard edit to Mail settings does not survive the next restart.
+Neither SMTP nor Google are set here. `RegisterMail`
+(`backend/internal/tournament/mail.go`) points PocketBase at Brevo on every
+boot, and `RegisterSocialAuth` (`backend/internal/tournament/social_auth.go`)
+gives the `users` collection its `google` OAuth2 provider on every boot — both
+read their secret from the env file below. A dashboard edit to either does not
+survive the next restart; the env file is the source of truth.
 
 ## Once, in `/srv/whistleday/.env`
 
@@ -140,10 +144,21 @@ creates it empty; fill in:
 ```bash
 WHISTLEDAY_SMTP_PASS=xsmtpsib-…        # the Brevo SMTP key
 # WHISTLEDAY_MAIL_FROM=alerts@whistle.day   # override the default sender
+
+WHISTLEDAY_GOOGLE_CLIENT_ID=…-….apps.googleusercontent.com
+WHISTLEDAY_GOOGLE_CLIENT_SECRET=GOCSPX-…
 ```
 
-Then restart the API. With no key the mailer stays off and every send is a
-logged no-op — which is what `go run` on a laptop wants.
+Then restart the API. With no SMTP key the mailer stays off and every send is
+a logged no-op — which is what `go run` on a laptop wants. With no Google
+client id and secret, `RegisterSocialAuth` removes the `google` provider
+rather than leaving a button that would fail, so the sign-in screen falls back
+to email and password on its own.
+
+The Google credentials come from a project in
+[Google Cloud Console](https://console.cloud.google.com/apis/credentials): an
+OAuth 2.0 Client ID, application type "Web application", with
+`https://whistle.day/account` as the one authorised redirect URI.
 
 Mail is sent as `no-reply@whistle.day`. The apex is the domain authenticated in
 Brevo — `brevo1`/`brevo2._domainkey.whistle.day` (CNAMEs to Brevo's DKIM keys)

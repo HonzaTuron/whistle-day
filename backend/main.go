@@ -25,6 +25,7 @@ func main() {
 	})
 
 	tournament.RegisterMail(app)
+	tournament.RegisterSocialAuth(app)
 	tournament.RegisterHooks(app)
 	tournament.RegisterHistory(app)
 	tournament.RegisterRealtime(app)
