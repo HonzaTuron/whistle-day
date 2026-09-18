@@ -259,168 +259,236 @@ export function Account({ next }: { next?: string } = {}) {
     <>
       <SiteNav />
       <div className="account">
-      {handoffError ? (
-        <div className="wiz__error" role="alert">
-          <span>{handoffError}</span>
-          <button
-            type="button"
-            onClick={() => setHandoffError(null)}
-            aria-label={t("common.dismiss")}
-          >
-            ✕
-          </button>
-        </div>
-      ) : null}
-      {error ? (
-        <div className="wiz__error" role="alert">
-          <span>{error}</span>
-          <button type="button" onClick={() => setError(null)} aria-label={t("common.dismiss")}>
-            ✕
-          </button>
-        </div>
-      ) : null}
-
-      <header>
-        <h1>{t(heading)}</h1>
-        <p>
-          {deleted
-            ? t("account.deleted")
-            : claimed
-              ? t("account.signedInAs", { email: session?.email ?? "" })
-              : mode === "forgot"
-                ? t("recover.forgotBody")
-                : canClaim
-                  ? running
-                    ? t("account.keepBodyNamed", { name: running.name })
-                    : t("account.keepBody")
-                  : t("account.signInBody")}
-        </p>
-        {canClaim && running ? (
-          <Link
-            to="/t/$id"
-            params={{ id: running.id }}
-            className="account__link account__link--center"
-          >
-            {t("landing.resume", { name: running.name })}
-          </Link>
+        {handoffError ? (
+          <div className="wiz__error" role="alert">
+            <span>{handoffError}</span>
+            <button
+              type="button"
+              onClick={() => setHandoffError(null)}
+              aria-label={t("common.dismiss")}
+            >
+              ✕
+            </button>
+          </div>
         ) : null}
-      </header>
+        {error ? (
+          <div className="wiz__error" role="alert">
+            <span>{error}</span>
+            <button type="button" onClick={() => setError(null)} aria-label={t("common.dismiss")}>
+              ✕
+            </button>
+          </div>
+        ) : null}
 
-      {deleted ? (
-        <section className="account__owned">
-          <Link to="/" className="btn btn--primary btn--block">
-            {t("common.done")}
-          </Link>
-        </section>
-      ) : claimed ? (
-        <section className="account__owned">
-          {needsVerify ? (
-            <p className="account__warning">
-              {resent ? t("recover.verifyResent") : t("recover.verifyNudge")}{" "}
-              {!resent ? (
-                <button
-                  type="button"
-                  className="account__link"
-                  disabled={busy}
-                  onClick={() => void resendVerify()}
-                >
-                  {t("recover.resend")}
-                </button>
-              ) : null}
-            </p>
+        <header>
+          <h1>{t(heading)}</h1>
+          <p>
+            {deleted
+              ? t("account.deleted")
+              : claimed
+                ? t("account.signedInAs", { email: session?.email ?? "" })
+                : mode === "forgot"
+                  ? t("recover.forgotBody")
+                  : canClaim
+                    ? running
+                      ? t("account.keepBodyNamed", { name: running.name })
+                      : t("account.keepBody")
+                    : t("account.signInBody")}
+          </p>
+          {canClaim && running ? (
+            <Link
+              to="/t/$id"
+              params={{ id: running.id }}
+              className="account__link account__link--center"
+            >
+              {t("landing.resume", { name: running.name })}
+            </Link>
           ) : null}
-          {owned === null ? (
-            <p className="account__hint">{t("account.looking")}</p>
-          ) : owned.length === 0 ? (
-            <p className="account__hint">{t("account.noTournaments")}</p>
-          ) : (
-            <ul>
-              {owned.map((tournament) => (
-                <li key={tournament.id}>
-                  <button type="button" onClick={() => open(tournament)}>
-                    <span>{tournament.name}</span>
-                    <small>
-                      {STATUS[tournament.status]
-                        ? t(STATUS[tournament.status]!)
-                        : tournament.status}
-                    </small>
+        </header>
+
+        {deleted ? (
+          <section className="account__owned">
+            <Link to="/" className="btn btn--primary btn--block">
+              {t("common.done")}
+            </Link>
+          </section>
+        ) : claimed ? (
+          <section className="account__owned">
+            {needsVerify ? (
+              <p className="account__warning">
+                {resent ? t("recover.verifyResent") : t("recover.verifyNudge")}{" "}
+                {!resent ? (
+                  <button
+                    type="button"
+                    className="account__link"
+                    disabled={busy}
+                    onClick={() => void resendVerify()}
+                  >
+                    {t("recover.resend")}
                   </button>
-                </li>
-              ))}
-            </ul>
-          )}
-          {confirmingDelete ? (
-            <div className="account__danger-card" role="alert">
-              <h3>{t("account.deleteConfirmTitle")}</h3>
-              <p>
-                {t("account.deleteConfirmPrompt", {
-                  count: owned?.length ?? 0,
-                })}
+                ) : null}
               </p>
-              <div className="account__danger-actions">
-                <button
-                  type="button"
-                  className="btn btn--danger btn--block"
-                  disabled={busy}
-                  onClick={() => void onDelete()}
-                >
-                  {t(busy ? "common.moment" : "account.deleteConfirmButton")}
-                </button>
+            ) : null}
+            {owned === null ? (
+              <p className="account__hint">{t("account.looking")}</p>
+            ) : owned.length === 0 ? (
+              <p className="account__hint">{t("account.noTournaments")}</p>
+            ) : (
+              <ul>
+                {owned.map((tournament) => (
+                  <li key={tournament.id}>
+                    <button type="button" onClick={() => open(tournament)}>
+                      <span>{tournament.name}</span>
+                      <small>
+                        {STATUS[tournament.status]
+                          ? t(STATUS[tournament.status]!)
+                          : tournament.status}
+                      </small>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+            {confirmingDelete ? (
+              <div className="account__danger-card" role="alert">
+                <h3>{t("account.deleteConfirmTitle")}</h3>
+                <p>
+                  {t("account.deleteConfirmPrompt", {
+                    count: owned?.length ?? 0,
+                  })}
+                </p>
+                <div className="account__danger-actions">
+                  <button
+                    type="button"
+                    className="btn btn--danger btn--block"
+                    disabled={busy}
+                    onClick={() => void onDelete()}
+                  >
+                    {t(busy ? "common.moment" : "account.deleteConfirmButton")}
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn--quiet btn--block"
+                    disabled={busy}
+                    onClick={() => setConfirmingDelete(false)}
+                  >
+                    {t("common.cancel")}
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="account__actions">
+                <Link to="/" className="btn btn--primary btn--block">
+                  {t("common.done")}
+                </Link>
                 <button
                   type="button"
                   className="btn btn--quiet btn--block"
-                  disabled={busy}
-                  onClick={() => setConfirmingDelete(false)}
+                  onClick={onSignOut}
                 >
-                  {t("common.cancel")}
+                  {t("account.signOut")}
+                </button>
+                <button
+                  type="button"
+                  className="account__link account__link--center"
+                  onClick={() => setConfirmingDelete(true)}
+                >
+                  {t("account.deleteButton")}
                 </button>
               </div>
-            </div>
-          ) : (
-            <div className="account__actions">
-              <Link to="/" className="btn btn--primary btn--block">
-                {t("common.done")}
-              </Link>
+            )}
+          </section>
+        ) : mode === "forgot" ? (
+          sentReset ? (
+            <section className="account__owned">
+              <p className="account__hint">{t("recover.sent")}</p>
               <button
                 type="button"
                 className="btn btn--quiet btn--block"
-                onClick={onSignOut}
+                onClick={() => {
+                  setMode("signin");
+                  setSentReset(false);
+                }}
               >
-                {t("account.signOut")}
+                {t("recover.backToSignIn")}
               </button>
-              <button
-                type="button"
-                className="account__link account__link--center"
-                onClick={() => setConfirmingDelete(true)}
-              >
-                {t("account.deleteButton")}
-              </button>
-            </div>
-          )}
-        </section>
-      ) : mode === "forgot" ? (
-        sentReset ? (
-          <section className="account__owned">
-            <p className="account__hint">{t("recover.sent")}</p>
-            <button
-              type="button"
-              className="btn btn--quiet btn--block"
-              onClick={() => {
-                setMode("signin");
-                setSentReset(false);
+            </section>
+          ) : (
+            <form
+              className="account__form"
+              onSubmit={(event) => {
+                event.preventDefault();
+                void sendReset();
               }}
             >
-              {t("recover.backToSignIn")}
-            </button>
-          </section>
+              <label>
+                <span>{t("account.email")}</span>
+                <input
+                  type="email"
+                  name="email"
+                  autoComplete="email"
+                  value={email}
+                  onChange={(event) => setEmail(event.target.value)}
+                  required
+                />
+              </label>
+
+              <button
+                type="submit"
+                className="btn btn--primary btn--block"
+                disabled={busy}
+              >
+                {t(busy ? "common.moment" : "recover.sendLink")}
+              </button>
+
+              <button
+                type="button"
+                className="btn btn--quiet btn--block"
+                onClick={() => {
+                  setMode("signin");
+                  setError(null);
+                }}
+              >
+                {t("recover.backToSignIn")}
+              </button>
+            </form>
+          )
         ) : (
           <form
             className="account__form"
             onSubmit={(event) => {
               event.preventDefault();
-              void sendReset();
+              void submit();
             }}
           >
+            {/*
+              Above the form, because it is the shorter way through and the one
+              most people will take. Whichever mode the form is in, this button
+              does the same thing — keep this device's tournament if there is one
+              to keep, sign in if there is not — so it is not repeated per mode.
+            */}
+            {providers.length > 0 ? (
+              <div className="account__providers">
+                {providers.map((provider) => (
+                  <button
+                    key={provider.name}
+                    type="button"
+                    className="btn btn--quiet btn--block"
+                    disabled={busy}
+                    onClick={() => startOAuth(provider)}
+                  >
+                    {provider.name === "google" ? (
+                      <GoogleIcon className="account__provider-icon" />
+                    ) : null}
+                    {t("account.continueWith", {
+                      provider: provider.displayName || provider.name,
+                    })}
+                  </button>
+                ))}
+                <p className="account__or">{t("account.or")}</p>
+              </div>
+            ) : null}
+
             <label>
               <span>{t("account.email")}</span>
               <input
@@ -433,151 +501,83 @@ export function Account({ next }: { next?: string } = {}) {
               />
             </label>
 
+            <label>
+              <span>{t("account.password")}</span>
+              <input
+                type="password"
+                name="password"
+                autoComplete={mode === "claim" ? "new-password" : "current-password"}
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+                minLength={8}
+                required
+              />
+            </label>
+
             <button
               type="submit"
               className="btn btn--primary btn--block"
               disabled={busy}
             >
-              {t(busy ? "common.moment" : "recover.sendLink")}
-            </button>
-
-            <button
-              type="button"
-              className="btn btn--quiet btn--block"
-              onClick={() => {
-                setMode("signin");
-                setError(null);
-              }}
-            >
-              {t("recover.backToSignIn")}
-            </button>
-          </form>
-        )
-      ) : (
-        <form
-          className="account__form"
-          onSubmit={(event) => {
-            event.preventDefault();
-            void submit();
-          }}
-        >
-          {/*
-            Above the form, because it is the shorter way through and the one
-            most people will take. Whichever mode the form is in, this button
-            does the same thing — keep this device's tournament if there is one
-            to keep, sign in if there is not — so it is not repeated per mode.
-          */}
-          {providers.length > 0 ? (
-            <div className="account__providers">
-              {providers.map((provider) => (
-                <button
-                  key={provider.name}
-                  type="button"
-                  className="btn btn--quiet btn--block"
-                  disabled={busy}
-                  onClick={() => startOAuth(provider)}
-                >
-                  {provider.name === "google" ? (
-                    <GoogleIcon className="account__provider-icon" />
-                  ) : null}
-                  {t("account.continueWith", {
-                    provider: provider.displayName || provider.name,
-                  })}
-                </button>
-              ))}
-              <p className="account__or">{t("account.or")}</p>
-            </div>
-          ) : null}
-
-          <label>
-            <span>{t("account.email")}</span>
-            <input
-              type="email"
-              name="email"
-              autoComplete="email"
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-              required
-            />
-          </label>
-
-          <label>
-            <span>{t("account.password")}</span>
-            <input
-              type="password"
-              name="password"
-              autoComplete={mode === "claim" ? "new-password" : "current-password"}
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              minLength={8}
-              required
-            />
-          </label>
-
-          <button
-            type="submit"
-            className="btn btn--primary btn--block"
-            disabled={busy}
-          >
-            {t(
-              busy
-                ? "common.moment"
-                : mode === "claim"
-                  ? "account.save"
-                  : "account.signInTitle",
-            )}
-          </button>
-
-          {mode === "claim" ? (
-            <p className="account__agreement">
-              {t("account.termsNotice")}{" "}
-              <Link to="/$" params={{ _splat: "terms" }}>
-                {t("account.termsOfService")}
-              </Link>{" "}
-              {t("account.and")}{" "}
-              <Link to="/$" params={{ _splat: "privacy" }}>
-                {t("account.privacyPolicy")}
-              </Link>
-              .
-            </p>
-          ) : null}
-
-          {canClaim ? (
-            <button
-              type="button"
-              className="btn btn--quiet btn--block"
-              onClick={() => {
-                setMode(mode === "claim" ? "signin" : "claim");
-                setError(null);
-              }}
-            >
               {t(
-                mode === "claim" ? "account.haveAccount" : "account.keepInstead",
+                busy
+                  ? "common.moment"
+                  : mode === "claim"
+                    ? "account.save"
+                    : "account.signInTitle",
               )}
             </button>
-          ) : null}
 
-          {mode === "signin" && canClaim ? (
-            <p className="account__warning">{t("account.switchWarning")}</p>
-          ) : null}
+            {mode === "claim" ? (
+              <p className="account__agreement">
+                {t("account.termsNotice")}{" "}
+                <Link to="/$" params={{ _splat: "terms" }}>
+                  {t("account.termsOfService")}
+                </Link>{" "}
+                {t("account.and")}{" "}
+                <Link to="/$" params={{ _splat: "privacy" }}>
+                  {t("account.privacyPolicy")}
+                </Link>
+                .
+              </p>
+            ) : null}
 
-          {mode === "signin" ? (
-            <button
-              type="button"
-              className="account__link account__link--center"
-              onClick={() => {
-                setMode("forgot");
-                setError(null);
-                setSentReset(false);
-              }}
-            >
-              {t("recover.forgotLink")}
-            </button>
-          ) : null}
-        </form>
-      )}
+            {canClaim ? (
+              <button
+                type="button"
+                className="btn btn--quiet btn--block"
+                onClick={() => {
+                  setMode(mode === "claim" ? "signin" : "claim");
+                  setError(null);
+                }}
+              >
+                {t(
+                  mode === "claim" ? "account.haveAccount" : "account.keepInstead",
+                )}
+              </button>
+            ) : null}
 
-      <AccountLegal />
+            {mode === "signin" && canClaim ? (
+              <p className="account__warning">{t("account.switchWarning")}</p>
+            ) : null}
+
+            {mode === "signin" ? (
+              <button
+                type="button"
+                className="account__link account__link--center"
+                onClick={() => {
+                  setMode("forgot");
+                  setError(null);
+                  setSentReset(false);
+                }}
+              >
+                {t("recover.forgotLink")}
+              </button>
+            ) : null}
+          </form>
+        )}
+
+        <AccountLegal />
       </div>
     </>
   );

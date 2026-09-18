@@ -10,6 +10,9 @@ import { isAppRoute } from "../lib/routes";
  * their way in gets the page in their system language and never has to find a
  * control. The projector is out too — it is a wall, aimed once with `?lang=` on
  * the link, and a floating chip would only burn into the projected image.
+ * `/account` carries the marketing pages' own `SiteNav` rather than a header of
+ * its own, so it follows their reasoning as well: this would only float on top
+ * of it, doubling up on the corner `SiteNav`'s own layout already uses.
  *
  * Fixed rather than folded into each screen's header, because the wizard, the
  * board and the phone view keep three different headers and none of them has an
@@ -20,6 +23,7 @@ export function AppChrome() {
 
   if (!isAppRoute(pathname)) return null;
   if (pathname.startsWith("/display")) return null;
+  if (pathname.startsWith("/account")) return null;
 
   return (
     <div className="appchrome">
