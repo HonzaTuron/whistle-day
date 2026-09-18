@@ -28,6 +28,7 @@ import {
 import { requestPasswordReset, resendVerification } from "../api/recovery";
 import { AccountLegal } from "../components/AccountLegal";
 import { GoogleIcon } from "../components/GoogleIcon";
+import { SiteNav } from "../components/marketing/SiteNav";
 
 type Mode = "claim" | "signin" | "forgot";
 
@@ -242,17 +243,22 @@ export function Account({ next }: { next?: string } = {}) {
 
   if (completingHandoff && !handoffError) {
     return (
-      <div className="account">
-        <header>
-          <h1>{t("claim.finishing")}</h1>
-          <p>{t("common.moment")}</p>
-        </header>
-      </div>
+      <>
+        <SiteNav />
+        <div className="account">
+          <header>
+            <h1>{t("claim.finishing")}</h1>
+            <p>{t("common.moment")}</p>
+          </header>
+        </div>
+      </>
     );
   }
 
   return (
-    <div className="account">
+    <>
+      <SiteNav />
+      <div className="account">
       {handoffError ? (
         <div className="wiz__error" role="alert">
           <span>{handoffError}</span>
@@ -572,6 +578,7 @@ export function Account({ next }: { next?: string } = {}) {
       )}
 
       <AccountLegal />
-    </div>
+      </div>
+    </>
   );
 }
