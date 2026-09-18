@@ -547,6 +547,7 @@ export const en = {
   "board.teams": "Teams",
   "board.scoring": "Scoring",
   "board.crew": "Crew",
+  "board.sponsors": "Sponsors",
   "board.tabTodo": "To play",
   "board.tabDone": "Played",
   "board.emptyTodo": "Every match is in.",
@@ -767,6 +768,25 @@ export const en = {
   "screen.groundDark": "Dark",
   "screen.groundNote":
     "A projector has no black — with the hall lights on, a dark screen goes grey and the text goes with it. Dark is for a room that has been dimmed.",
+
+  // -------------------------------------------------------------------------
+  // who is on the closing panel
+  // -------------------------------------------------------------------------
+  "sponsors.label": "Sponsors",
+  "sponsors.title": "Who's on the closing panel",
+  "sponsors.intro":
+    "Shown on the wall's last panel once your subscription is active. A name is enough to add one — a logo can follow later.",
+  "sponsors.empty": "No sponsors yet.",
+  "sponsors.addName": "Sponsor name",
+  "sponsors.addTier": "Main partner, official ball…",
+  "sponsors.addLogo": "Add a logo",
+  "sponsors.add": "Add",
+  "sponsors.adding": "Adding…",
+  "sponsors.addHint": "PNG, JPG, SVG or WebP, up to 2MB.",
+  "sponsors.changeLogo": "Change {name}'s logo",
+  "sponsors.moveUp": "Move {name} up",
+  "sponsors.moveDown": "Move {name} down",
+  "sponsors.removeSponsor": "Remove {name}",
 
   "panel.now_playing": "Now playing",
   "panel.now_playing.hint": "The live matches.",

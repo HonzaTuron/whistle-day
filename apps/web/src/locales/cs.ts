@@ -557,6 +557,7 @@ export const cs: Record<keyof Catalog, Message> = {
   "board.teams": "Týmy",
   "board.scoring": "Bodování",
   "board.crew": "Tým pořadatelů",
+  "board.sponsors": "Sponzoři",
   "board.tabTodo": "K odehrání",
   "board.tabDone": "Odehráno",
   "board.emptyTodo": "Všechny zápasy jsou zapsané.",
@@ -793,6 +794,25 @@ export const cs: Record<keyof Catalog, Message> = {
   "screen.groundDark": "Tmavé",
   "screen.groundNote":
     "Projektor neumí černou — při rozsvícené hale zšedne tmavá obrazovka a text s ní. Tmavé je na sál, kde se zhaslo.",
+
+  // -------------------------------------------------------------------------
+  // kdo je na závěrečném panelu
+  // -------------------------------------------------------------------------
+  "sponsors.label": "Sponzoři",
+  "sponsors.title": "Kdo je na závěrečném panelu",
+  "sponsors.intro":
+    "Zobrazí se na posledním panelu zdi, dokud je aktivní předplatné. Stačí jméno — logo může přijít později.",
+  "sponsors.empty": "Zatím žádní sponzoři.",
+  "sponsors.addName": "Jméno sponzora",
+  "sponsors.addTier": "Hlavní partner, oficiální míč…",
+  "sponsors.addLogo": "Přidat logo",
+  "sponsors.add": "Přidat",
+  "sponsors.adding": "Přidávání…",
+  "sponsors.addHint": "PNG, JPG, SVG nebo WebP, do 2 MB.",
+  "sponsors.changeLogo": "Změnit logo — {name}",
+  "sponsors.moveUp": "Přesunout {name} nahoru",
+  "sponsors.moveDown": "Přesunout {name} dolů",
+  "sponsors.removeSponsor": "Odebrat {name}",
 
   "panel.now_playing": "Právě se hraje",
   "panel.now_playing.hint": "Živé zápasy.",

@@ -228,7 +228,7 @@ func BuildDisplayPayload(app core.App, display *core.Record) (*DisplayPayload, e
 		Entries:  map[string]displayEntry{},
 		Courts:   []displayCourt{},
 		Stages:   []displayStage{},
-		Sponsors: sponsorSlots(app, display, tournament),
+		Sponsors: sponsorSlots(app, tournament),
 	}
 
 	entries, err := app.FindRecordsByFilter(
@@ -425,30 +425,18 @@ func BuildDisplayPayload(app core.App, display *core.Record) (*DisplayPayload, e
 	return payload, nil
 }
 
-// sponsorSlots reads the screen's sponsors out of its theme — and returns
-// nothing at all unless the tournament's owner is subscribed.
+// sponsorSlots reads a tournament's sponsors — and returns nothing at all
+// unless the tournament's owner is subscribed.
 //
 // The check is here, and not in the browser, for two reasons. A client cannot
 // be trusted to hide something it has been handed; and the owner's plan is not
 // the screen's business, so the way to keep it off a public endpoint is to
 // send no sponsors rather than send them with a flag.
 //
-// Nothing in here can fail the payload. A theme that will not parse, or an
-// owner who cannot be loaded, costs the sponsors — not the scoreboard.
-func sponsorSlots(app core.App, display, tournament *core.Record) []displaySponsor {
+// Nothing in here can fail the payload. An owner who cannot be loaded, or a
+// tournament with none configured, costs the sponsors — not the scoreboard.
+func sponsorSlots(app core.App, tournament *core.Record) []displaySponsor {
 	empty := []displaySponsor{}
-
-	raw := display.GetString("theme")
-	if raw == "" || raw == "null" {
-		return empty
-	}
-
-	var theme struct {
-		Sponsors []displaySponsor `json:"sponsors"`
-	}
-	if err := json.Unmarshal([]byte(raw), &theme); err != nil || len(theme.Sponsors) == 0 {
-		return empty
-	}
 
 	// Only looked up when there is something to gate, so an ordinary screen
 	// polling every four seconds does not read the owner at all.
@@ -457,16 +445,25 @@ func sponsorSlots(app core.App, display, tournament *core.Record) []displaySpons
 		return empty
 	}
 
+	sponsors, err := app.FindRecordsByFilter(
+		"sponsors", "tournament = {:t}", "position", maxSponsors, 0,
+		dbx.Params{"t": tournament.Id},
+	)
+	if err != nil {
+		return empty
+	}
+
 	slots := empty
-	for _, sponsor := range theme.Sponsors {
-		// Neither a logo nor a name is not a sponsor, it is a blank box.
-		if sponsor.Logo == "" && sponsor.Name == "" {
-			continue
+	for _, sponsor := range sponsors {
+		logo := ""
+		if filename := sponsor.GetString("logo"); filename != "" {
+			logo = "/api/files/" + sponsor.BaseFilesPath() + "/" + filename
 		}
-		slots = append(slots, sponsor)
-		if len(slots) == maxSponsors {
-			break
-		}
+		slots = append(slots, displaySponsor{
+			Name: sponsor.GetString("name"),
+			Logo: logo,
+			Tier: sponsor.GetString("tier"),
+		})
 	}
 	return slots
 }

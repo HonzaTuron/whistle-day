@@ -109,6 +109,25 @@ export interface Court {
   active: boolean;
 }
 
+/**
+ * One sponsor an organiser has configured, scoped to a tournament rather than
+ * to one screen — every screen shows the same closing panel.
+ *
+ * `logo` is the raw filename PocketBase stores it under, the same way
+ * `Entry.logo` is; build a URL for it with `pb().files.getUrl(sponsor,
+ * sponsor.logo)`. This is the record an organiser edits — see
+ * {@link DisplaySponsor} for what a screen is actually sent.
+ */
+export interface Sponsor {
+  id: Id;
+  tournament: Id;
+  name: string;
+  logo: string;
+  /** The line underneath — "Main partner", "Official ball". */
+  tier: string;
+  position: number;
+}
+
 // ---------------------------------------------------------------------------
 // entries
 // ---------------------------------------------------------------------------
@@ -462,11 +481,13 @@ export interface Display {
 }
 
 /**
- * One sponsor slot on the projector's closing panel.
+ * One sponsor slot on the projector's closing panel, as a screen receives it
+ * — see {@link Sponsor} for the record an organiser edits.
  *
- * `logo` is a URL; `name` is what the screen draws when there is no logo, and
- * the image's alt text when there is. A slot with neither is dropped by the
- * server — a blank box is not a sponsor.
+ * `logo` is a URL the server built from the uploaded file; `name` is what the
+ * screen draws when there is no logo, and the image's alt text when there is.
+ * A slot with neither is dropped by the server — a blank box is not a
+ * sponsor.
  */
 export interface DisplaySponsor {
   name: string;
@@ -490,8 +511,6 @@ export interface DisplayTheme {
   mode?: DisplayThemeMode;
   accent?: string;
   logo?: string;
-  /** Shown only while the tournament's owner has a subscription. */
-  sponsors?: DisplaySponsor[];
 }
 
 // ---------------------------------------------------------------------------

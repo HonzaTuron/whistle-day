@@ -1,19 +1,24 @@
 import { Link } from "@tanstack/react-router";
 import { useRef, useState, useSyncExternalStore } from "react";
 import {
+  addSponsor,
   addTeam,
   admitEntry,
   ensureOrganiser,
   ensureInvite,
   rememberTournament,
+  removeSponsor,
   removeStaff,
   removeTeam,
   resetInvite,
   reinstateEntry,
+  sponsorLogoUrl,
   statusAfterClearing,
   storedSession,
+  swapSponsors,
   updateDisplay,
   updateScoring,
+  updateSponsor,
   withdrawEntry,
   type Board,
   type Session,
@@ -33,13 +38,14 @@ import {
 import { useT } from "../lib/i18n";
 import { admissionNotice } from "../lib/teams";
 import { overlay, waitingFixtures, type Intent } from "../lib/pending";
-import type { Display, Entry, ScoringConfig, StaffRole } from "@whistleday/engine";
+import type { Display, Entry, ScoringConfig, Sponsor, StaffRole } from "@whistleday/engine";
 import { CrewSheet } from "../components/results/CrewSheet";
 import { FixtureRow } from "../components/results/FixtureRow";
 import { TeamsSheet } from "../components/results/TeamsSheet";
 import { MatchSheet } from "../components/results/MatchSheet";
 import { ScoringSheet } from "../components/results/ScoringSheet";
 import { ScreenSheet } from "../components/results/ScreenSheet";
+import { SponsorsSheet } from "../components/results/SponsorsSheet";
 import { StageProgress } from "../components/results/StageProgress";
 import { progress, sections, toRow } from "../lib/board";
 
@@ -53,6 +59,7 @@ export function Results({ id }: { id: string }) {
   const [scoring, setScoring] = useState(false);
   const [crew, setCrew] = useState(false);
   const [roster, setRoster] = useState(false);
+  const [sponsors, setSponsors] = useState(false);
   const [invite, setInvite] = useState<{ role: StaffRole; url: string } | null>(null);
   /** Where the team just added landed, said once and shown in the sheet. */
   const [joined, setJoined] = useState<string | null>(null);
@@ -257,6 +264,33 @@ export function Results({ id }: { id: string }) {
   const putBack = (team: Entry) =>
     void write((active) => reinstateEntry(active, team.id), false);
 
+  const addSponsorRow = (name: string, tier: string, logo: File | null) =>
+    void write(
+      (active) =>
+        addSponsor(active, id, {
+          name,
+          tier,
+          position: displayBoard.sponsors.length,
+          ...(logo ? { logo } : {}),
+        }),
+      false,
+    );
+
+  const replaceSponsorLogo = (sponsor: Sponsor, logo: File) =>
+    void write((active) => updateSponsor(active, sponsor.id, { logo }), false);
+
+  const removeSponsorRow = (sponsor: Sponsor) =>
+    void write((active) => removeSponsor(active, sponsor.id), false);
+
+  /** Swapping two positions is all "move one row up or down" ever needs. */
+  const moveSponsor = (sponsor: Sponsor, direction: "up" | "down") => {
+    const rows = displayBoard.sponsors;
+    const at = rows.findIndex((one) => one.id === sponsor.id);
+    const other = rows[direction === "up" ? at - 1 : at + 1];
+    if (!other) return;
+    void write((active) => swapSponsors(active, sponsor, other), false);
+  };
+
   return (
     <div className="results">
       {error ? (
@@ -301,6 +335,14 @@ export function Results({ id }: { id: string }) {
             onClick={() => setScoring(true)}
           >
             {t("board.scoring")}
+          </button>
+          <button
+            type="button"
+            className="results__screen results__screen--settings"
+            onClick={() => setSponsors(true)}
+          >
+            {t("board.sponsors")}
+            {displayBoard.sponsors.length > 0 ? ` · ${displayBoard.sponsors.length}` : ""}
           </button>
           {isOwner ? (
             <button
@@ -458,6 +500,19 @@ export function Results({ id }: { id: string }) {
           state={scoringState}
           onChange={(next, sport) => void writeScoring(next, sport)}
           onClose={() => setScoring(false)}
+        />
+      ) : null}
+
+      {sponsors ? (
+        <SponsorsSheet
+          sponsors={displayBoard.sponsors}
+          logoUrl={sponsorLogoUrl}
+          busy={saving}
+          onAdd={addSponsorRow}
+          onReplaceLogo={replaceSponsorLogo}
+          onRemove={removeSponsorRow}
+          onMove={moveSponsor}
+          onClose={() => setSponsors(false)}
         />
       ) : null}
 

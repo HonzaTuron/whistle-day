@@ -435,7 +435,8 @@ func init() {
 			num("rotate_seconds", false),
 			// narrow what this screen shows: { stage, pool, court }
 			jsn("scope"),
-			// { accent, logo, sponsors: [] }
+			// { accent, logo } — sponsors live in their own collection, see
+			// migrations/1788393600_sponsors.go
 			jsn("theme"),
 			bln("active"),
 		)

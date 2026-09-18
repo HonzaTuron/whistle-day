@@ -489,11 +489,11 @@ Three details that matter for a screen:
   The organiser writes them from the results screen and the wall follows on
   the next nudge, which is what makes the wall the preview.
 - **`theme` is free-form json, and stays that way.** It carries `mode`
-  (`dark`, or absent for the light default a lit hall needs), `accent`, `logo`
-  and `sponsors`, and the server reads exactly one of them — `sponsors`,
-  because those are the ones somebody pays for. Everything else is handed to
-  the screen verbatim, which is what makes a key the browser understands a
-  change the backend never has to migrate for.
+  (`dark`, or absent for the light default a lit hall needs), `accent` and
+  `logo`, all handed to the screen verbatim, which is what makes a key the
+  browser understands a change the backend never has to migrate for. Sponsors
+  used to live in here too, as a hand-edited list; they are their own
+  collection now — see below.
 - **A screen is told when to read.** Every write to anything a screen renders
   broadcasts a nudge on `tournament/{id}` over PocketBase's realtime stream —
   the fact of the change, never the change itself. Screens still hold a slow
@@ -506,8 +506,16 @@ to probe for unpublished events.
 ## The one thing on a screen somebody pays for
 
 The rotation ends on a panel crediting Whistle.day, and that panel carries the
-screen's sponsor slots — `displays.theme.sponsors`, a list of
-`{ name, logo, tier }` — while the tournament's owner is subscribed.
+tournament's sponsors while its owner is subscribed.
+
+**Sponsors are a collection, not a blob of JSON.** `sponsors` is modelled on
+`entries`: one row per business, scoped to a `tournament` rather than to a
+single screen, with `name`, a real uploaded `logo` file, `tier` (free text —
+"Main partner", "Official ball") and a `position` an organiser can reorder. It
+used to be `displays.theme.sponsors`, a list an organiser could only fill in
+by pasting a URL to an image hosted somewhere else into raw JSON through the
+admin UI; a proper collection means a real upload form and a picture that
+lives with the tournament instead of on whatever hosting the organiser found.
 
 **It is one date on the user.** `users.subscription_until`, and nothing beside
 it. The subscription is on the user because that is what is bought — somebody
@@ -521,11 +529,10 @@ than two columns that can disagree about a distinction nothing yet makes.
 
 **The filtering happens on the server.** `GET /api/display/{token}` is public
 and needs no login, so an unsubscribed tournament sends `sponsors: []` rather
-than sending them with a flag for the browser to respect. The owner is only
-looked up when a theme actually has sponsors in it, so an ordinary screen
-re-reading the payload does not touch the user table at all, and neither a
-theme that will not parse nor an owner who cannot be loaded fails the payload —
-that costs the sponsors, not the scoreboard.
+than sending them with a flag for the browser to respect. The owner is looked
+up first and the `sponsors` collection is never queried at all if they are not
+subscribed, and neither a lookup that fails nor an owner who cannot be loaded
+fails the payload — that costs the sponsors, not the scoreboard.
 
 **Nothing else guards the field.** It sits on a record its owner is allowed to
 write, which is what lets an organiser put an email on a device account, and a

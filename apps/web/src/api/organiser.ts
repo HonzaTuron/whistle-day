@@ -11,6 +11,7 @@ import type {
   Pool,
   ScoringConfig,
   Slot,
+  Sponsor,
   Stage,
   StaffRole,
 } from "@whistleday/engine";
@@ -487,6 +488,68 @@ export const removeCourt = (session: Session, id: Id) =>
   remove(session, "courts", id);
 
 // ---------------------------------------------------------------------------
+// the closing panel's sponsors
+// ---------------------------------------------------------------------------
+
+export const loadSponsors = (session: Session, tournament: Id) =>
+  records<Sponsor>(session, "sponsors", {
+    filter: filter("tournament = {:v}", { v: tournament }),
+    sort: "position",
+  });
+
+/**
+ * A thumbnail for the sheet an organiser edits this from, or "" with none
+ * uploaded. `100x100` needs no per-field thumb config — PocketBase serves it
+ * for any file field.
+ */
+export const sponsorLogoUrl = (sponsor: Sponsor): string =>
+  sponsor.logo ? pb().files.getURL(sponsor, sponsor.logo, { thumb: "100x100" }) : "";
+
+/**
+ * A logo is not required to add a row — the name is what makes it a sponsor,
+ * and a picture can follow the moment it arrives by email.
+ */
+export const addSponsor = (
+  session: Session,
+  tournament: Id,
+  sponsor: { name: string; tier: string; position: number; logo?: File },
+) =>
+  create<Sponsor>(session, "sponsors", {
+    tournament,
+    name: sponsor.name,
+    tier: sponsor.tier,
+    position: sponsor.position,
+    ...(sponsor.logo ? { logo: sponsor.logo } : {}),
+  });
+
+/**
+ * `logo` is only sent when a new file was picked. Leaving it out of the patch
+ * keeps whatever is already uploaded; `null` clears it without replacing it.
+ */
+export const updateSponsor = (
+  session: Session,
+  id: Id,
+  patch: { name?: string; tier?: string; logo?: File | null },
+) => update<Sponsor>(session, "sponsors", id, patch);
+
+export const removeSponsor = (session: Session, id: Id) =>
+  remove(session, "sponsors", id);
+
+/**
+ * Swap two rows' places in the rotation.
+ *
+ * There is no drag handle here the way there is for a screen's panels — a
+ * sponsor list is short and reordered rarely, so a pair of buttons is the
+ * whole interface, and swapping the two positions is all moving one row up or
+ * down ever needs.
+ */
+export const swapSponsors = (session: Session, a: Sponsor, b: Sponsor) =>
+  Promise.all([
+    update<Sponsor>(session, "sponsors", a.id, { position: b.position }),
+    update<Sponsor>(session, "sponsors", b.id, { position: a.position }),
+  ]);
+
+// ---------------------------------------------------------------------------
 // running a tournament
 // ---------------------------------------------------------------------------
 
@@ -498,6 +561,8 @@ export interface Board {
   pools: Pool[];
   courts: Court[];
   fixtures: BoardFixture[];
+  /** The closing panel's sponsors, in the order they run. */
+  sponsors: Sponsor[];
   /** The screen token, so the organiser can always find the wall. */
   token: string;
   /**
@@ -536,7 +601,7 @@ export interface BoardFixture extends Fixture {
 export const stamp = (date: Date) => date.toISOString().replace("T", " ");
 
 export async function loadBoard(session: Session, id: Id): Promise<Board> {
-  const [tournament, entries, stages, pools, courts, fixtures, screens, crew] =
+  const [tournament, entries, stages, pools, courts, fixtures, screens, crew, sponsors] =
     await Promise.all([
     loadTournament(session, id),
     records<Entry>(session, "entries", { filter: filter("tournament = {:v}", { v: id }), sort: "seed" }),
@@ -557,6 +622,7 @@ export async function loadBoard(session: Session, id: Id): Promise<Board> {
       "staff",
       { filter: filter("tournament = {:v}", { v: id }), sort: "created" },
     ),
+    loadSponsors(session, id),
   ]);
 
   return {
@@ -566,6 +632,7 @@ export async function loadBoard(session: Session, id: Id): Promise<Board> {
     pools,
     courts,
     fixtures,
+    sponsors,
     token: screens[0]?.token ?? "",
     screen: screens[0] ?? null,
     staff: crew,

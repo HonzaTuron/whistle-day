@@ -454,15 +454,17 @@ try {
     mode: "auto",
     rotate_seconds: 15,
     active: true,
-    theme: {
-      accent: "#0a7",
-      sponsors: [
-        { name: "Hall Sponsor", logo: "https://example.test/hall.svg", tier: "Main partner" },
-        { name: "Ball Sponsor", logo: "" },
-        { name: "", logo: "" },
-      ],
-    },
+    theme: { accent: "#0a7" },
   });
+
+  // Sponsors are their own collection, scoped to the tournament rather than
+  // to this one screen. A logo is a real upload, not something a smoke test
+  // can fake over JSON, so the second row is left without one on purpose —
+  // that is the ordinary case for a sponsor signed up five minutes ago.
+  await create("sponsors", {
+    tournament: cup.id, name: "Hall Sponsor", tier: "Main partner", position: 0,
+  });
+  await create("sponsors", { tournament: cup.id, name: "Ball Sponsor", position: 1 });
 
   // Public: no Authorization header at all.
   const raw = await fetch(`${BASE}/api/display/${screenToken}`);
@@ -518,8 +520,8 @@ try {
   // The sponsor slots are the one thing on this endpoint somebody pays for, so
   // the gate has to hold from the outside: the screen is public, the plan is
   // the owner's, and the only way to keep one off the other is to send
-  // nothing. `theme.sponsors` is set on this screen throughout — what changes
-  // below is only what the owner is paying for.
+  // nothing. The two `sponsors` rows created above stay in place throughout —
+  // what changes below is only what the owner is paying for.
   const sponsorsOf = async () =>
     (await (await fetch(`${BASE}/api/display/${screenToken}`)).json()).sponsors;
 
@@ -532,8 +534,8 @@ try {
   const paid = await sponsorsOf();
   check("a subscription opens the slots", paid.length, 2);
   check("and carries what the screen draws", paid[0].tier, "Main partner");
-  // Neither a logo nor a name is a blank box, not a sponsor.
-  check("an empty slot is dropped", paid.map((s: any) => s.name), ["Hall Sponsor", "Ball Sponsor"]);
+  // A sponsor signed up five minutes ago has a name and no logo yet.
+  check("a sponsor with no logo still shows", paid[1].logo, "");
 
   await patch("users", organiser.id, { subscription_until: "2020-01-01 00:00:00Z" });
   check("a lapsed subscription closes them again", await sponsorsOf(), []);

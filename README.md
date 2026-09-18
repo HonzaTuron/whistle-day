@@ -327,12 +327,13 @@ the anonymous device account exactly as before.
   below the smallest pool's last place are disregarded, so teams out of a pool
   of four and a pool of three are compared over the same number of matches.
 - **The rotation closes on a credit.** Every screen ends on a "Powered by
-  Whistle.day" panel, and on the sponsor slots from `displays.theme.sponsors` as
-  well while `users.subscription_until` on the tournament's owner is still in
-  the future. The filtering is the server's: an unsubscribed tournament sends
-  no sponsors at all, so there is nothing on a public endpoint for a screen to
-  un-hide, and no account can sell itself the upgrade — the date sits on a
-  record its owner may otherwise write, so a hook refuses that write.
+  Whistle.day" panel, and on the tournament's `sponsors` — a proper collection,
+  each row a name, an uploaded logo and a tier — as well while
+  `users.subscription_until` on the tournament's owner is still in the future.
+  The filtering is the server's: an unsubscribed tournament sends no sponsors
+  at all, so there is nothing on a public endpoint for a screen to un-hide, and
+  no account can sell itself the upgrade — the date sits on a record its owner
+  may otherwise write, so a hook refuses that write.
 - **A team that turns up late is put in, not started again.** The mirror of a
   withdrawal and the harder half of it: taking somebody out only has to close
   what they had left, while putting somebody in has to invent the matches they
