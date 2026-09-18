@@ -855,6 +855,7 @@ export const en = {
   "projector.connecting": "Connecting…",
   "projector.nothingYet": "{name} — nothing to show yet",
   "projector.reconnecting": "reconnecting",
+  "projector.mobileHint": "Live scores on your phone",
   "projector.partners": "Our partners",
   "projector.poweredBy": "Powered by Whistle.day",
   "projector.credit": "Scoring and screens for this tournament",

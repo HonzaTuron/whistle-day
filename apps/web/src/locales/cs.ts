@@ -886,6 +886,7 @@ export const cs: Record<keyof Catalog, Message> = {
   "projector.connecting": "Připojuje se…",
   "projector.nothingYet": "{name} — zatím není co ukázat",
   "projector.reconnecting": "obnovuje se spojení",
+  "projector.mobileHint": "Živé výsledky v mobilu",
   "projector.partners": "Naši partneři",
   "projector.poweredBy": "Běží na Whistle.day",
   "projector.credit": "Bodování a obrazovky pro tenhle turnaj",

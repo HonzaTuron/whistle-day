@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { renderSVG } from "uqr";
 import { useDisplayPayload } from "../../api/display";
 import { bracketStages, tablePools } from "../../lib/format";
 import { useI18n } from "../../lib/i18n";
@@ -26,6 +27,24 @@ export function ProjectorScreen({ token }: { token: string }) {
     () => (payload ? buildPanels(t, payload) : []),
     [t, payload],
   );
+
+  // The mobile view is the same token read from a phone rather than a wall —
+  // `typeof window` guards the one render that happens without a browser to
+  // ask for an origin, which is the server pass that builds this page's head.
+  const qr = useMemo(() => {
+    if (typeof window === "undefined") return null;
+    const url = `${window.location.origin}/m/${token}`;
+    // Black on white whatever the ground is doing, the way the crew's join
+    // code is: a code inverted into the dark palette scans on about half the
+    // phones in a hall, which is the worst way for it to fail.
+    return renderSVG(url, {
+      pixelSize: 6,
+      border: 1,
+      blackColor: "#0b0f14",
+      whiteColor: "#ffffff",
+      ecc: "M",
+    });
+  }, [token]);
 
   useEffect(() => {
     const tick = setInterval(() => setClock(new Date()), 1000);
@@ -128,6 +147,13 @@ export function ProjectorScreen({ token }: { token: string }) {
             </button>
           ))}
         </footer>
+      )}
+
+      {qr && (
+        <div className="screen__qr">
+          <div className="screen__qr-code" dangerouslySetInnerHTML={{ __html: qr }} />
+          <small>{t("projector.mobileHint")}</small>
+        </div>
       )}
     </div>
   );
