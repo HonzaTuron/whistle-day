@@ -1,3 +1,5 @@
+import type { Id } from "@whistleday/engine";
+import PocketBase from "pocketbase";
 import { call, pb, useToken } from "./client";
 import { writeSession, type Session } from "./organiser";
 
@@ -175,4 +177,110 @@ function clearReturnParams(): void {
     search.delete(key);
   }
   window.history.replaceState({}, "", url.pathname + (search.size ? `?${search}` : ""));
+}
+
+/**
+ * Claiming a handoff with Google or Facebook, instead of setting a password.
+ *
+ * The browser accepting a handoff has no session for the account it names —
+ * that is the whole point of a handoff — so it cannot lean on the trick above
+ * of putting this device's own token on `pb.authStore` before the exchange.
+ * `POST /api/organiser/handoff/{token}/oauth-session`
+ * (backend/internal/tournament/handoff.go) is what stands in for it: a token
+ * for the still-anonymous account, minted from nothing but the handoff token
+ * itself.
+ *
+ * Everything below runs on its own PocketBase client with its own, unsaved
+ * auth store — never `pb()`, which is whatever this device is signed in as
+ * for its own tournaments. A handoff is somebody else's account; claiming one
+ * must not read that session or leave a trace on it.
+ */
+
+const HANDOFF_PENDING_KEY = "whistleday.oauth.handoff";
+
+interface PendingHandoff {
+  handoffToken: string;
+  sessionToken: string;
+  tournamentName: string;
+  provider: string;
+  state: string;
+  codeVerifier: string;
+}
+
+/** Send the browser to the provider to claim a handoff. */
+export async function startHandoffOAuth(
+  handoffToken: Id,
+  tournamentName: string,
+  provider: OAuthProvider,
+): Promise<void> {
+  const { token: sessionToken } = await call<{ token: string }>(() =>
+    pb().send(`/api/organiser/handoff/${handoffToken}/oauth-session`, { method: "POST" }),
+  );
+  const pending: PendingHandoff = {
+    handoffToken,
+    sessionToken,
+    tournamentName,
+    provider: provider.name,
+    state: provider.state,
+    codeVerifier: provider.codeVerifier,
+  };
+  sessionStorage.setItem(HANDOFF_PENDING_KEY, JSON.stringify(pending));
+  window.location.assign(provider.authURL + encodeURIComponent(redirectURL()));
+}
+
+/**
+ * Whether `/account` was just opened by a provider handing back a handoff
+ * claim rather than an ordinary sign-in — checked before anything else reads
+ * `isOAuthReturn`'s own state, so the two are never handled as the same
+ * thing.
+ */
+export function pendingHandoff(): { token: Id; tournamentName: string } | null {
+  try {
+    const raw = sessionStorage.getItem(HANDOFF_PENDING_KEY);
+    if (!raw) return null;
+    const pending = JSON.parse(raw) as PendingHandoff;
+    return { token: pending.handoffToken, tournamentName: pending.tournamentName };
+  } catch {
+    return null;
+  }
+}
+
+/** Finish claiming a handoff with whatever the browser just came back with. */
+export async function completeHandoffOAuth(): Promise<{ tournament: Id; email: string }> {
+  const raw = sessionStorage.getItem(HANDOFF_PENDING_KEY);
+  sessionStorage.removeItem(HANDOFF_PENDING_KEY);
+
+  const params = new URLSearchParams(window.location.search);
+  const code = params.get("code");
+  const state = params.get("state");
+  const failed = params.get("error");
+  clearReturnParams();
+
+  if (failed) throw new Error(failed);
+  if (!raw || !code || !state) throw new Error("oauth");
+
+  const pending = JSON.parse(raw) as PendingHandoff;
+  if (pending.state !== state) throw new Error("oauth");
+
+  const scratch = new PocketBase(window.location.origin);
+  scratch.autoCancellation(false);
+  scratch.authStore.save(pending.sessionToken, null as never);
+
+  const auth = await call(() =>
+    scratch
+      .collection("users")
+      .authWithOAuth2Code(pending.provider, code, pending.codeVerifier, redirectURL()),
+  );
+
+  // The verified email the provider returned, regardless of what ended up on
+  // the record — PocketBase does not overwrite a device account's non-empty
+  // address on its own. /finish is what puts the real one on the account.
+  const email = (auth.meta as { email?: string } | undefined)?.email ?? "";
+
+  return call(() =>
+    scratch.send<{ tournament: Id; email: string }>(
+      `/api/organiser/handoff/${pending.handoffToken}/finish`,
+      { method: "POST", body: { email } },
+    ),
+  );
 }

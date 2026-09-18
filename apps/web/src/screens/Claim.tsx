@@ -1,6 +1,11 @@
 import { Link, useNavigate } from "@tanstack/react-router";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { usePreviewHandoff } from "../api/hooks";
+import {
+  availableProviders,
+  startHandoffOAuth,
+  type OAuthProvider,
+} from "../api/oauth";
 import { claimHandoff, rememberTournament } from "../api/organiser";
 import { useT } from "../lib/i18n";
 import { AccountLegal } from "../components/AccountLegal";
@@ -30,12 +35,34 @@ export function Claim({ token }: { token: string }) {
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [providers, setProviders] = useState<OAuthProvider[]>([]);
 
   const { data: handoff, isLoading, isError } = usePreviewHandoff(token);
+
+  useEffect(() => {
+    void availableProviders().then(setProviders);
+  }, []);
 
   // A handoff is single-use, so a double submit is one success and one "this
   // link is not valid any more" — which would replace the first with an error.
   const inflight = useRef(false);
+
+  const acceptWithProvider = async (provider: OAuthProvider) => {
+    if (inflight.current) return;
+    inflight.current = true;
+    setBusy(true);
+    setError(null);
+    try {
+      // The page is about to be replaced by the provider, so there is
+      // nothing to reset on success — only on the request that starts it
+      // failing outright, before the browser ever leaves.
+      await startHandoffOAuth(token, handoff?.tournament ?? "", provider);
+    } catch (thrown) {
+      setError(thrown instanceof Error ? thrown.message : t("claim.failed"));
+      setBusy(false);
+      inflight.current = false;
+    }
+  };
 
   const accept = async () => {
     if (inflight.current) return;
@@ -103,6 +130,25 @@ export function Claim({ token }: { token: string }) {
           void accept();
         }}
       >
+        {providers.length > 0 ? (
+          <div className="account__providers">
+            {providers.map((provider) => (
+              <button
+                key={provider.name}
+                type="button"
+                className="btn btn--quiet btn--block"
+                disabled={busy}
+                onClick={() => void acceptWithProvider(provider)}
+              >
+                {t("account.continueWith", {
+                  provider: provider.displayName || provider.name,
+                })}
+              </button>
+            ))}
+            <p className="account__or">{t("account.or")}</p>
+          </div>
+        ) : null}
+
         <label>
           <span>{t("account.email")}</span>
           <input

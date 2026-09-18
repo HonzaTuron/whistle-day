@@ -18,8 +18,10 @@ import {
 } from "../api/organiser";
 import {
   availableProviders,
+  completeHandoffOAuth,
   completeOAuth,
   isOAuthReturn,
+  pendingHandoff,
   startOAuth,
   type OAuthProvider,
 } from "../api/oauth";
@@ -51,6 +53,15 @@ export function Account({ next }: { next?: string } = {}) {
   const [error, setError] = useState<string | null>(null);
   const [providers, setProviders] = useState<OAuthProvider[]>([]);
   const [returning] = useState(isOAuthReturn);
+  const [handoff] = useState(pendingHandoff);
+  // Starts false on every render, server or client, so hydration never has
+  // to reconcile two different trees for the same markup: `handoff` itself
+  // reads sessionStorage, which is empty on the server, so branching the
+  // JSX on it directly would render one thing there and — the moment this
+  // is genuinely a handoff return — another on the client. This only flips
+  // once the effect below has actually started completing one.
+  const [completingHandoff, setCompletingHandoff] = useState(false);
+  const [handoffError, setHandoffError] = useState<string | null>(null);
   const [sentReset, setSentReset] = useState(false);
   const [resent, setResent] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
@@ -71,6 +82,30 @@ export function Account({ next }: { next?: string } = {}) {
   }, []);
 
   /**
+   * Coming back from Google or Facebook by way of a handoff link instead of
+   * this device's own account — see the note atop `completeHandoffOAuth` in
+   * `api/oauth.ts` for why that runs on its own client rather than this
+   * screen's session. Checked ahead of the ordinary return below, and that
+   * one is skipped entirely when this is what brought the browser back:
+   * the two are never the same request.
+   */
+  useEffect(() => {
+    if (!returning || !handoff) return;
+    setCompletingHandoff(true);
+    setBusy(true);
+    void completeHandoffOAuth()
+      .then(({ tournament }) => {
+        rememberTournament({ id: tournament, name: handoff.tournamentName, token: "" });
+        return navigate({ to: "/t/$id", params: { id: tournament } });
+      })
+      .catch(() => {
+        setHandoffError(t("account.oauthFailed"));
+        setCompletingHandoff(false);
+        setBusy(false);
+      });
+  }, [returning, handoff]);
+
+  /**
    * Coming back from Google or Facebook.
    *
    * It waits for the stored session to have been read, because handing that
@@ -81,7 +116,7 @@ export function Account({ next }: { next?: string } = {}) {
    * device that has none.
    */
   useEffect(() => {
-    if (!returning) return;
+    if (!returning || handoff) return;
     if (storedSession() && !session) return;
 
     setBusy(true);
@@ -92,7 +127,7 @@ export function Account({ next }: { next?: string } = {}) {
       })
       .catch(() => setError(t("account.oauthFailed")))
       .finally(() => setBusy(false));
-  }, [returning, session]);
+  }, [returning, handoff, session]);
 
   const claimed = session !== null && !isDeviceAccount(session);
   const canClaim = session !== null && !claimed;
@@ -204,8 +239,31 @@ export function Account({ next }: { next?: string } = {}) {
     }
   };
 
+  if (completingHandoff && !handoffError) {
+    return (
+      <div className="account">
+        <header>
+          <h1>{t("claim.finishing")}</h1>
+          <p>{t("common.moment")}</p>
+        </header>
+      </div>
+    );
+  }
+
   return (
     <div className="account">
+      {handoffError ? (
+        <div className="wiz__error" role="alert">
+          <span>{handoffError}</span>
+          <button
+            type="button"
+            onClick={() => setHandoffError(null)}
+            aria-label={t("common.dismiss")}
+          >
+            ✕
+          </button>
+        </div>
+      ) : null}
       {error ? (
         <div className="wiz__error" role="alert">
           <span>{error}</span>

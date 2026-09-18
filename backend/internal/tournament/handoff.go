@@ -294,8 +294,9 @@ func RegisterHandoffRoutes(app core.App) {
 			}
 
 			return e.JSON(http.StatusOK, map[string]any{
-				"token": newToken,
-				"email": user.Email(),
+				"token":      newToken,
+				"email":      user.Email(),
+				"tournament": handoff.GetString("tournament"),
 			})
 		}).Bind(apis.RequireAuth())
 

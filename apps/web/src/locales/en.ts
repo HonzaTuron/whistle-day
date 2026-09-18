@@ -229,6 +229,7 @@ export const en = {
   "claim.deadBody":
     "It has been used, or it expired, or it was never a link at all. Ask whoever sent it for another one.",
   "claim.failed": "That did not work. Nothing has changed — try again.",
+  "claim.finishing": "Taking it…",
 
   // An AI agent asking to connect to a signed-in account (the MCP OAuth flow).
   "connect.title": "{client} wants to connect",

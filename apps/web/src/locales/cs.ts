@@ -232,6 +232,7 @@ export const cs: Record<keyof Catalog, Message> = {
   "claim.deadBody":
     "Byl použitý, vypršel, nebo to odkaz nikdy nebyl. Řekněte si o nový tomu, kdo vám ho poslal.",
   "claim.failed": "Nepovedlo se to. Nic se nezměnilo — zkuste to znovu.",
+  "claim.finishing": "Přebírám…",
 
   "connect.title": "{client} se chce připojit",
   "connect.unnamedClient": "Aplikace",
