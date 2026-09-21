@@ -3,9 +3,9 @@ import type { Message } from "../lib/i18n";
 /**
  * Every sentence the app says, in English.
  *
- * This file is the shape: `cs.ts` is typed against it, so a key added here
- * without a Czech form is a compile error rather than an English sentence
- * turning up in the middle of a Czech screen. Keys are `area.thing`, and the
+ * This file is the shape: `cs.ts` and `es.ts` are typed against it, so a key
+ * added here without a translation is a compile error rather than an English
+ * sentence turning up in the middle of another language. Keys are `area.thing`, and the
  * area matches the file the sentence is drawn in.
  *
  * A value is either a string or a set of plural forms. Use the plural form
@@ -110,6 +110,9 @@ export const en = {
   // -------------------------------------------------------------------------
   // landing
   // -------------------------------------------------------------------------
+  "landing.title": "Whistle.day — Free Tournament Organiser",
+  "landing.description":
+    "Free tournament organiser. Draw groups, brackets or a Swiss, run the day from your phone, and put the results on a projector. No account, no ads.",
   "landing.eyebrow": "Live scores, on the wall",
   "landing.tagline": "Run a tournament off a phone and put it on the wall.",
   "landing.resume": "Back to {name}",

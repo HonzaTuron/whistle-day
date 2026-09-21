@@ -1,6 +1,9 @@
+import { useEffect, useLayoutEffect } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { Create } from "../screens/Create";
+import { isLocale, useI18n, type Locale } from "../lib/i18n";
 import { PRESETS, type PresetId } from "../lib/presets";
+import { SPORTS, type SportId } from "../lib/scoring";
 
 /**
  * The wizard, optionally started where a marketing page left off.
@@ -16,14 +19,27 @@ import { PRESETS, type PresetId } from "../lib/presets";
  */
 export interface NewSearch {
   preset?: PresetId;
+  /** The sport chip a marketing page already knows. A suggestion, like preset. */
+  sport?: SportId;
+  /** Aims the wizard. Wins over a laptop that is in another language. */
+  lang?: Locale;
 }
 
 const isPresetId = (value: unknown): value is PresetId =>
   PRESETS.some((preset) => preset.id === value);
 
+const isSportId = (value: unknown): value is SportId =>
+  SPORTS.some((sport) => sport.id === value);
+
+const useIsoLayoutEffect = typeof window === "undefined" ? useEffect : useLayoutEffect;
+
 export const Route = createFileRoute("/new")({
   validateSearch: (search: Record<string, unknown>): NewSearch => ({
     preset: isPresetId(search.preset) ? search.preset : undefined,
+    sport: isSportId(search.sport) ? search.sport : undefined,
+    lang: isLocale(typeof search.lang === "string" ? search.lang : undefined)
+      ? (search.lang as Locale)
+      : undefined,
   }),
   head: () => ({
     meta: [
@@ -39,6 +55,13 @@ export const Route = createFileRoute("/new")({
 });
 
 function CreateRoute() {
-  const { preset } = Route.useSearch();
-  return <Create initialPreset={preset} />;
+  const { preset, sport, lang } = Route.useSearch();
+  const { locale, setLocale } = useI18n();
+  // Client navigation does not remount the provider, so a `?lang=` that
+  // arrived with the call to action has to be applied here — before paint,
+  // or the wizard flashes in the laptop's language.
+  useIsoLayoutEffect(() => {
+    if (lang && lang !== locale) setLocale(lang);
+  }, [lang, locale, setLocale]);
+  return <Create initialPreset={preset} initialSport={sport} />;
 }

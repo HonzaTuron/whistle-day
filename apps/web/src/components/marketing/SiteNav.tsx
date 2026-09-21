@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { pageBySlug } from "../../content";
-import { useT } from "../../lib/i18n";
+import { useI18n } from "../../lib/i18n";
 import type { MessageKey } from "../../lib/i18n";
 
 /**
@@ -37,7 +37,7 @@ const DESTINATIONS: { slug: string; key: MessageKey }[] = [
 const LINKS = DESTINATIONS.filter((link) => pageBySlug(link.slug));
 
 export function SiteNav() {
-  const t = useT();
+  const { locale, t } = useI18n();
 
   return (
     <header className="sitenav">
@@ -60,7 +60,11 @@ export function SiteNav() {
           ))}
         </nav>
 
-        <Link to="/new" className="sitenav__cta">
+        <Link
+          to="/new"
+          search={locale === "en" ? {} : { lang: locale }}
+          className="sitenav__cta"
+        >
           {t("nav.setUp")}
         </Link>
       </div>

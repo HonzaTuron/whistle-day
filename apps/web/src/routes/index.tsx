@@ -1,7 +1,17 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Landing } from "../screens/Landing";
+import { isLocale, type Locale } from "../lib/i18n";
+
+export interface HomeSearch {
+  /** Aims the homepage the way `?lang=` aims a projector. */
+  lang?: Locale;
+}
 
 export const Route = createFileRoute("/")({
+  validateSearch: (search: Record<string, unknown>): HomeSearch => {
+    const lang = typeof search.lang === "string" ? search.lang : undefined;
+    return { lang: isLocale(lang) ? lang : undefined };
+  },
   head: () => ({
     meta: [
       { title: "Whistle.day — Free Tournament Organiser" },

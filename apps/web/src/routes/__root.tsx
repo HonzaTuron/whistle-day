@@ -11,7 +11,8 @@ import { useState, type ReactNode } from "react";
 import { SiteNav } from "../components/marketing/SiteNav";
 import { AppChrome } from "../components/AppChrome";
 import { AccountLegal } from "../components/AccountLegal";
-import { I18nProvider } from "../lib/i18n";
+import { localeOfPath } from "../content";
+import { I18nProvider, useI18n } from "../lib/i18n";
 import { isAppRoute } from "../lib/routes";
 import "../styles.css";
 
@@ -112,8 +113,9 @@ function RootComponent() {
       }),
   );
 
+  const pathname = useRouterState({ select: (state) => state.location.pathname });
   return (
-    <I18nProvider initial="en">
+    <I18nProvider initial={localeOfPath(pathname) ?? "en"}>
       <QueryClientProvider client={queryClient}>
         <RootDocument>
           <Outlet />
@@ -124,8 +126,13 @@ function RootComponent() {
 }
 
 function RootDocument({ children }: Readonly<{ children: ReactNode }>) {
+  const { locale } = useI18n();
+  const pathname = useRouterState({ select: (state) => state.location.pathname });
+  // A Spanish marketing page is Spanish in the HTML, not only after the
+  // bundle guesses. The homepage has no page language and follows the visitor.
+  const lang = localeOfPath(pathname) ?? locale;
   return (
-    <html lang="en">
+    <html lang={lang}>
       <head>
         {/*
           The browser's own chrome around the page — the address bar on

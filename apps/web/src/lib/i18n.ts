@@ -11,35 +11,42 @@ import {
 } from "react";
 import { en } from "../locales/en";
 import { cs } from "../locales/cs";
+import { es } from "../locales/es";
 
 /**
- * Two languages, no library.
+ * Three languages, no library.
  *
  * What an i18n dependency buys is a message format, a plural rule table and a
  * loader. The platform already ships the second one — `Intl.PluralRules` knows
- * Czech better than any table we would paste in — and the third is a static
- * import when there are two locales and the whole app is one bundle. What is
- * left is interpolation, which is the twenty lines below.
+ * Czech better than any table we would paste in, and Spanish's two forms as
+ * well — and the third is a static import when the locales are in one bundle.
+ * What is left is interpolation, which is the twenty lines below.
  *
  * The part worth having is the part a library cannot give us: `en` is the
- * shape, `cs` is typed against it, and a key that is missing from one or
- * misspelled in a component fails the typecheck rather than showing an
- * organiser a dotted path in a hall.
+ * shape, every other catalog is typed against it, and a key that is missing
+ * from one or misspelled in a component fails the typecheck rather than
+ * showing an organiser a dotted path in a hall.
+ *
+ * `es` is one catalog for Spain and Spanish-speaking America. `detectLocale`
+ * matches the base tag, so `es-ES`, `es-MX`, `es-AR`, `es-CL`, `es-CO` and
+ * `es-PE` all land here. The wording is the overlap: tú, not vosotros or vos.
  */
 
-export const LOCALES = ["en", "cs"] as const;
+export const LOCALES = ["en", "cs", "es"] as const;
 export type Locale = (typeof LOCALES)[number];
 
 /** What a language calls itself, for the switcher's label and its `title`. */
 export const LOCALE_NAMES: Record<Locale, string> = {
   en: "English",
   cs: "Čeština",
+  es: "Español",
 };
 
 /** The two-letter tag shown beside the flag in the compact app switch. */
 export const LOCALE_SHORT: Record<Locale, string> = {
   en: "EN",
   cs: "CZ",
+  es: "ES",
 };
 
 /**
@@ -54,6 +61,9 @@ export const LOCALE_SHORT: Record<Locale, string> = {
 export const LOCALE_FLAG: Record<Locale, string> = {
   en: "🇬🇧",
   cs: "🇨🇿",
+  // A country, standing in for a language that is not one — the same compromise
+  // as 🇬🇧. The catalog is not Spain's; see the note on `LOCALES`.
+  es: "🇪🇸",
 };
 
 /**
@@ -81,7 +91,7 @@ export type Vars = Record<string, string | number>;
 export type Catalog = typeof en;
 export type MessageKey = keyof Catalog;
 
-const CATALOGS: Record<Locale, Record<string, Message>> = { en, cs };
+const CATALOGS: Record<Locale, Record<string, Message>> = { en, cs, es };
 
 /**
  * `{name}` is replaced, `{{` is a literal brace, and a placeholder with no
@@ -144,7 +154,7 @@ export type Translate = (key: MessageKey, vars?: Vars) => string;
 
 const STORAGE_KEY = "whistleday.locale";
 
-const isLocale = (value: string | null | undefined): value is Locale =>
+export const isLocale = (value: string | null | undefined): value is Locale =>
   LOCALES.includes(value as Locale);
 
 /**
@@ -269,8 +279,8 @@ export function I18nProvider({
   }, []);
 
   // The server has no browser to ask, so it renders English and the real
-  // language is applied here — before the first paint, so a Czech phone opening
-  // the homepage never flashes English on the way to it. The homepage carries
+  // language is applied here — before the first paint, so a Czech or Spanish
+  // phone opening the homepage never flashes English on the way to it. The homepage carries
   // no switch of its own and leans entirely on this; `?lang=` and a remembered
   // choice still win inside `detectLocale`.
   // Runs once, on arrival, and then never again: after this, `locale` is

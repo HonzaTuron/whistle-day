@@ -18,6 +18,7 @@ import { FORMAT_PAGES, HUB } from "./formats";
 import { GUIDE_PAGES } from "./guides";
 import { LEGAL_PAGES } from "./legal";
 import { OPERATIONAL_PAGES } from "./operational";
+import { PADEL_ES_ALIASES, PADEL_ES_PAGES } from "./padel-es";
 import { PARAMETRIC_PAGES, SLUG_ALIASES as PARAMETRIC_ALIASES } from "./parametric";
 import { PRINTABLE_PAGES } from "./printables";
 import { SPORT_PAGES } from "./sports";
@@ -28,6 +29,7 @@ const ALL: Page[] = [
   ...FORMAT_PAGES,
   ...PARAMETRIC_PAGES,
   ...SPORT_PAGES,
+  ...PADEL_ES_PAGES,
   ...OPERATIONAL_PAGES,
   ...GUIDE_PAGES,
   ...COMPARISON_PAGES,
@@ -69,12 +71,21 @@ const BY_SLUG = new Map(ALL.map((page) => [page.slug, page]));
 export const PAGES: Page[] = ALL.map((page) => ({
   ...page,
   related: page.related?.filter((slug) => BY_SLUG.has(slug) && slug !== page.slug),
+  // The English padel page is the other half of the Spanish generator. Set
+  // here so the two hreflang links cannot point at a slug the other does not
+  // have — both slugs are in ALL, or this throws below when the alternate
+  // is unresolved. Checked with the aliases, not by a second map.
+  alternate:
+    page.slug === "padel-tournament-generator"
+      ? { hreflang: "es", slug: "generador-torneo-padel" }
+      : page.alternate,
 }));
 
 const RESOLVED = new Map(PAGES.map((page) => [page.slug, page]));
 
 export const SLUG_ALIASES: Record<string, string> = {
   ...PARAMETRIC_ALIASES,
+  ...PADEL_ES_ALIASES,
   "privacy-policy": "privacy",
   "terms-of-service": "terms",
   "terms-of-use": "terms",
@@ -104,5 +115,15 @@ export const pagesOfKind = (kind: Page["kind"]) =>
  * the destination rather than the redirect.
  */
 export const MARKETING_PATHS: string[] = PAGES.map((page) => `/${page.slug}`);
+
+/**
+ * The language a prerendered marketing page is written in, if it is not
+ * English. The homepage has no slug and follows the visitor instead.
+ */
+export function localeOfPath(pathname: string): Page["locale"] {
+  const slug = pathname.replace(/^\/+|\/+$/g, "");
+  if (!slug) return undefined;
+  return pageBySlug(slug)?.locale;
+}
 
 export type { Page } from "./types";

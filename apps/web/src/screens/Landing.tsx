@@ -1,9 +1,9 @@
-import { Link, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { getRouteApi, Link, useNavigate } from "@tanstack/react-router";
+import { useEffect, useLayoutEffect, useState } from "react";
 import { rememberedTournament } from "../api/organiser";
 import { SiteNav } from "../components/marketing/SiteNav";
 import { pageBySlug } from "../content";
-import { useT, type MessageKey } from "../lib/i18n";
+import { useI18n, useT, type MessageKey } from "../lib/i18n";
 
 /**
  * The page somebody lands on before they trust this with a Saturday.
@@ -49,10 +49,10 @@ const FORMATS: { slug: string; title: MessageKey; body: MessageKey }[] = [
  * robin generator" when what they are running is a padel afternoon. Each chip
  * is that person's own page.
  */
-const SPORTS: { slug: string; key: MessageKey }[] = [
+const SPORTS: { slug: string; es?: string; key: MessageKey }[] = [
   { slug: "volleyball-tournament-bracket", key: "landing.sportVolleyball" },
   { slug: "beach-volleyball-tournament-generator", key: "landing.sportBeach" },
-  { slug: "padel-tournament-generator", key: "landing.sportPadel" },
+  { slug: "padel-tournament-generator", es: "generador-torneo-padel", key: "landing.sportPadel" },
   { slug: "pickleball-round-robin-generator", key: "landing.sportPickleball" },
   { slug: "badminton-tournament-draw", key: "landing.sportBadminton" },
   { slug: "table-tennis-tournament-generator", key: "landing.sportTableTennis" },
@@ -74,11 +74,29 @@ const STATS: { value: MessageKey; label: MessageKey }[] = [
 const LINKED_FORMATS = FORMATS.filter((item) => pageBySlug(item.slug));
 const LINKED_SPORTS = SPORTS.filter((item) => pageBySlug(item.slug));
 
+const homeRoute = getRouteApi("/");
+const useIsoLayoutEffect = typeof window === "undefined" ? useEffect : useLayoutEffect;
+
 export function Landing() {
-  const t = useT();
+  const { locale, setLocale, t } = useI18n();
+  const { lang } = homeRoute.useSearch();
   const navigate = useNavigate();
   const [token, setToken] = useState("");
   const [running] = useState(rememberedTournament);
+
+  // `/?lang=es` from a Spanish page is a full document load or a client
+  // navigation. The first is handled by detectLocale; the second is this,
+  // because the provider does not remount.
+  useIsoLayoutEffect(() => {
+    if (lang && lang !== locale) setLocale(lang);
+  }, [lang, locale, setLocale]);
+
+  useIsoLayoutEffect(() => {
+    document.title = t("landing.title");
+    document
+      .querySelector('meta[name="description"]')
+      ?.setAttribute("content", t("landing.description"));
+  }, [t]);
 
   const open = (to: "/display/$token" | "/m/$token") => {
     const trimmed = token.trim();
@@ -110,7 +128,11 @@ export function Landing() {
                   {t("landing.resume", { name: running.name })}
                 </Link>
               ) : (
-                <Link to="/new" className="btn btn--primary btn--block">
+                <Link
+                  to="/new"
+                  search={locale === "en" ? {} : { lang: locale }}
+                  className="btn btn--primary btn--block"
+                >
                   {t("landing.setUp")}
                 </Link>
               )}
@@ -181,7 +203,9 @@ export function Landing() {
               <li key={sport.slug}>
                 <Link
                   to="/$"
-                  params={{ _splat: sport.slug }}
+                  params={{
+                    _splat: locale === "es" && sport.es && pageBySlug(sport.es) ? sport.es : sport.slug,
+                  }}
                   className="home__sport"
                 >
                   {t(sport.key)}

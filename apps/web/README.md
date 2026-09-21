@@ -312,19 +312,21 @@ still need a signal and say so.
 
 `lib/pending.ts` is pure and is the part with tests — `bun test`.
 
-## Two languages
+## Three languages
 
-English and Czech, in `src/locales/`, with no i18n dependency. What a library
-would sell us is a message format, a plural table and a loader; the platform
-ships the plural table as `Intl.PluralRules` — which knows Czech better than
-anything we would paste in — and with two locales in one bundle the loader is a
-static import. What is left is interpolation, and that is twenty lines of
-`src/lib/i18n.ts`.
+English, Czech and Spanish, in `src/locales/`, with no i18n dependency. What a
+library would sell us is a message format, a plural table and a loader; the
+platform ships the plural table as `Intl.PluralRules` — which knows Czech
+better than anything we would paste in, and Spanish's two forms as well — and
+with the locales in one bundle the loader is a static import. What is left is
+interpolation, and that is twenty lines of `src/lib/i18n.ts`.
 
 The part worth having is the part a library cannot give: `en.ts` is the shape
-and `cs.ts` is typed against it, so a key missing from one, or misspelled in a
-component, fails the typecheck rather than showing an organiser a dotted path
-in a hall.
+and `cs.ts` and `es.ts` are typed against it, so a key missing from one, or
+misspelled in a component, fails the typecheck rather than showing an organiser
+a dotted path in a hall. Spanish is one catalog for Spain and Spanish-speaking
+America. `detectLocale` matches the base tag, so `es-ES` and `es-AR` are the
+same `es`, worded for the overlap: tú, not vosotros or vos.
 
 - **Which language, in the order the answers are trustworthy.** `?lang=cs` in
   the URL, then what this browser was last told, then what it says it prefers,
@@ -339,12 +341,15 @@ in a hall.
   page, the account screen, the bottom of the phone view. It is deliberately
   absent from the organiser's board and the projector, which are screens
   somebody is working from.
-- **The bar across the top is translated; the marketing pages under it are
-  not.** The 123 pages are English data in `src/content/`, and a Czech visitor
+- **The bar across the top is translated; most marketing pages under it are
+  not.** Those pages are English data in `src/content/`, and a Czech visitor
   reading one of them still gets Czech chrome — the destinations, and the "Set
   up" that leads into a wizard which is fully translated. Chrome in a language
   somebody does not read is worse than a mixed page: the point of the bar is to
-  be the way out.
+  be the way out. The exception is the Spanish padel set in `content/padel-es.ts`:
+  those pages are Spanish in the HTML, each call to action opens `/new` with
+  the format it described, pádel already chosen, and `?lang=es` so the wizard
+  follows even when the laptop is not.
 - **`document.documentElement.lang` is set before the first render**, because a
   document whose lang disagrees with what is on it is read out in the wrong
   accent by a screen reader and hyphenated by the wrong rules. It is also the

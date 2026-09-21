@@ -64,6 +64,7 @@ export function structuredData(page: Page, site: string): ScriptTag[] {
         "@context": "https://schema.org",
         "@type": "HowTo",
         name: page.h1,
+        inLanguage: page.locale ?? "en",
         step: page.howTo.map((step) => ({
           "@type": "HowToStep",
           name: step.name,
@@ -78,6 +79,7 @@ export function structuredData(page: Page, site: string): ScriptTag[] {
       json({
         "@context": "https://schema.org",
         "@type": "FAQPage",
+        inLanguage: page.locale ?? "en",
         mainEntity: page.faq.map((item) => ({
           "@type": "Question",
           name: item.q,

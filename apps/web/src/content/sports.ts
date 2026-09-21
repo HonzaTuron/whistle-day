@@ -173,6 +173,7 @@ const SPORTS: SportSpec[] = [
       },
     ],
     related: [
+      "organizar-torneo-de-padel",
       "16-team-group-stage-and-playoff",
       "pickleball-round-robin-generator",
       "tournament-projector-display",

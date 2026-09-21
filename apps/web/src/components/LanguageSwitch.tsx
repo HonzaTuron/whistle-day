@@ -9,8 +9,8 @@ import { LOCALE_FLAG, LOCALE_NAMES, LOCALE_SHORT, LOCALES, useI18n } from "../li
  * a screen reader and as the button's `title`, because a flag names a country
  * and the reader wants a language.
  *
- * Not a dropdown: with two languages a dropdown is one click spent finding out
- * what the two options are.
+ * Not a dropdown: a row of flags is still one glance, and a dropdown would be
+ * a click spent finding out what the options are.
  */
 export function LanguageSwitch({ className = "" }: { className?: string }) {
   const { locale, setLocale, t } = useI18n();

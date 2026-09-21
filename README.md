@@ -244,14 +244,16 @@ the anonymous device account exactly as before.
 
 ## Behaviour worth knowing about
 
-- **English and Czech, and the wall can be aimed at one of them.** Every screen
-  reads in either, with no i18n dependency — two typed catalogues in
-  `apps/web/src/locales/` and twenty lines of interpolation, because
-  `Intl.PluralRules` already knows Czech's four plural forms. `cs` is typed
-  against `en`, so a missing key is a compile error rather than a dotted path
-  on a wall. A `?lang=cs` on a link wins over what the browser prefers, which
-  is the only way to aim a projector: the laptop driving it is as likely as not
-  to be in English, and the hall is not.
+- **English, Czech and Spanish, and the wall can be aimed at one of them.**
+  Every screen reads in any of the three, with no i18n dependency — typed
+  catalogues in `apps/web/src/locales/` and twenty lines of interpolation,
+  because `Intl.PluralRules` already knows Czech's four plural forms and
+  Spanish's two. `cs` and `es` are typed against `en`, so a missing key is a
+  compile error rather than a dotted path on a wall. Spanish is one catalog
+  for Spain and Spanish-speaking America: `es-ES` and `es-AR` are the same
+  `es`. A `?lang=cs` or `?lang=es` on a link wins over what the browser
+  prefers, which is the only way to aim a projector: the laptop driving it is
+  as likely as not to be in English, and the hall is not.
 - **The names the app wrote travel as facts, not sentences.** "Winner QF1" is
   composed hours before it is read, and a projector cannot translate prose —
   only look a message up. So a slot stores its kind and its arguments beside

@@ -6,7 +6,8 @@ import { PrintableSheet } from "./PrintableSheet";
 import { SiteNav } from "./SiteNav";
 import { FORMAT_OF } from "../../content/formats-map";
 import { renderInlineMarkdown } from "./InlineMarkdown";
-import { useT } from "../../lib/i18n";
+import { isLocale, useT, type Locale } from "../../lib/i18n";
+import { SPORTS, type SportId } from "../../lib/scoring";
 
 /**
  * The layout every marketing page uses.
@@ -22,13 +23,51 @@ import { useT } from "../../lib/i18n";
  * action comes after the prose, where somebody who is convinced will look for
  * it.
  */
+/**
+ * Chrome that is part of the page, not of the visitor's browser.
+ *
+ * A Spanish article prerenders before any bundle runs, so these strings cannot
+ * wait for `t()` — the server has no browser to ask, and an English button
+ * under a Spanish lede is the page failing the search that found it.
+ */
+const CHROME = {
+  en: {
+    cta: "Set this up now",
+    ctaNote: "Free, and there is no account to make first. About a minute to the QR code.",
+    faq: "Common questions",
+    related: "See also",
+    footer: "Free tournament organiser. No account, no ads, no cap.",
+    privacy: "Privacy",
+    terms: "Terms",
+    deletion: "Data deletion",
+  },
+  es: {
+    cta: "Crear este torneo",
+    ctaNote: "Gratis, y no hay que crear una cuenta antes. Un minuto hasta el código QR.",
+    faq: "Preguntas frecuentes",
+    related: "Ver también",
+    footer: "Organizador de torneos gratis. Sin cuenta, sin anuncios, sin tope.",
+    privacy: "Privacidad",
+    terms: "Términos",
+    deletion: "Borrar datos",
+  },
+} as const;
+
+function chromeOf(page: Page) {
+  return page.locale === "es" ? CHROME.es : CHROME.en;
+}
+
+const isSportId = (value: string | undefined): value is SportId =>
+  SPORTS.some((sport) => sport.id === value);
+
 export function PageView({ page }: { page: Page }) {
+  const chrome = chromeOf(page);
   return (
     <>
       <SiteNav />
 
       <main>
-        <article className="doc">
+        <article className="doc" lang={page.locale}>
           <header className="doc__head">
             <h1 className="doc__title">{page.h1}</h1>
             <p className="doc__lede">{renderInlineMarkdown(page.lede)}</p>
@@ -75,7 +114,7 @@ export function PageView({ page }: { page: Page }) {
 
           {page.faq && page.faq.length > 0 && (
             <section className="doc__section">
-              <h2 className="doc__heading">Common questions</h2>
+              <h2 className="doc__heading">{chrome.faq}</h2>
               {page.faq.map((item) => (
                 <div className="doc__faq" key={item.q}>
                   <h3 className="doc__faq-q">{item.q}</h3>
@@ -88,24 +127,26 @@ export function PageView({ page }: { page: Page }) {
           <Related page={page} />
 
           <footer className="doc__foot">
-            <Link to="/" className="doc__foot-link">
+            <Link
+              to="/"
+              search={page.locale ? { lang: page.locale } : {}}
+              className="doc__foot-link"
+            >
               Whistle.day
             </Link>
-            <span className="doc__foot-note">
-              Free tournament organiser. No account, no ads, no cap.
-            </span>
+            <span className="doc__foot-note">{chrome.footer}</span>
             <div className="doc__foot-legal">
               <a href="mailto:info@whistle.day" className="doc__foot-sublink">
                 info@whistle.day
               </a>
               <Link to="/$" params={{ _splat: "privacy" }} className="doc__foot-sublink">
-                Privacy
+                {chrome.privacy}
               </Link>
               <Link to="/$" params={{ _splat: "terms" }} className="doc__foot-sublink">
-                Terms
+                {chrome.terms}
               </Link>
               <Link to="/$" params={{ _splat: "user-deletion" }} className="doc__foot-sublink">
-                Data deletion
+                {chrome.deletion}
               </Link>
             </div>
           </footer>
@@ -123,20 +164,23 @@ export function PageView({ page }: { page: Page }) {
  * `/new` reads these off the search params.
  */
 function Cta({ page }: { page: Page }) {
-  const { preset } = page.generator!;
+  const chrome = chromeOf(page);
+  const { preset, sport, lang } = page.generator!;
+  const asked: Locale | undefined = isLocale(lang) ? lang : page.locale;
   return (
     <div className="doc__cta">
       <Link
         to="/new"
-        search={{ preset }}
+        search={{
+          preset,
+          sport: isSportId(sport) ? sport : undefined,
+          lang: asked,
+        }}
         className="btn btn--primary btn--block"
       >
-        Set this up now
+        {page.cta ?? chrome.cta}
       </Link>
-      <p className="doc__cta-note">
-        Free, and there is no account to make first. About a minute to the QR
-        code.
-      </p>
+      <p className="doc__cta-note">{page.ctaNote ?? chrome.ctaNote}</p>
     </div>
   );
 }
@@ -184,9 +228,10 @@ function Related({ page }: { page: Page }) {
 
   if (related.length === 0) return null;
 
+  const heading = chromeOf(page).related;
   return (
-    <nav className="doc__related" aria-label="Related pages">
-      <h2 className="doc__heading">See also</h2>
+    <nav className="doc__related" aria-label={heading}>
+      <h2 className="doc__heading">{heading}</h2>
       <ul className="doc__related-list">
         {related.map((item) => (
           <li key={item.slug}>

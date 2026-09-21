@@ -52,9 +52,11 @@ interface Props {
    * and it should not stop them picking groups either.
    */
   initialPreset?: PresetId;
+  /** The sport that page was about. Absent leaves the wizard on its default. */
+  initialSport?: SportId;
 }
 
-export function Create({ initialPreset }: Props = {}) {
+export function Create({ initialPreset, initialSport }: Props = {}) {
   const t = useT();
   const { locale } = useI18n();
   const [step, setStep] = useState<Step>("name");
@@ -62,7 +64,7 @@ export function Create({ initialPreset }: Props = {}) {
   const [teams, setTeams] = useState<TeamRecord[]>([]);
   const [courts, setCourts] = useState<CourtRecord[]>([]);
   const [preset, setPreset] = useState<PresetId>("groups");
-  const [sport, setSport] = useState<SportId>(DEFAULT_SPORT);
+  const [sport, setSport] = useState<SportId>(initialSport ?? DEFAULT_SPORT);
   // Overrides the preset's own default sets, once the organiser has picked
   // one — `null` means "whatever the sport implies", not "one set".
   const [bestOf, setBestOf] = useState<number | null>(null);

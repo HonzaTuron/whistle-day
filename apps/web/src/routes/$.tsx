@@ -6,6 +6,7 @@ import {
 import { PageView } from "../components/marketing/PageView";
 import { canonicalSlug, pageBySlug } from "../content";
 import { structuredData } from "../content/schema";
+import type { Page } from "../content/types";
 
 const SITE = "https://whistle.day";
 
@@ -56,7 +57,10 @@ export const Route = createFileRoute("/$")({
         { name: "twitter:description", content: page.description },
         { name: "twitter:image", content: `${SITE}/og.png` },
       ],
-      links: [{ rel: "canonical", href: url }],
+      links: [
+        { rel: "canonical", href: url },
+        ...languageLinks(page, SITE),
+      ],
       scripts: structuredData(page, SITE),
     };
   },
@@ -66,4 +70,28 @@ export const Route = createFileRoute("/$")({
 
 function MarketingPage() {
   return <PageView page={Route.useLoaderData()} />;
+}
+
+/**
+ * Both versions of a page, including itself, so a Spanish result and the
+ * English one are alternates rather than duplicates. Omitted when the page
+ * has no twin — a hreflang that points only at itself is noise.
+ */
+function languageLinks(page: Page, site: string): { rel: "alternate"; hrefLang: string; href: string }[] {
+  if (!page.alternate && !page.locale) return [];
+  const self = page.locale ?? "en";
+  const links: { rel: "alternate"; hrefLang: string; href: string }[] = [
+    { rel: "alternate", hrefLang: self, href: `${site}/${page.slug}` },
+  ];
+  if (page.alternate) {
+    links.push({
+      rel: "alternate",
+      hrefLang: page.alternate.hreflang,
+      href: `${site}/${page.alternate.slug}`,
+    });
+  }
+  const english =
+    self === "en" ? `${site}/${page.slug}` : page.alternate ? `${site}/${page.alternate.slug}` : undefined;
+  if (english) links.push({ rel: "alternate", hrefLang: "x-default", href: english });
+  return links;
 }

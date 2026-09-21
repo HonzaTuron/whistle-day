@@ -15,6 +15,7 @@
  * the three can never disagree about which pages exist.
  */
 
+import type { Locale } from "../lib/i18n";
 import type { PresetId } from "../lib/presets";
 
 /**
@@ -89,6 +90,11 @@ export interface GeneratorDefaults {
   preset: PresetId;
   teams?: number;
   sport?: string;
+  /**
+   * Open the wizard in this language. Travels as `?lang=` so a Spanish page
+   * can aim the setup even when the laptop is in English.
+   */
+  lang?: Locale;
 }
 
 export interface Page {
@@ -108,6 +114,19 @@ export interface Page {
   /** In order. Only set this on a page whose sections are actually a procedure to follow, not a list of facts about one. */
   howTo?: HowToStep[];
   generator?: GeneratorDefaults;
+  /**
+   * Set when the prose is not English. The prerendered document uses it for
+   * `lang`, and the page chrome (call to action, footer) follows it rather
+   * than the visitor's browser — a Spanish article with an English button is
+   * the page failing the person who searched for it.
+   */
+  locale?: Locale;
+  /** The other-language version of this page, for hreflang. */
+  alternate?: { hreflang: string; slug: string };
+  /** Button label. Defaults to the locale's "set this up". */
+  cta?: string;
+  /** The line under the button. */
+  ctaNote?: string;
   /** Slugs of pages worth offering next. Rendered as links; must resolve. */
   related?: string[];
 }

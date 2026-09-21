@@ -113,6 +113,9 @@ export const cs: Record<keyof Catalog, Message> = {
   // -------------------------------------------------------------------------
   // landing
   // -------------------------------------------------------------------------
+  "landing.title": "Whistle.day — Organizátor turnajů zdarma",
+  "landing.description":
+    "Organizátor turnajů zdarma. Skupiny, pavouk nebo švýcarský systém, den z mobilu a výsledky na projektoru. Bez účtu a bez reklam.",
   "landing.eyebrow": "Živé skóre rovnou na zeď",
   "landing.tagline": "Řiďte turnaj z mobilu a pusťte ho na zeď.",
   "landing.resume": "Zpět na {name}",
