@@ -3,7 +3,7 @@ module whistleday/backend
 go 1.27
 
 require (
-	github.com/mark3labs/mcp-go v1.0.0
+	github.com/mark3labs/mcp-go v1.1.0
 	github.com/pocketbase/dbx v1.12.0
 	github.com/pocketbase/pocketbase v0.40.4
 )
