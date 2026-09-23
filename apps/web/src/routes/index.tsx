@@ -43,6 +43,33 @@ export const Route = createFileRoute("/")({
       { name: "twitter:image", content: "https://whistle.day/og.png" },
     ],
     links: [{ rel: "canonical", href: "https://whistle.day" }],
+    scripts: [
+      {
+        type: "application/ld+json",
+        children: JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "WebSite",
+          name: "Whistle.day",
+          url: "https://whistle.day",
+        }),
+      },
+      {
+        type: "application/ld+json",
+        children: JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "WebApplication",
+          name: "Whistle.day",
+          url: "https://whistle.day",
+          applicationCategory: "SportsApplication",
+          operatingSystem: "All",
+          offers: {
+            "@type": "Offer",
+            price: "0",
+            priceCurrency: "USD",
+          },
+        }),
+      },
+    ],
   }),
   component: Landing,
 });
