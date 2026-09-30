@@ -85,10 +85,15 @@ export function Create({ initialPreset, initialSport }: Props = {}) {
     let cancelled = false;
 
     void (async () => {
+      // Only a remembered draft needs a session up front. Anyone else gets
+      // their account once they submit the first step, so just opening /new
+      // (a crawler, a curious click) doesn't leave an empty user behind.
+      const draftId = rememberedDraft();
+      if (!draftId) return;
+
       try {
         const active = await getSession();
-        const draftId = rememberedDraft();
-        if (!draftId || cancelled) return;
+        if (cancelled) return;
 
         const draft = await loadTournament(active, draftId);
         if (draft.status !== "draft") {
