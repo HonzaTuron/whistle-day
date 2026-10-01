@@ -17,9 +17,6 @@ backend/pocketbase
 .vscode/
 .claude/
 
-# Local zvec-grep search index cache.
-.zvec-grep/
-
 # Vite / TanStack
 apps/web/dist/
 apps/web/.vite/
