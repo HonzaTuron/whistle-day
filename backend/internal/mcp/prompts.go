@@ -21,7 +21,7 @@ import (
 // actually runs against these tools is the reason to bother.
 //
 // Prompts here render to message text and nothing else. They take no
-// session_token and read no database — `plan_a_tournament` writes out the tool
+// credential and read no database — `plan_a_tournament` writes out the tool
 // sequence in order, `enter_the_results` writes out how to find what still
 // needs a score.
 
@@ -82,12 +82,11 @@ func (s *WhistleMCP) planTournament(ctx context.Context, req mcp.GetPromptReques
 
 Work through the Whistle.day tools in this order:
 
-1. create_tournament {name: %q, sport: %q}. If this connection already
-   carries an Authorization: Bearer token from signing in, it is created
-   under that real account and no session_token comes back — there is
-   nothing new to keep. Otherwise it needs no session_token and returns
-   one — keep it, every later call takes it, and it is the only way back
-   to this tournament.
+1. create_tournament {name: %q, sport: %q}. If this connection is signed
+   in, it is created on that account. Otherwise it is created on a
+   temporary account that this connection remembers — there is nothing
+   to pass to later calls, and nothing that outlives the connection
+   except the handoff in step 7.
 2. add_entry once per team, seed 1..N in the order given.
 3. add_court for each court, pitch or table the day is played on.
 4. create_stage {name: %q, format: %q, position: 0}. Add further stages at
@@ -95,8 +94,8 @@ Work through the Whistle.day tools in this order:
 5. generate_stage {dry_run: true} to preview the draw, then again without
    dry_run to commit it.
 6. publish_tournament, then create_display for the projector.
-7. create_handoff when it is ready for a person to take over — that link
-   retires the session_token, so leave it until last.
+7. Not signed in: create_handoff when it is ready for a person to take
+   over — that link ends this connection's access, so leave it until last.
 
 Then enter results with update_fixture as they come in.`,
 		name, format, who, name, sport, stageName, format)
@@ -138,11 +137,7 @@ func (s *WhistleMCP) enterResults(ctx context.Context, req mcp.GetPromptRequest)
 4. After correcting a score already entered, resolve_stage {stage_id} to push
    the change through the tables and anything seeded from them.
 5. get_stage_table {stage_id} reads the cross-pool standings once the pools
-   are done.
-
-Every call takes the session_token that create_tournament returned — unless
-this connection already carries an Authorization: Bearer token from signing
-in, in which case none of them need one.`, where)
+   are done.`, where)
 
 	return mcp.NewGetPromptResult(
 		"How to enter results",

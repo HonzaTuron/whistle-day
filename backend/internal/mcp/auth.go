@@ -2,11 +2,14 @@ package mcp
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"net/http"
 	"strings"
 
 	"github.com/mark3labs/mcp-go/mcp"
+	"github.com/pocketbase/dbx"
 	"github.com/pocketbase/pocketbase/core"
 	"github.com/pocketbase/pocketbase/tools/security"
 
@@ -23,52 +26,55 @@ tournament without meeting a signup form. An agent is in exactly that
 position: it turns up with a tournament to build and no account, and demanding
 it go and get one first would be the same friction, moved.
 
-So `create_tournament` needs no credential and mints one, and every other tool
-requires the credential it handed back. That is the same bargain `/new` makes,
-and it means the identity the tools authorise against is an ordinary `users`
-record — which is what lets `tournament.IsOperator` do the deciding here, with
-no second notion of who may touch what.
+So `create_tournament` needs no credential and makes an account, and every
+other tool acts as it. That is the same bargain `/new` makes, and it means the
+identity the tools authorise against is an ordinary `users` record — which is
+what lets `tournament.IsOperator` do the deciding here, with no second notion
+of who may touch what.
 
-The credential travels as a tool argument rather than an `Authorization`
-header. That looks wrong and is deliberate: the agent does not have a token
-when it opens the connection, and a header is fixed for the life of one. A
-token that only exists after the first call has to arrive with the second, and
-an argument is the only place it fits.
+What remembers which account is the connection, not the model. The transport
+gives every connection an Mcp-Session-Id and sends it with each request;
+`create_tournament` records the account against it (mcp_sessions) and later
+calls on the same connection are that account.
 
-What that costs is worth saying plainly. The token goes back through the
-model's context, so it lands in a transcript and probably a log. Nothing here
-can prevent that. What it can do is bound it: one account per tournament, so
-what leaks is one tournament rather than a platform.
+It used to be a `session_token` returned as a tool result and passed back as
+an argument, which put a live credential into the model's context, the
+transcript and probably a log, twice a call. A header the model never sees
+cannot leak that way. The argument is still honoured when one arrives — there
+are tokens out there from before — but no tool asks for it and none returns
+one.
+
+What the connection costs is that it ends. A client that reconnects is a
+stranger, and the way to keep a tournament past that is the way a person keeps
+one: `create_handoff`, or signing in.
 
 A caller that already has a real account can skip all of that: signing in
 once in a browser (internal/oauth) and handing the resulting access token to
 an agent as an `Authorization: Bearer` header identifies it as that real
 user, with everything they own or crew reachable — the same account, not a
 narrower one, because tournament.IsOperator is the only gate either way. See
-caller() below for how the two identities and three channels (a
-session_token argument, that header, and X-Whistle-Session for a gateway)
-are tried in order.
+caller() below for the order the channels are tried in.
 */
 
 // Unambiguous, and the same alphabet the browser uses: these end up read off a
 // wall or pasted between tools by something that is not looking closely.
 const tokenAlphabet = "abcdefghijkmnpqrstuvwxyz23456789"
 
-// sessionArg is what the credential is called in every tool that needs one.
-// Not `token`, which `create_display` already uses for a screen's URL — two
-// different secrets under one name is a mis-paste waiting to happen.
+// sessionArg is the argument a credential used to arrive in. No schema lists
+// it any more; caller() reads it for the tokens issued while one did.
 const sessionArg = "session_token"
 
 var errNoSession = fmt.Errorf(
-	"this tool needs the session_token that create_tournament returned")
+	"sign in to Whistle.day, or start a tournament with create_tournament first")
 
-// withSession adds the credential argument to a tool's schema.
-func withSession() mcp.ToolOption {
-	return mcp.WithString(sessionArg,
-		mcp.Required(),
-		mcp.Description("The session_token returned by create_tournament"),
-	)
-}
+// connectionHeader is the id Streamable HTTP gives a connection at
+// `initialize` and the client sends on every request after it.
+const connectionHeader = "Mcp-Session-Id"
+
+// A connection id shorter than this is not one the transport issued (those
+// are a prefix and a UUID), and binding an account to something guessable
+// would be handing it out.
+const minConnectionID = 32
 
 // SessionHeader is the other way in for the credential.
 //
@@ -86,6 +92,7 @@ type ctxKey int
 const (
 	sessionCtxKey ctxKey = iota
 	bearerCtxKey
+	connectionCtxKey
 )
 
 // withCredentials is wired into the HTTP transport in New(). mcp-go runs it
@@ -102,7 +109,58 @@ func withCredentials(ctx context.Context, r *http.Request) context.Context {
 	if auth := r.Header.Get("Authorization"); strings.HasPrefix(auth, "Bearer ") {
 		ctx = context.WithValue(ctx, bearerCtxKey, strings.TrimSpace(strings.TrimPrefix(auth, "Bearer ")))
 	}
+	if v := strings.TrimSpace(r.Header.Get(connectionHeader)); len(v) >= minConnectionID {
+		ctx = context.WithValue(ctx, connectionCtxKey, v)
+	}
 	return ctx
+}
+
+func connectionFromContext(ctx context.Context) string {
+	v, _ := ctx.Value(connectionCtxKey).(string)
+	return v
+}
+
+func connectionKey(id string) string {
+	sum := sha256.Sum256([]byte(id))
+	return hex.EncodeToString(sum[:])
+}
+
+// bind records the account this connection acts as from now on.
+func (s *WhistleMCP) bind(ctx context.Context, user *core.Record) error {
+	col, err := s.app.FindCollectionByNameOrId("mcp_sessions")
+	if err != nil {
+		return err
+	}
+	r := core.NewRecord(col)
+	r.Set("session", connectionKey(connectionFromContext(ctx)))
+	r.Set("user", user.Id)
+	return s.app.Save(r)
+}
+
+// bound is the account create_tournament made on this connection, if it made
+// one and nobody has claimed it since.
+//
+// The second half is what `create_handoff` promises: once a person has set an
+// email and a password the account is theirs, and the agent that built it is
+// done. The old session_token died there because claiming rotates the token
+// key; a row in a table does not die by itself, so it is checked.
+func (s *WhistleMCP) bound(ctx context.Context) (*core.Record, error) {
+	id := connectionFromContext(ctx)
+	if id == "" {
+		return nil, errNoSession
+	}
+	row, err := s.app.FindFirstRecordByFilter(
+		"mcp_sessions", "session = {:s}", dbx.Params{"s": connectionKey(id)},
+	)
+	if err != nil {
+		return nil, errNoSession
+	}
+	user, err := s.app.FindRecordById("users", row.GetString("user"))
+	if err != nil || !tournament.IsDeviceAccount(user.Email()) {
+		_ = s.app.Delete(row)
+		return nil, errNoSession
+	}
+	return user, nil
 }
 
 func sessionFromContext(ctx context.Context) string {
@@ -153,16 +211,18 @@ func (s *WhistleMCP) newOrganiser() (*core.Record, string, error) {
 
 // caller resolves the credential on a tool call to the account that holds it.
 //
-// Three channels, tried in this order, each failing closed: a channel that
+// Four channels, tried in this order, each failing closed: a channel that
 // carries something invalid errors immediately rather than falling through
 // to the next one, which matters most for the Bearer case — a caller whose
 // access token just expired should hear that, not silently end up as a new
 // anonymous account.
 //
-//  1. The session_token argument — a device account create_tournament minted.
+//  1. A session_token argument — a token from before the connection was
+//     what remembered the account. Nothing issues these now.
 //  2. Authorization: Bearer — a real account, via internal/oauth.
-//  3. X-Whistle-Session — the same session_token, for a gateway that binds
-//     config at connect time and has nowhere to put a per-call argument.
+//  3. X-Whistle-Session — the same old token, for a gateway that binds
+//     config at connect time.
+//  4. The connection itself — the account create_tournament made on it.
 func (s *WhistleMCP) caller(ctx context.Context, req mcp.CallToolRequest) (*core.Record, error) {
 	if token, _ := req.GetArguments()[sessionArg].(string); token != "" {
 		return resolveSessionToken(s.app, token)
@@ -173,7 +233,7 @@ func (s *WhistleMCP) caller(ctx context.Context, req mcp.CallToolRequest) (*core
 	if header := sessionFromContext(ctx); header != "" {
 		return resolveSessionToken(s.app, header)
 	}
-	return nil, errNoSession
+	return s.bound(ctx)
 }
 
 func resolveSessionToken(app core.App, token string) (*core.Record, error) {

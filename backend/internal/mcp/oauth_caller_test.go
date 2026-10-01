@@ -9,6 +9,7 @@ import (
 	"github.com/pocketbase/pocketbase/core"
 
 	"whistleday/backend/internal/oauth"
+	"whistleday/backend/internal/tournament"
 )
 
 // realAccount is what a person who already has a Whistle.day account looks
@@ -142,8 +143,12 @@ func TestCreateTournamentUsesRealOwnerWhenBearerPresent(t *testing.T) {
 	if _, has := first["session_token"]; has {
 		t.Fatal("an OAuth-authenticated create_tournament returned a session_token; it should have nothing new to hand back")
 	}
-	if first["owner"] != person.Id {
-		t.Fatalf("owner = %v, want the signed-in person %s", first["owner"], person.Id)
+	created, err := app.FindRecordById("tournaments", first["id"].(string))
+	if err != nil {
+		t.Fatalf("tournament: %v", err)
+	}
+	if owner := created.GetString("owner"); owner != person.Id {
+		t.Fatalf("owner = %v, want the signed-in person %s", owner, person.Id)
 	}
 
 	r, e = s.createTournament(ctx, toolArgs("create_tournament", map[string]any{"name": "Second Cup"}))
@@ -164,8 +169,8 @@ func TestCreateTournamentUsesRealOwnerWhenBearerPresent(t *testing.T) {
 	}
 }
 
-// The anonymous path is unchanged: nothing presented still mints a fresh
-// device account, exactly as before this feature existed.
+// The anonymous path still works beside it: nothing presented mints a fresh
+// device account, remembered by the connection rather than handed back.
 func TestCreateTournamentAnonymousPathUnchanged(t *testing.T) {
 	app := newTestApp(t)
 	defer app.Cleanup()
@@ -178,12 +183,15 @@ func TestCreateTournamentAnonymousPathUnchanged(t *testing.T) {
 	var data map[string]any
 	json.Unmarshal([]byte(r.Content[0].(mcp.TextContent).Text), &data)
 
-	tok, ok := data["session_token"].(string)
-	if !ok || tok == "" {
-		t.Fatal("expected a session_token for the anonymous path")
+	if _, has := data["session_token"]; has {
+		t.Fatal("the anonymous path returned a credential through the tool result")
 	}
-	if _, err := resolveSessionToken(app, tok); err != nil {
-		t.Fatalf("the minted session_token does not resolve: %v", err)
+	owner, err := s.caller(ctx, toolArgs("list_tournaments", map[string]any{}))
+	if err != nil {
+		t.Fatalf("the connection does not resolve to the account it made: %v", err)
+	}
+	if !tournament.IsDeviceAccount(owner.Email()) {
+		t.Fatalf("expected a device account, got %s", owner.Email())
 	}
 }
 

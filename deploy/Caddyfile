@@ -116,6 +116,13 @@ whistle.day, www.whistle.day {
 			@sw path /sw.js /manifest.webmanifest
 			header @sw Cache-Control "no-cache"
 
+			# OpenAI's domain verification for the ChatGPT plugin reads this
+			# as plain text, and a file with no extension is served with no
+			# type at all. The file itself is `apps/web/public/.well-known/
+			# openai-apps-challenge`; see plugins/chatgpt/README.md.
+			@openai path /.well-known/openai-apps-challenge
+			header @openai Content-Type "text/plain; charset=utf-8"
+
 			rewrite {file_match.relative}
 			file_server
 		}

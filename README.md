@@ -173,28 +173,24 @@ volleyball day differently depending on who set it up.
 
 An agent is treated as an organiser who has not signed up, because that is
 what it is. `create_tournament` is the only tool that needs no credential; it
-makes an account for that tournament and hands back a `session_token`, and
-every other tool requires it. What that account may touch is decided by
-`tournament.IsOperator`, the same function the REST routes use.
+makes a temporary account and every other tool then acts as it. What that
+account may touch is decided by `tournament.IsOperator`, the same function the
+REST routes use.
 
-The token travels as a tool argument rather than an `Authorization` header,
-which looks wrong and is not: the agent has no token when it opens the
-connection, and the header a client is configured with cannot change because a
-tool returned one. It also means what leaks, if the model's transcript leaks,
-is one tournament — that is what an account per tournament is for.
+What remembers the account is the connection. Streamable HTTP gives each one
+an `Mcp-Session-Id` and the client sends it with every request;
+`create_tournament` records the account against a hash of it (`mcp_sessions`).
+No tool returns a credential and none takes one as an argument, so nothing
+that opens a tournament passes through the model's context or lands in a
+transcript. It used to: a `session_token` came back from `create_tournament`
+and went into every later call. `caller()` still honours one sent as an
+argument or in an `X-Whistle-Session` header, for the tokens issued then.
 
-A caller that *does* hold a token before it connects — a person reconnecting
-to an existing tournament through a gateway like [Smithery](https://smithery.ai)
-that binds a config value at connect time — has nowhere to put it as an
-argument, so `caller()` also reads an `X-Whistle-Session` header when a call
-carries no argument. A Smithery config schema with a single `sessionToken`
-field mapped `x-from`/`x-to` onto that header is all it takes to expose it
-there.
-
-`create_handoff` ends it. The link goes to whoever is actually running the day,
-they set an email and a password at `/claim/{token}`, and the account becomes
-theirs — after which the agent's `session_token` stops working, which is the
-point.
+A connection ends, and a client that reconnects is a stranger.
+`create_handoff` is how a tournament outlives it. The link goes to whoever is
+actually running the day, they set an email and a password at
+`/claim/{token}`, and the account becomes theirs — after which the connection
+that built it can no longer touch it, which is the point.
 
 ### Or: sign in as an account you already have
 
@@ -206,9 +202,8 @@ sign in once in a browser and hand an agent a token scoped to their existing
 account instead of a fresh anonymous one. `caller()` tries an
 `Authorization: Bearer` header — resolved by `oauth.ResolveAccessToken`
 against this package's own database-backed tokens, not a PocketBase auth
-JWT, because those cannot be individually revoked — as the second of its
-three identity channels, between the `session_token` argument and
-`X-Whistle-Session`. `tournament.IsOperator` decides what the resulting
+JWT, because those cannot be individually revoked — ahead of the connection's
+own remembered account. `tournament.IsOperator` decides what the resulting
 account may touch either way, so a signed-in connection reaches exactly what
 the account owns or crews, no more and no less.
 
@@ -231,12 +226,15 @@ the spec's discovery flow assumes a client learns OAuth is available from a
 401 challenge, and this server never 401s at the transport level, because
 `create_tournament` has to keep working with no credential at all. A client
 that only checks for `/.well-known/oauth-protected-resource` after a 401 may
-not discover sign-in here — the `/mcp` page's own docs are the mitigation.
+not discover sign-in here. Two mitigations: every tool lists `securitySchemes`
+(`noauth` and `oauth2`) in `_meta`, and a call that needed a credential and
+had none answers with an `mcp/www_authenticate` challenge in its result —
+together what ChatGPT reads to offer sign-in — and the `/mcp` page documents
+it for everything else.
 
 `create_tournament` notices which identity a connection carries: signed-in,
-the tournament is created under that real account and no `session_token`
-comes back — there's nothing new to keep — otherwise it falls back to minting
-the anonymous device account exactly as before.
+the tournament is created under that real account; otherwise it falls back to
+minting the anonymous device account and binding it to the connection.
 
 | | |
 |---|---|

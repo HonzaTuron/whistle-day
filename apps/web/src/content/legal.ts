@@ -253,4 +253,48 @@ export const LEGAL_PAGES: Page[] = [
     ],
     related: ["privacy", "terms"],
   },
+
+  {
+    slug: "contact",
+    kind: "legal",
+    title: "Contact and Support — Whistle.day",
+    h1: "Contact",
+    description:
+      "How to reach Whistle.day for help with a tournament, the MCP server or the ChatGPT plugin, a bug report, or a privacy request.",
+    lede:
+      "There is one address for everything: [info@whistle.day](mailto:info@whistle.day). Write to it for help with a tournament, a bug, a question about the MCP server or the ChatGPT plugin, or a request about your data.",
+    sections: [
+      {
+        heading: "Support",
+        body: [
+          "Email [info@whistle.day](mailto:info@whistle.day). Every message is read by the people who build the product.",
+          "If something is wrong with a tournament, include its link (the address of the tournament or projector page) and what you expected to happen. If it is happening right now, in a hall, say so in the subject line.",
+        ],
+      },
+      {
+        heading: "Agents, the MCP server and the ChatGPT plugin",
+        body: [
+          "Questions and problems with connecting Claude, ChatGPT or another client go to the same address. Tell us which client you used and, if you can, the tool call that failed and the message it returned.",
+          "How the server works and how to connect to it is described on the [MCP page](/mcp).",
+        ],
+      },
+      {
+        heading: "Privacy and data requests",
+        body: [
+          "To access, correct or delete your data, write from the email address registered to your account. You can also delete your account yourself at any time: see the [user deletion path](/user-deletion).",
+        ],
+      },
+    ],
+    faq: [
+      {
+        q: "Is there a phone number or a chat?",
+        a: "No. Email is the only channel.",
+      },
+      {
+        q: "Where do I report a security problem?",
+        a: "The same address, info@whistle.day, with 'Security' in the subject line. Please give us a chance to fix it before publishing details.",
+      },
+    ],
+    related: ["privacy", "terms", "user-deletion"],
+  },
 ];

@@ -1,0 +1,114 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "whistle-day",
+  "version": "1.0.0",
+  "description": "Set up and run a sports tournament on Whistle.day: teams, courts, the draw, scores, standings and a projector screen.",
+  "author": {
+    "name": "Whistle.day",
+    "email": "info@whistle.day",
+    "url": "https://whistle.day"
+  },
+  "homepage": "https://whistle.day/mcp",
+  "keywords": [
+    "tournament",
+    "bracket",
+    "round robin",
+    "swiss",
+    "sports",
+    "scores",
+    "standings"
+  ],
+  "extensions": {
+    "com.openai": {
+      "interface": {
+        "displayName": "Whistle.day",
+        "shortDescription": "Run a tournament from a chat",
+        "longDescription": "Whistle.day organises a sports tournament from the first team list to the last result. Describe the day and the plugin creates the tournament, adds the teams and courts, and draws a round robin, single elimination, double elimination or Swiss stage — or several in a row, such as groups feeding a playoff. As matches finish it records the scores, keeps the tables and brackets up to date, and gives you a link for a projector or TV that shows live results.\n\nIt is for organisers of club, school and community events in volleyball, football, basketball, tennis, padel, badminton, table tennis, handball and other sports.\n\nSign in to work with the tournaments on your Whistle.day account. Without signing in, the plugin can start a new tournament for the length of the conversation's connection and hand it over to you with a claim link. It only reaches tournaments you own or crew. It does not delete tournaments, take payments or handle player registration.",
+        "developerName": "Whistle.day",
+        "category": "Productivity",
+        "capabilities": [
+          "Create a tournament and add teams and courts",
+          "Draw round robin, knockout, double elimination and Swiss stages",
+          "Record match scores and walkovers",
+          "Read fixtures, standings and brackets",
+          "Publish a tournament and create a projector screen link"
+        ],
+        "websiteURL": "https://whistle.day",
+        "supportURL": "https://whistle.day/contact",
+        "privacyPolicyURL": "https://whistle.day/privacy",
+        "termsOfServiceURL": "https://whistle.day/terms",
+        "defaultPrompt": [
+          "Set up a volleyball round robin for 6 teams on 2 courts.",
+          "Record a result in my tournament and show the standings.",
+          "Which matches in my tournament still need a score?"
+        ],
+        "brandColor": "#CA8A04",
+        "brandColorDark": "#FACC15",
+        "composerIcon": "./assets/icon.png",
+        "logo": "./assets/logo.png"
+      },
+      "onboardingSkill": "./skills/plan-a-tournament/SKILL.md",
+      "review": {
+        "test_cases": {
+          "positive": [
+            {
+              "description": "Create a tournament with teams and courts",
+              "prompt": "Create a volleyball tournament called Review Cup with the teams Aces, Blockers, Diggers and Setters, played on two courts.",
+              "tools_triggered": "create_tournament, add_entry, add_court",
+              "expected_behavior": "A draft volleyball tournament named Review Cup exists on the signed-in account with four entries seeded 1 to 4 and two courts. The reply confirms the tournament, the four teams and the two courts."
+            },
+            {
+              "description": "Add a stage and draw the fixtures",
+              "prompt": "Add a round robin group stage to Review Cup and draw the fixtures.",
+              "tools_triggered": "list_tournaments, create_stage, generate_stage, list_fixtures",
+              "expected_behavior": "A round_robin stage is created and generated for Review Cup. With four teams the draw is one pool of six fixtures over three rounds, and the reply lists who plays whom."
+            },
+            {
+              "description": "Record a match result",
+              "prompt": "In Review Cup, Aces beat Blockers 2-0. Record it.",
+              "tools_triggered": "list_tournaments, list_stages, list_entries, list_fixtures, update_fixture",
+              "expected_behavior": "The Aces v Blockers fixture is set to finished with the score 2-0 in favour of Aces, and the reply confirms the recorded score. No other fixture changes."
+            },
+            {
+              "description": "Read the standings",
+              "prompt": "Show me the current standings in Review Cup.",
+              "tools_triggered": "list_tournaments, list_stages, list_pools, list_standings, list_entries",
+              "expected_behavior": "A table of the four teams with played, won, lost and points, with Aces first after the result from the previous case. Nothing is modified."
+            },
+            {
+              "description": "Publish and create a projector screen",
+              "prompt": "Publish Review Cup and give me a link I can put on the projector.",
+              "tools_triggered": "list_tournaments, publish_tournament, create_display",
+              "expected_behavior": "The tournament status becomes live and the reply contains a https://whistle.day/display/... link that opens the live screen for Review Cup."
+            }
+          ],
+          "negative": [
+            {
+              "description": "Deletion is not supported: the plugin has no tool that deletes a tournament, so it should say so and point to the account page on whistle.day instead of altering anything.",
+              "prompt": "Delete my Review Cup tournament."
+            },
+            {
+              "description": "Payments are out of scope: the plugin does not take entry fees or process payments and should decline without calling a tool.",
+              "prompt": "Charge each team a 20 euro entry fee for Review Cup and collect the payments."
+            },
+            {
+              "description": "No access outside the connected account: a tournament the signed-in account does not own or crew is reported as not found, and nothing about it is revealed.",
+              "prompt": "Show me the fixtures of the tournament with id abc123def456ghi."
+            }
+          ]
+        },
+        "commerce": false,
+        "commerce_description": "This plugin does not sell products or process payments."
+      },
+      "publication": {
+        "release_notes": "Initial release: create tournaments, add teams and courts, draw stages, record scores, read standings, publish and create projector screens.",
+        "translations": {
+          "cs-CZ": {
+            "subtitle": "Turnaj řízený z chatu",
+            "description": "Whistle.day uspořádá sportovní turnaj od soupisky týmů po poslední výsledek. Popište, jak má den vypadat, a plugin založí turnaj, přidá týmy a kurty a rozlosuje skupiny každý s každým, pavouka na jednu či dvě porážky nebo švýcarský systém — případně několik fází za sebou, třeba skupiny a po nich play-off. Jak zápasy končí, zapisuje výsledky, udržuje tabulky a pavouky aktuální a dá vám odkaz na obrazovku pro projektor nebo televizi s živými výsledky.\n\nJe určen pořadatelům klubových, školních a komunitních akcí ve volejbale, fotbale, basketbale, tenise, padelu, badmintonu, stolním tenise, házené a dalších sportech.\n\nPo přihlášení pracuje s turnaji na vašem účtu Whistle.day. Bez přihlášení umí založit nový turnaj a předat vám ho odkazem. Dostane se jen k turnajům, které vlastníte nebo na kterých spolupracujete. Turnaje nemaže, nepřijímá platby a neřeší registraci hráčů."
+          }
+        }
+      }
+    }
+  }
+}

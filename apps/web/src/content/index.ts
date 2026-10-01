@@ -92,6 +92,8 @@ export const SLUG_ALIASES: Record<string, string> = {
   "data-deletion": "user-deletion",
   "delete-account": "user-deletion",
   "account-deletion": "user-deletion",
+  support: "contact",
+  "contact-us": "contact",
 };
 
 /** The page at this slug, following an alias if there is one. */

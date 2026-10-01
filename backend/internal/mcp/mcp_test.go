@@ -41,7 +41,30 @@ func toolArgs(method string, args map[string]any) mcp.CallToolRequest {
 	}
 }
 
-var ctx = context.Background()
+// Every test is one connection unless it says otherwise: create_tournament
+// with no credential needs a connection to remember the account against.
+var ctx = context.WithValue(context.Background(), connectionCtxKey,
+	"mcp-session-00000000-0000-4000-8000-000000000000")
+
+// tokenOf is a credential for the account that owns a tournament, for tests
+// that act as it through the session_token argument — which also keeps that
+// argument, still honoured for tokens issued before, under test.
+func tokenOf(t *testing.T, app core.App, created map[string]any) string {
+	t.Helper()
+	r, err := app.FindRecordById("tournaments", created["id"].(string))
+	if err != nil {
+		t.Fatalf("tournament: %v", err)
+	}
+	owner, err := app.FindRecordById("users", r.GetString("owner"))
+	if err != nil {
+		t.Fatalf("owner: %v", err)
+	}
+	token, err := owner.NewAuthToken()
+	if err != nil {
+		t.Fatalf("token: %v", err)
+	}
+	return token
+}
 
 func TestListTournaments(t *testing.T) {
 	app := newTestApp(t)
@@ -76,7 +99,7 @@ func TestListTournaments(t *testing.T) {
 		}
 		var created map[string]any
 		json.Unmarshal([]byte(r.Content[0].(mcp.TextContent).Text), &created)
-		tok := created["session_token"].(string)
+		tok := tokenOf(t, app, created)
 		if created["name"] != "Test Cup" {
 			t.Fatalf("name = %v", created["name"])
 		}
@@ -146,7 +169,7 @@ func TestGetTournament(t *testing.T) {
 	}
 	var created map[string]any
 	json.Unmarshal([]byte(r.Content[0].(mcp.TextContent).Text), &created)
-	tok := created["session_token"].(string)
+	tok := tokenOf(t, app, created)
 
 	t.Run("found", func(t *testing.T) {
 		r, e := s.getTournament(ctx, toolArgs("get_tournament", map[string]any{"session_token": tok, "id": created["id"]}))
@@ -179,7 +202,7 @@ func TestAddEntry(t *testing.T) {
 	}
 	var tournament map[string]any
 	json.Unmarshal([]byte(r.Content[0].(mcp.TextContent).Text), &tournament)
-	tok := tournament["session_token"].(string)
+	tok := tokenOf(t, app, tournament)
 
 	t.Run("add entry", func(t *testing.T) {
 		r, e := s.addEntry(ctx, toolArgs("add_entry", map[string]any{"session_token": tok,
@@ -237,7 +260,7 @@ func TestCreateStage(t *testing.T) {
 	}
 	var tournament map[string]any
 	json.Unmarshal([]byte(r.Content[0].(mcp.TextContent).Text), &tournament)
-	tok := tournament["session_token"].(string)
+	tok := tokenOf(t, app, tournament)
 
 	t.Run("round robin", func(t *testing.T) {
 		r, e := s.createStage(ctx, toolArgs("create_stage", map[string]any{"session_token": tok,
@@ -296,7 +319,7 @@ func TestListStages(t *testing.T) {
 	}
 	var tournament map[string]any
 	json.Unmarshal([]byte(r.Content[0].(mcp.TextContent).Text), &tournament)
-	tok := tournament["session_token"].(string)
+	tok := tokenOf(t, app, tournament)
 
 	_, e = s.createStage(ctx, toolArgs("create_stage", map[string]any{"session_token": tok,
 		"tournament_id": tournament["id"], "name": "Groups", "format": "round_robin", "position": float64(0),
@@ -333,7 +356,7 @@ func TestGetStage(t *testing.T) {
 	}
 	var tournament map[string]any
 	json.Unmarshal([]byte(r.Content[0].(mcp.TextContent).Text), &tournament)
-	tok := tournament["session_token"].(string)
+	tok := tokenOf(t, app, tournament)
 
 	r, e = s.createStage(ctx, toolArgs("create_stage", map[string]any{"session_token": tok,
 		"tournament_id": tournament["id"], "name": "My Stage", "format": "swiss", "position": float64(0),
@@ -375,7 +398,7 @@ func TestGenerateStage(t *testing.T) {
 	}
 	var tournament map[string]any
 	json.Unmarshal([]byte(r.Content[0].(mcp.TextContent).Text), &tournament)
-	tok := tournament["session_token"].(string)
+	tok := tokenOf(t, app, tournament)
 
 	for i := 1; i <= 8; i++ {
 		_, e := s.addEntry(ctx, toolArgs("add_entry", map[string]any{"session_token": tok,
@@ -466,7 +489,7 @@ func TestUpdateAndGetFixture(t *testing.T) {
 	}
 	var tournament map[string]any
 	json.Unmarshal([]byte(r.Content[0].(mcp.TextContent).Text), &tournament)
-	tok := tournament["session_token"].(string)
+	tok := tokenOf(t, app, tournament)
 
 	for i := 1; i <= 4; i++ {
 		_, e := s.addEntry(ctx, toolArgs("add_entry", map[string]any{"session_token": tok,
@@ -549,7 +572,7 @@ func TestListFixturesWithFilters(t *testing.T) {
 	}
 	var tournament map[string]any
 	json.Unmarshal([]byte(r.Content[0].(mcp.TextContent).Text), &tournament)
-	tok := tournament["session_token"].(string)
+	tok := tokenOf(t, app, tournament)
 
 	for i := 1; i <= 8; i++ {
 		_, e := s.addEntry(ctx, toolArgs("add_entry", map[string]any{"session_token": tok,
@@ -615,7 +638,7 @@ func TestResolveStage(t *testing.T) {
 	}
 	var tournament map[string]any
 	json.Unmarshal([]byte(r.Content[0].(mcp.TextContent).Text), &tournament)
-	tok := tournament["session_token"].(string)
+	tok := tokenOf(t, app, tournament)
 
 	for i := 1; i <= 4; i++ {
 		_, e := s.addEntry(ctx, toolArgs("add_entry", map[string]any{"session_token": tok,
@@ -662,7 +685,7 @@ func TestListStandings(t *testing.T) {
 	}
 	var tournament map[string]any
 	json.Unmarshal([]byte(r.Content[0].(mcp.TextContent).Text), &tournament)
-	tok := tournament["session_token"].(string)
+	tok := tokenOf(t, app, tournament)
 
 	for i := 1; i <= 4; i++ {
 		_, e := s.addEntry(ctx, toolArgs("add_entry", map[string]any{"session_token": tok,
@@ -740,7 +763,7 @@ func TestPublishTournament(t *testing.T) {
 	}
 	var tournament map[string]any
 	json.Unmarshal([]byte(r.Content[0].(mcp.TextContent).Text), &tournament)
-	tok := tournament["session_token"].(string)
+	tok := tokenOf(t, app, tournament)
 
 	r, e = s.publishTournament(ctx, toolArgs("publish_tournament", map[string]any{"session_token": tok,
 		"tournament_id": tournament["id"],
@@ -766,7 +789,7 @@ func TestCreateDisplay(t *testing.T) {
 	}
 	var tournament map[string]any
 	json.Unmarshal([]byte(r.Content[0].(mcp.TextContent).Text), &tournament)
-	tok := tournament["session_token"].(string)
+	tok := tokenOf(t, app, tournament)
 
 	_, e = s.publishTournament(ctx, toolArgs("publish_tournament", map[string]any{"session_token": tok,
 		"tournament_id": tournament["id"],
@@ -817,7 +840,7 @@ func TestSwissStage(t *testing.T) {
 	}
 	var tournament map[string]any
 	json.Unmarshal([]byte(r.Content[0].(mcp.TextContent).Text), &tournament)
-	tok := tournament["session_token"].(string)
+	tok := tokenOf(t, app, tournament)
 
 	for i := 1; i <= 9; i++ {
 		_, e := s.addEntry(ctx, toolArgs("add_entry", map[string]any{"session_token": tok,
@@ -927,7 +950,7 @@ func TestToolsRefuseWithoutASession(t *testing.T) {
 	id := mine["id"].(string)
 
 	t.Run("no token at all", func(t *testing.T) {
-		if _, err := s.getTournament(ctx, toolArgs("get_tournament",
+		if _, err := s.getTournament(context.Background(), toolArgs("get_tournament",
 			map[string]any{"id": id})); err == nil {
 			t.Fatal("a tool answered a caller with no session")
 		}
@@ -1087,7 +1110,7 @@ func TestAddCourt(t *testing.T) {
 	}
 	var cup map[string]any
 	json.Unmarshal([]byte(r.Content[0].(mcp.TextContent).Text), &cup)
-	tok := cup["session_token"].(string)
+	tok := tokenOf(t, app, cup)
 	id := cup["id"].(string)
 
 	t.Run("courts append rather than pile up at zero", func(t *testing.T) {
@@ -1153,7 +1176,7 @@ func TestCreateHandoff(t *testing.T) {
 	}
 	var cup map[string]any
 	json.Unmarshal([]byte(r.Content[0].(mcp.TextContent).Text), &cup)
-	tok := cup["session_token"].(string)
+	tok := tokenOf(t, app, cup)
 	id := cup["id"].(string)
 
 	t.Run("the owner gets a link", func(t *testing.T) {
@@ -1185,7 +1208,7 @@ func TestCreateHandoff(t *testing.T) {
 	})
 
 	t.Run("and neither does a caller with no session", func(t *testing.T) {
-		if _, err := s.createHandoff(ctx, toolArgs("create_handoff", map[string]any{
+		if _, err := s.createHandoff(context.Background(), toolArgs("create_handoff", map[string]any{
 			"tournament_id": id,
 		})); err == nil {
 			t.Fatal("an unidentified caller minted a handoff")
@@ -1254,7 +1277,7 @@ func TestCompleteFlow(t *testing.T) {
 	}
 	var tournament map[string]any
 	json.Unmarshal([]byte(r.Content[0].(mcp.TextContent).Text), &tournament)
-	tok := tournament["session_token"].(string)
+	tok := tokenOf(t, app, tournament)
 
 	for i := 1; i <= 4; i++ {
 		_, e := s.addEntry(ctx, toolArgs("add_entry", map[string]any{"session_token": tok,
@@ -1381,7 +1404,7 @@ func TestStageRankSeedsAPlayoff(t *testing.T) {
 
 	var cup map[string]any
 	call(t, s.createTournament, "create_tournament", map[string]any{"name": "Stage Rank Cup"}, &cup)
-	tok := cup["session_token"].(string)
+	tok := tokenOf(t, app, cup)
 
 	for i := 1; i <= 12; i++ {
 		call(t, s.addEntry, "add_entry", map[string]any{"session_token": tok,
@@ -1512,7 +1535,7 @@ func TestStageTableEvensOutUnequalPools(t *testing.T) {
 
 	var cup map[string]any
 	call(t, s.createTournament, "create_tournament", map[string]any{"name": "Uneven Cup"}, &cup)
-	tok := cup["session_token"].(string)
+	tok := tokenOf(t, app, cup)
 	for i := 1; i <= 10; i++ {
 		call(t, s.addEntry, "add_entry", map[string]any{"session_token": tok,
 			"tournament_id": cup["id"], "name": fmt.Sprintf("Team %d", i), "seed": float64(i),
@@ -1559,7 +1582,7 @@ func TestBestOfNextRejectsPoolsWithoutThatPlace(t *testing.T) {
 
 	var cup map[string]any
 	call(t, s.createTournament, "create_tournament", map[string]any{"name": "Too Small"}, &cup)
-	tok := cup["session_token"].(string)
+	tok := tokenOf(t, app, cup)
 	for i := 1; i <= 4; i++ {
 		call(t, s.addEntry, "add_entry", map[string]any{"session_token": tok,
 			"tournament_id": cup["id"], "name": fmt.Sprintf("Team %d", i), "seed": float64(i),
@@ -1603,7 +1626,7 @@ func TestSessionHeaderFallback(t *testing.T) {
 
 	var cup map[string]any
 	call(t, s.createTournament, "create_tournament", map[string]any{"name": "Header Cup"}, &cup)
-	tok := cup["session_token"].(string)
+	tok := tokenOf(t, app, cup)
 
 	// No session_token argument at all — only the context value the header
 	// would have produced.
@@ -1619,7 +1642,7 @@ func TestSessionHeaderFallback(t *testing.T) {
 	}
 
 	// Neither channel: still refused.
-	if _, err := s.listTournaments(ctx, toolArgs("list_tournaments", map[string]any{})); err == nil {
+	if _, err := s.listTournaments(context.Background(), toolArgs("list_tournaments", map[string]any{})); err == nil {
 		t.Fatal("a call with no credential in either place should be refused")
 	}
 

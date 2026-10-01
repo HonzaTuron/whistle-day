@@ -58,7 +58,8 @@ func New(app core.App) *WhistleMCP {
 		server.WithEndpointPath(MCPEndpoint),
 		// Lifts X-Whistle-Session and Authorization: Bearer onto the request
 		// context, where caller() looks for a credential when a tool call
-		// carries no session_token argument of its own.
+		// carries no session_token argument of its own, and Mcp-Session-Id,
+		// which is what an account made by create_tournament is remembered by.
 		server.WithHTTPContextFunc(withCredentials),
 		// A long poll through a proxy is a connection something will decide to
 		// close; the heartbeat is what stops it being closed as idle.
@@ -105,27 +106,27 @@ func behindProxy() bool {
 // ---------------------------------------------------------------------------
 
 func (s *WhistleMCP) registerTools() {
-	s.mcp.AddTool(listTournamentsTool(), s.listTournaments)
-	s.mcp.AddTool(getTournamentTool(), s.getTournament)
-	s.mcp.AddTool(createTournamentTool(), s.createTournament)
-	s.mcp.AddTool(addEntryTool(), s.addEntry)
-	s.mcp.AddTool(createStageTool(), s.createStage)
-	s.mcp.AddTool(publishTournamentTool(), s.publishTournament)
-	s.mcp.AddTool(createDisplayTool(), s.createDisplay)
-	s.mcp.AddTool(listStagesTool(), s.listStages)
-	s.mcp.AddTool(getStageTool(), s.getStage)
-	s.mcp.AddTool(listPoolsTool(), s.listPools)
-	s.mcp.AddTool(listFixturesTool(), s.listFixtures)
-	s.mcp.AddTool(getFixtureTool(), s.getFixture)
-	s.mcp.AddTool(listEntriesTool(), s.listEntries)
-	s.mcp.AddTool(listStandingsTool(), s.listStandings)
-	s.mcp.AddTool(getStageTableTool(), s.getStageTable)
-	s.mcp.AddTool(updateFixtureTool(), s.updateFixture)
-	s.mcp.AddTool(generateStageTool(), s.generateStage)
-	s.mcp.AddTool(resolveStageTool(), s.resolveStage)
-	s.mcp.AddTool(createHandoffTool(), s.createHandoff)
-	s.mcp.AddTool(addCourtTool(), s.addCourt)
-	s.mcp.AddTool(listCourtsTool(), s.listCourts)
+	s.add(listTournamentsTool(), reads, s.listTournaments)
+	s.add(getTournamentTool(), reads, s.getTournament)
+	s.add(createTournamentTool(), adds, s.createTournament)
+	s.add(addEntryTool(), adds, s.addEntry)
+	s.add(createStageTool(), adds, s.createStage)
+	s.add(publishTournamentTool(), publishes, s.publishTournament)
+	s.add(createDisplayTool(), publishes, s.createDisplay)
+	s.add(listStagesTool(), reads, s.listStages)
+	s.add(getStageTool(), reads, s.getStage)
+	s.add(listPoolsTool(), reads, s.listPools)
+	s.add(listFixturesTool(), reads, s.listFixtures)
+	s.add(getFixtureTool(), reads, s.getFixture)
+	s.add(listEntriesTool(), reads, s.listEntries)
+	s.add(listStandingsTool(), reads, s.listStandings)
+	s.add(getStageTableTool(), reads, s.getStageTable)
+	s.add(updateFixtureTool(), overwrites, s.updateFixture)
+	s.add(generateStageTool(), overwrites, s.generateStage)
+	s.add(resolveStageTool(), overwrites, s.resolveStage)
+	s.add(createHandoffTool(), overwrites, s.createHandoff)
+	s.add(addCourtTool(), adds, s.addCourt)
+	s.add(listCourtsTool(), reads, s.listCourts)
 }
 
 func addCourtTool() mcp.Tool {
@@ -139,7 +140,6 @@ func addCourtTool() mcp.Tool {
 		mcp.WithString("tournament_id", mcp.Required(), mcp.Description("Tournament ID")),
 		mcp.WithString("name", mcp.Required(), mcp.Description("Court name, e.g. 'Court 1'")),
 		mcp.WithNumber("position", mcp.Description("Order on the screen, 0-based (default: after the last one)")),
-		withSession(),
 	)
 }
 
@@ -195,7 +195,6 @@ func listCourtsTool() mcp.Tool {
 				"update_fixture's court argument takes.",
 		),
 		mcp.WithString("tournament_id", mcp.Required(), mcp.Description("Tournament ID")),
-		withSession(),
 	)
 }
 
@@ -220,12 +219,13 @@ func createHandoffTool() mcp.Tool {
 			"Make a link that hands this tournament to a person. They open it, "+
 				"set an email and a password, and the account this session has "+
 				"been acting as becomes theirs. Single use, and it expires. "+
-				"Afterwards this session_token stops working — which is the "+
-				"point, so hand it over when the tournament is ready rather than "+
-				"when you are still building it.",
+				"Afterwards this connection can no longer change the tournament "+
+				"— which is the point, so hand it over when the tournament is "+
+				"ready rather than when you are still building it. Only for a "+
+				"tournament made without signing in; a signed-in account "+
+				"already owns what it creates.",
 		),
 		mcp.WithString("tournament_id", mcp.Required(), mcp.Description("Tournament ID")),
-		withSession(),
 	)
 }
 
@@ -259,7 +259,7 @@ func (s *WhistleMCP) createHandoff(ctx context.Context, req mcp.CallToolRequest)
 		"url":     tournament.HandoffURL(s.app, handoff.GetString("token")),
 		"expires": handoff.GetString("expires"),
 		"note": "Give this link to the person running the tournament. " +
-			"Once they open it, this session_token stops working.",
+			"Once they open it, this connection can no longer change the tournament.",
 	})
 }
 
@@ -274,7 +274,6 @@ func argString(req mcp.CallToolRequest, name string) string {
 func listTournamentsTool() mcp.Tool {
 	return mcp.NewTool("list_tournaments",
 		mcp.WithDescription("List the tournaments this session can act on"),
-		withSession(),
 	)
 }
 
@@ -303,7 +302,6 @@ func getTournamentTool() mcp.Tool {
 	return mcp.NewTool("get_tournament",
 		mcp.WithDescription("Get a tournament by ID"),
 		mcp.WithString("id", mcp.Required(), mcp.Description("Tournament ID")),
-		withSession(),
 	)
 }
 
@@ -326,7 +324,6 @@ func listStagesTool() mcp.Tool {
 	return mcp.NewTool("list_stages",
 		mcp.WithDescription("List stages in a tournament"),
 		mcp.WithString("tournament_id", mcp.Required(), mcp.Description("Tournament ID")),
-		withSession(),
 	)
 }
 
@@ -349,7 +346,6 @@ func getStageTool() mcp.Tool {
 	return mcp.NewTool("get_stage",
 		mcp.WithDescription("Get a stage by ID with its pools"),
 		mcp.WithString("id", mcp.Required(), mcp.Description("Stage ID")),
-		withSession(),
 	)
 }
 
@@ -376,7 +372,6 @@ func listPoolsTool() mcp.Tool {
 	return mcp.NewTool("list_pools",
 		mcp.WithDescription("List pools in a stage"),
 		mcp.WithString("stage_id", mcp.Required(), mcp.Description("Stage ID")),
-		withSession(),
 	)
 }
 
@@ -406,7 +401,6 @@ func listFixturesTool() mcp.Tool {
 		mcp.WithString("pool_id", mcp.Description("Pool ID (optional)")),
 		mcp.WithNumber("round", mcp.Description("Round number (optional)")),
 		mcp.WithString("status", mcp.Description("Status filter: pending, ready, live, finished, walkover, bye (optional)")),
-		withSession(),
 	)
 }
 
@@ -451,7 +445,6 @@ func getFixtureTool() mcp.Tool {
 	return mcp.NewTool("get_fixture",
 		mcp.WithDescription("Get a fixture by ID with games"),
 		mcp.WithString("id", mcp.Required(), mcp.Description("Fixture ID")),
-		withSession(),
 	)
 }
 
@@ -496,7 +489,6 @@ func listEntriesTool() mcp.Tool {
 	return mcp.NewTool("list_entries",
 		mcp.WithDescription("List entries (participants) in a tournament"),
 		mcp.WithString("tournament_id", mcp.Required(), mcp.Description("Tournament ID")),
-		withSession(),
 	)
 }
 
@@ -519,7 +511,6 @@ func listStandingsTool() mcp.Tool {
 	return mcp.NewTool("list_standings",
 		mcp.WithDescription("List standings for a pool"),
 		mcp.WithString("pool_id", mcp.Required(), mcp.Description("Pool ID")),
-		withSession(),
 	)
 }
 
@@ -555,7 +546,6 @@ func getStageTableTool() mcp.Tool {
 				"finished — readable throughout, but nothing is seeded from it until then.",
 		),
 		mcp.WithString("stage_id", mcp.Required(), mcp.Description("Stage ID")),
-		withSession(),
 	)
 }
 
@@ -587,7 +577,6 @@ func updateFixtureTool() mcp.Tool {
 		mcp.WithNumber("away_score", mcp.Description("Away score")),
 		mcp.WithString("winner", mcp.Description("Winner entry ID (for walkover)")),
 		mcp.WithString("court", mcp.Description("Court ID (optional)")),
-		withSession(),
 	)
 }
 
@@ -636,7 +625,6 @@ func generateStageTool() mcp.Tool {
 		mcp.WithDescription("Generate pools, slots and fixtures for a stage. Use dry_run=true to preview without saving."),
 		mcp.WithString("stage_id", mcp.Required(), mcp.Description("Stage ID")),
 		mcp.WithBoolean("dry_run", mcp.Description("Preview only, don't write anything")),
-		withSession(),
 	)
 }
 
@@ -688,7 +676,6 @@ func resolveStageTool() mcp.Tool {
 	return mcp.NewTool("resolve_stage",
 		mcp.WithDescription("Re-resolve a stage's fixture propagation and standings. Use after correcting scores."),
 		mcp.WithString("stage_id", mcp.Required(), mcp.Description("Stage ID")),
-		withSession(),
 	)
 }
 
@@ -714,10 +701,11 @@ func (s *WhistleMCP) resolveStage(ctx context.Context, req mcp.CallToolRequest) 
 func createTournamentTool() mcp.Tool {
 	return mcp.NewTool("create_tournament",
 		mcp.WithDescription(
-			"Create a tournament. The only tool that needs no session_token: it "+
-				"makes an account for this tournament and returns the session_token "+
-				"for it, which every other tool then requires. Keep that token — it "+
-				"is the only way back to this tournament, and it is not recoverable.",
+			"Create a draft tournament. Signed in, it is created on that "+
+				"account. Not signed in, it is created on a temporary account "+
+				"that lasts as long as this connection does, and the other "+
+				"tools then work on it for the rest of the connection; use "+
+				"create_handoff to give a person a link that makes it theirs.",
 		),
 		mcp.WithString("name", mcp.Required(), mcp.Description("Tournament name")),
 		mcp.WithString("sport",
@@ -784,8 +772,7 @@ func (s *WhistleMCP) createTournament(ctx context.Context, req mcp.CallToolReque
 	preset := tournament.SportByID(sport)
 
 	// A caller that already signed in (internal/oauth) owns this outright —
-	// no throwaway account, no session_token to hand back, because there is
-	// nothing new to keep. Anything else — including a credential that was
+	// no throwaway account, because there is nothing new to keep. Anything else — including a credential that was
 	// presented but did not check out, such as an expired Bearer token —
 	// falls back to the anonymous device account this always minted, so a
 	// bad credential errors here rather than quietly becoming a fresh
@@ -795,14 +782,23 @@ func (s *WhistleMCP) createTournament(ctx context.Context, req mcp.CallToolReque
 		return nil, err
 	}
 
-	var session string
-	if owner == nil {
+	anonymous := owner == nil
+	if anonymous {
+		// Nothing to remember the account against means nothing could ever
+		// reach the tournament again, so it is not made. The wrapper in
+		// hints.go turns this into an invitation to sign in.
+		if connectionFromContext(ctx) == "" {
+			return nil, errNoSession
+		}
 		// An account of its own rather than one shared system user. What
 		// that bought: every tournament the MCP made used to have the same
 		// owner, so any caller could edit any of them, and no human could
 		// ever be given one without being given all of them.
-		owner, session, err = s.newOrganiser()
+		owner, _, err = s.newOrganiser()
 		if err != nil {
+			return nil, fmt.Errorf("could not make an account for this tournament: %w", err)
+		}
+		if err := s.bind(ctx, owner); err != nil {
 			return nil, fmt.Errorf("could not make an account for this tournament: %w", err)
 		}
 	}
@@ -824,16 +820,17 @@ func (s *WhistleMCP) createTournament(ctx context.Context, req mcp.CallToolReque
 		return nil, fmt.Errorf("create tournament: %w", err)
 	}
 
-	data := recordToMap(r, "id", "name", "sport", "status", "created")
+	// The tournament and how it scores, and nothing about who or when: the
+	// account id and the timestamp were of no use to whoever asked for a
+	// tournament, and the credential that used to be here is the reason
+	// mcp_sessions exists.
+	data := recordToMap(r, "id", "name", "sport", "status")
 	data["scoring"] = preset.Scoring
-	data["owner"] = owner.Id
-	if session != "" {
-		data["session_token"] = session
-		data["note"] = "Pass session_token to every other tool. " +
+	if anonymous {
+		data["note"] = "Created on a temporary account that lasts as long as this connection. " +
 			"Use create_handoff when a person should take this tournament over."
 	} else {
-		data["note"] = "Created under the signed-in account this connection already carries. " +
-			"Every other tool works the same way, with no session_token needed."
+		data["note"] = "Created on the signed-in account."
 	}
 
 	return resultJSON(data)
@@ -845,7 +842,6 @@ func addEntryTool() mcp.Tool {
 		mcp.WithString("tournament_id", mcp.Required(), mcp.Description("Tournament ID")),
 		mcp.WithString("name", mcp.Required(), mcp.Description("Team name")),
 		mcp.WithNumber("seed", mcp.Required(), mcp.Description("Seed (position)")),
-		withSession(),
 	)
 }
 
@@ -884,7 +880,6 @@ func createStageTool() mcp.Tool {
 		mcp.WithString("format", mcp.Required(), mcp.Description("Format: round_robin, single_elim, double_elim, swiss")),
 		mcp.WithNumber("position", mcp.Required(), mcp.Description("Stage position (0-based)")),
 		mcp.WithString("config", mcp.Description("JSON config, e.g. {\"poolCount\":1}")),
-		withSession(),
 	)
 }
 
@@ -933,7 +928,6 @@ func createDisplayTool() mcp.Tool {
 		mcp.WithString("tournament_id", mcp.Required(), mcp.Description("Tournament ID")),
 		mcp.WithString("name", mcp.Description("Display name (default: Main screen)")),
 		mcp.WithString("token", mcp.Description("URL token (default: auto-generated)")),
-		withSession(),
 	)
 }
 
@@ -986,7 +980,6 @@ func publishTournamentTool() mcp.Tool {
 	return mcp.NewTool("publish_tournament",
 		mcp.WithDescription("Publish a tournament (set status to live) so the display works"),
 		mcp.WithString("tournament_id", mcp.Required(), mcp.Description("Tournament ID")),
-		withSession(),
 	)
 }
 
