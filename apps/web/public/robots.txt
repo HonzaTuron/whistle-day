@@ -1,13 +1,43 @@
 User-agent: *
-Allow: /
-
-# One organiser's live board, and screens whose token is their only credential.
-# Nothing here is secret, but a tournament that turns up in a search result is
-# one somebody can read who was never given the link.
 Disallow: /t/
 Disallow: /display/
 Disallow: /m/
 Disallow: /account
 Disallow: /new
+Disallow: /new/
+Allow: /
+
+# Meta / Facebook AI and external crawlers
+User-agent: meta-externalagent
+Disallow: /t/
+Disallow: /display/
+Disallow: /m/
+Disallow: /account
+Disallow: /new
+Disallow: /new/
+
+User-agent: Meta-ExternalAgent
+Disallow: /t/
+Disallow: /display/
+Disallow: /m/
+Disallow: /account
+Disallow: /new
+Disallow: /new/
+
+User-agent: facebookexternalhit
+Disallow: /t/
+Disallow: /display/
+Disallow: /m/
+Disallow: /account
+Disallow: /new
+Disallow: /new/
+
+User-agent: FacebookBot
+Disallow: /t/
+Disallow: /display/
+Disallow: /m/
+Disallow: /account
+Disallow: /new
+Disallow: /new/
 
 Sitemap: https://whistle.day/sitemap.xml
