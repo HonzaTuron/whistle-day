@@ -64,7 +64,15 @@ whistle.day, www.whistle.day {
 	# anonymous one. These paths are dictated by the OAuth/MCP specs
 	# themselves (RFC 8414, RFC 9728, RFC 7591), so they cannot move under
 	# /api/ to share that block above.
-	handle /oauth/* {
+	#
+	# All but one. `/oauth/consent` is where /oauth/authorize sends the
+	# browser to sign in and approve, and that is a screen — it belongs to
+	# the web app, not the API, which has no such route and answers 404.
+	@oauth {
+		path /oauth/*
+		not path /oauth/consent
+	}
+	handle @oauth {
 		reverse_proxy 127.0.0.1:8090
 	}
 	handle /.well-known/oauth-protected-resource {
