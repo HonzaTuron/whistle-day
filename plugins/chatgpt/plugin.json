@@ -1,7 +1,7 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "whistle-day",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Set up and run a sports tournament on Whistle.day: teams, courts, the draw, scores, standings and a projector screen.",
   "author": {
     "name": "Whistle.day",
@@ -97,6 +97,7 @@
             }
           ]
         },
+        "demo_recording_url": "https://whistle.day/walkthrough",
         "commerce": false,
         "commerce_description": "This plugin does not sell products or process payments."
       },

@@ -59,8 +59,10 @@ Things only the account holder can do, in the order the dashboard asks:
    and each one depends on the one before. Run them once in ChatGPT developer
    mode first, then delete the tournament so the reviewer starts clean.
 6. **A screen recording** of those cases, hosted somewhere the reviewer can
-   open. Add its address as `review.demo_recording_url` in `plugin.json`, or
-   in the dashboard.
+   open. Its address is `review.demo_recording_url` in `plugin.json`:
+   <https://whistle.day/walkthrough>, which Caddy serves from
+   `/srv/whistleday/media/walkthrough.mp4`. The file is copied to the server
+   by hand and is not part of a deploy; replace it there to change it.
 7. **Check `category`.** It is "Productivity" here; the dashboard has the list
    it must be chosen from.
 

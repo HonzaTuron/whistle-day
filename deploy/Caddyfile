@@ -93,6 +93,16 @@ whistle.day, www.whistle.day {
 		reverse_proxy 127.0.0.1:8090
 	}
 
+	# The screen recording OpenAI's plugin review asks for, at the address
+	# `review.demo_recording_url` in plugins/chatgpt/plugin.json gives. It
+	# lives outside `client/` because a deploy replaces that directory whole,
+	# and a video is not something to keep in git just to survive that.
+	handle /walkthrough {
+		root * /srv/whistleday/media
+		rewrite * /walkthrough.mp4
+		file_server
+	}
+
 	# ------------------------------------------------------------------
 	# Everything else: a file if one was built, otherwise the renderer.
 	#
