@@ -2,6 +2,7 @@ package tournament
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"strings"
@@ -14,6 +15,8 @@ import (
 
 // RegisterRoutes adds the custom endpoints that collection rules cannot express.
 func RegisterRoutes(app core.App) {
+	screens := screenCacheOf(app)
+
 	app.OnServe().BindFunc(func(se *core.ServeEvent) error {
 		// Re-resolve a whole stage. Used after generating a bracket and as the
 		// repair path when a result is corrected after the fact.
@@ -517,47 +520,71 @@ func RegisterRoutes(app core.App) {
 				return e.NotFoundError("display not found", nil)
 			}
 
-			display, err := e.App.FindFirstRecordByFilter(
-				"displays",
-				"token = {:token} && active = true",
-				map[string]any{"token": token},
-			)
-			if err != nil || display == nil {
+			// Assembled once per write rather than once per reader; see
+			// screencache.go. Every way of not having a screen — no such
+			// token, switched off, a draft — is the same 404 and is not kept.
+			var encodeErr error
+			shown, err := screens.get(token, func() (*screen, error) {
+				display, err := e.App.FindFirstRecordByFilter(
+					"displays",
+					"token = {:token} && active = true",
+					map[string]any{"token": token},
+				)
+				if err != nil {
+					return nil, err
+				}
+				if display == nil {
+					return nil, errNoScreen
+				}
+
+				payload, err := BuildDisplayPayload(e.App, display)
+				if err != nil {
+					return nil, err
+				}
+				if payload.Tournament.Status == "draft" {
+					return nil, errNoScreen
+				}
+
+				body, err := json.Marshal(payload)
+				if err != nil {
+					encodeErr = err
+					return nil, err
+				}
+
+				// A screen polls; most polls change nothing. GeneratedAt is
+				// excluded from the tag so an unchanged tournament keeps
+				// hitting the same one.
+				tagged := body
+				if trimmed, err := json.Marshal(withoutTimestamp(payload)); err == nil {
+					tagged = trimmed
+				}
+				return &screen{
+					tournament: payload.Tournament.ID,
+					body:       body,
+					etag:       payloadETag(tagged),
+				}, nil
+			})
+			if encodeErr != nil {
+				return e.InternalServerError("could not encode payload", encodeErr)
+			}
+			if err != nil {
+				if errors.Is(err, errNoScreen) {
+					err = nil
+				}
 				return e.NotFoundError("display not found", err)
 			}
 
-			payload, err := BuildDisplayPayload(e.App, display)
-			if err != nil {
-				return e.NotFoundError("display not found", err)
-			}
-			if payload.Tournament.Status == "draft" {
-				return e.NotFoundError("display not found", nil)
-			}
-
-			body, err := json.Marshal(payload)
-			if err != nil {
-				return e.InternalServerError("could not encode payload", err)
-			}
-
-			// A screen polls; most polls change nothing. GeneratedAt is
-			// excluded from the tag so an unchanged tournament keeps hitting
-			// the same one.
-			tagged := body
-			if trimmed, err := json.Marshal(withoutTimestamp(payload)); err == nil {
-				tagged = trimmed
-			}
-			etag := payloadETag(tagged)
-			e.Response.Header().Set("ETag", etag)
+			e.Response.Header().Set("ETag", shown.etag)
 			e.Response.Header().Set("Cache-Control", "no-cache")
 
-			if e.Request.Header.Get("If-None-Match") == etag {
+			if e.Request.Header.Get("If-None-Match") == shown.etag {
 				e.Response.WriteHeader(http.StatusNotModified)
 				return nil
 			}
 
 			e.Response.Header().Set("Content-Type", "application/json")
 			e.Response.WriteHeader(http.StatusOK)
-			_, err = e.Response.Write(body)
+			_, err = e.Response.Write(shown.body)
 			return err
 		})
 

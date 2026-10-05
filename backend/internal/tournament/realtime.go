@@ -31,11 +31,16 @@ var changed = []byte(`{"changed":true}`)
 // alternative is this side trying to work out which write was the last one,
 // and being wrong the day somebody adds a hook.
 func RegisterRealtime(app core.App) {
+	// Taken from the app the routes were registered on, once, rather than
+	// from whichever app a hook is handed: the cache the endpoint reads and
+	// the one a write empties have to be the same one.
+	screens := screenCacheOf(app)
+
 	notify := func(e *core.RecordEvent) error {
 		if err := e.Next(); err != nil {
 			return err
 		}
-		notifyScreens(e.App, e.Record)
+		notifyScreens(e.App, screens, e.Record)
 		return nil
 	}
 
@@ -49,11 +54,25 @@ func RegisterRealtime(app core.App) {
 // misses a nudge is a screen that is a few seconds late, because it still
 // polls slowly underneath. A screen that stops a result being saved is worse
 // than any staleness.
-func notifyScreens(app core.App, record *core.Record) {
+func notifyScreens(app core.App, screens *screenCache, record *core.Record) {
+	// An account is not on any screen, but what it is paying for is: sponsors
+	// appear while the owner is subscribed. Working out which tournaments one
+	// account owns costs more than rebuilding the few screens that are live,
+	// and accounts change rarely, so every kept payload goes. No nudge — a
+	// screen has never been told about this and finds out on its slow poll.
+	if record.Collection().Name == "users" {
+		screens.invalidateAll()
+		return
+	}
+
 	tournamentID := tournamentOf(app, record)
 	if tournamentID == "" {
 		return
 	}
+
+	// Before the nudge, not after: the read a nudge causes has to find the
+	// kept payload already gone, or it is told the old board is current.
+	screens.invalidate(tournamentID)
 
 	topic := ScreenTopic(tournamentID)
 	message := subscriptions.Message{Name: topic, Data: changed}
