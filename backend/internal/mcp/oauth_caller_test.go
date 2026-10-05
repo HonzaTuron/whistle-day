@@ -108,7 +108,7 @@ func TestCallerAcceptsBearerWithNoSessionArg(t *testing.T) {
 		t.Fatalf("list_tournaments with only a Bearer header: %v", e)
 	}
 	var list []map[string]any
-	if err := json.Unmarshal([]byte(r.Content[0].(mcp.TextContent).Text), &list); err != nil {
+	if err := rows(r, &list); err != nil {
 		t.Fatalf("unmarshal: %v", err)
 	}
 	if len(list) != 0 {
@@ -163,7 +163,7 @@ func TestCreateTournamentUsesRealOwnerWhenBearerPresent(t *testing.T) {
 		t.Fatalf("list: %v", e)
 	}
 	var list []map[string]any
-	json.Unmarshal([]byte(r.Content[0].(mcp.TextContent).Text), &list)
+	rows(r, &list)
 	if len(list) != 2 {
 		t.Fatalf("expected 2 tournaments under the one real account, got %d", len(list))
 	}

@@ -110,7 +110,7 @@ func callOn(t *testing.T, c context.Context, fn func(context.Context, mcp.CallTo
 	if out == nil {
 		return
 	}
-	if err := json.Unmarshal([]byte(r.Content[0].(mcp.TextContent).Text), out); err != nil {
+	if err := decode(r, out); err != nil {
 		t.Fatalf("%s: unmarshal: %v", name, err)
 	}
 }

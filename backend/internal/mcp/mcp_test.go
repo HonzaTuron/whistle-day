@@ -41,6 +41,30 @@ func toolArgs(method string, args map[string]any) mcp.CallToolRequest {
 	}
 }
 
+// rows reads what a list tool answers with: an object holding one array,
+// whatever that tool calls it.
+func rows(r *mcp.CallToolResult, out *[]map[string]any) error {
+	var named map[string][]map[string]any
+	if err := json.Unmarshal([]byte(r.Content[0].(mcp.TextContent).Text), &named); err != nil {
+		return err
+	}
+	if len(named) != 1 {
+		return fmt.Errorf("expected one list, got %d keys", len(named))
+	}
+	for _, list := range named {
+		*out = list
+	}
+	return nil
+}
+
+// decode reads a result into out, which is a list when out is a slice.
+func decode(r *mcp.CallToolResult, out any) error {
+	if list, ok := out.(*[]map[string]any); ok {
+		return rows(r, list)
+	}
+	return json.Unmarshal([]byte(r.Content[0].(mcp.TextContent).Text), out)
+}
+
 // Every test is one connection unless it says otherwise: create_tournament
 // with no credential needs a connection to remember the account against.
 var ctx = context.WithValue(context.Background(), connectionCtxKey,
@@ -83,8 +107,7 @@ func TestListTournaments(t *testing.T) {
 			t.Fatalf("list: %v", e)
 		}
 		var list []map[string]any
-		text := r.Content[0].(mcp.TextContent).Text
-		if err := json.Unmarshal([]byte(text), &list); err != nil {
+		if err := rows(r, &list); err != nil {
 			t.Fatalf("unmarshal: %v", err)
 		}
 		if len(list) != 0 {
@@ -109,7 +132,7 @@ func TestListTournaments(t *testing.T) {
 			t.Fatalf("list: %v", e)
 		}
 		var list []map[string]any
-		json.Unmarshal([]byte(r.Content[0].(mcp.TextContent).Text), &list)
+		rows(r, &list)
 		if len(list) != 1 {
 			t.Fatalf("expected 1, got %d", len(list))
 		}
@@ -128,7 +151,7 @@ func TestListTournaments(t *testing.T) {
 			t.Fatalf("list: %v", e)
 		}
 		var list []map[string]any
-		json.Unmarshal([]byte(r.Content[0].(mcp.TextContent).Text), &list)
+		rows(r, &list)
 		if len(list) != 0 {
 			t.Fatalf("a fresh session saw %d tournaments belonging to somebody else", len(list))
 		}
@@ -242,7 +265,7 @@ func TestAddEntry(t *testing.T) {
 			t.Fatalf("list: %v", e)
 		}
 		var list []map[string]any
-		json.Unmarshal([]byte(r.Content[0].(mcp.TextContent).Text), &list)
+		rows(r, &list)
 		if len(list) != 3 {
 			t.Fatalf("expected 3, got %d", len(list))
 		}
@@ -339,7 +362,7 @@ func TestListStages(t *testing.T) {
 		t.Fatalf("list: %v", e)
 	}
 	var list []map[string]any
-	json.Unmarshal([]byte(r.Content[0].(mcp.TextContent).Text), &list)
+	rows(r, &list)
 	if len(list) != 2 {
 		t.Fatalf("expected 2, got %d", len(list))
 	}
@@ -459,7 +482,7 @@ func TestGenerateStage(t *testing.T) {
 			t.Fatalf("list pools: %v", e)
 		}
 		var list []map[string]any
-		json.Unmarshal([]byte(r.Content[0].(mcp.TextContent).Text), &list)
+		rows(r, &list)
 		if len(list) != 2 {
 			t.Fatalf("expected 2 pools, got %d", len(list))
 		}
@@ -471,7 +494,7 @@ func TestGenerateStage(t *testing.T) {
 			t.Fatalf("list fixtures: %v", e)
 		}
 		var list []map[string]any
-		json.Unmarshal([]byte(r.Content[0].(mcp.TextContent).Text), &list)
+		rows(r, &list)
 		if len(list) != 12 {
 			t.Fatalf("expected 12 fixtures, got %d", len(list))
 		}
@@ -521,7 +544,7 @@ func TestUpdateAndGetFixture(t *testing.T) {
 		t.Fatalf("list fixtures: %v", e)
 	}
 	var fixtures []map[string]any
-	json.Unmarshal([]byte(r.Content[0].(mcp.TextContent).Text), &fixtures)
+	rows(r, &fixtures)
 	if len(fixtures) < 1 {
 		t.Fatal("expected fixtures")
 	}
@@ -606,7 +629,7 @@ func TestListFixturesWithFilters(t *testing.T) {
 			t.Fatalf("list: %v", e)
 		}
 		var list []map[string]any
-		json.Unmarshal([]byte(r.Content[0].(mcp.TextContent).Text), &list)
+		rows(r, &list)
 		if len(list) != 4 {
 			t.Fatalf("expected 4, got %d", len(list))
 		}
@@ -620,7 +643,7 @@ func TestListFixturesWithFilters(t *testing.T) {
 			t.Fatalf("list: %v", e)
 		}
 		var list []map[string]any
-		json.Unmarshal([]byte(r.Content[0].(mcp.TextContent).Text), &list)
+		rows(r, &list)
 		if len(list) == 0 {
 			t.Fatal("expected ready fixtures")
 		}
@@ -716,7 +739,7 @@ func TestListStandings(t *testing.T) {
 		t.Fatalf("list pools: %v", e)
 	}
 	var pools []map[string]any
-	json.Unmarshal([]byte(r.Content[0].(mcp.TextContent).Text), &pools)
+	rows(r, &pools)
 	if len(pools) == 0 {
 		t.Fatal("expected pools")
 	}
@@ -726,7 +749,7 @@ func TestListStandings(t *testing.T) {
 		t.Fatalf("list fixtures: %v", e)
 	}
 	var fixtures []map[string]any
-	json.Unmarshal([]byte(r.Content[0].(mcp.TextContent).Text), &fixtures)
+	rows(r, &fixtures)
 	if len(fixtures) > 0 {
 		_, e = s.updateFixture(ctx, toolArgs("update_fixture", map[string]any{"session_token": tok,
 			"id": fixtures[0]["id"], "status": "finished", "home_score": float64(2), "away_score": float64(0),
@@ -741,7 +764,7 @@ func TestListStandings(t *testing.T) {
 		t.Fatalf("list standings: %v", e)
 	}
 	var list []map[string]any
-	json.Unmarshal([]byte(r.Content[0].(mcp.TextContent).Text), &list)
+	rows(r, &list)
 	if len(list) != 4 {
 		t.Fatalf("expected 4, got %d", len(list))
 	}
@@ -879,7 +902,7 @@ func TestSwissStage(t *testing.T) {
 		t.Fatalf("list: %v", e)
 	}
 	var fixtures []map[string]any
-	json.Unmarshal([]byte(r.Content[0].(mcp.TextContent).Text), &fixtures)
+	rows(r, &fixtures)
 	if len(fixtures) != 5 {
 		t.Fatalf("expected 5, got %d", len(fixtures))
 	}
@@ -1129,7 +1152,7 @@ func TestAddCourt(t *testing.T) {
 			t.Fatalf("list: %v", err)
 		}
 		var courts []map[string]any
-		json.Unmarshal([]byte(listed.Content[0].(mcp.TextContent).Text), &courts)
+		rows(listed, &courts)
 
 		if len(courts) != 3 {
 			t.Fatalf("got %d courts, want 3", len(courts))
@@ -1312,7 +1335,7 @@ func TestCompleteFlow(t *testing.T) {
 		t.Fatalf("list: %v", e)
 	}
 	var fixtures []map[string]any
-	json.Unmarshal([]byte(r.Content[0].(mcp.TextContent).Text), &fixtures)
+	rows(r, &fixtures)
 
 	for _, f := range fixtures {
 		if f["round"] == float64(0) {
@@ -1340,7 +1363,7 @@ func TestCompleteFlow(t *testing.T) {
 		t.Fatalf("list: %v", e)
 	}
 	var updated []map[string]any
-	json.Unmarshal([]byte(r.Content[0].(mcp.TextContent).Text), &updated)
+	rows(r, &updated)
 	if updated[len(updated)-1]["round"] != float64(1) {
 		t.Fatalf("final round = %v", updated[len(updated)-1]["round"])
 	}
@@ -1361,7 +1384,7 @@ func call(t *testing.T, fn func(context.Context, mcp.CallToolRequest) (*mcp.Call
 	if out == nil {
 		return
 	}
-	if err := json.Unmarshal([]byte(r.Content[0].(mcp.TextContent).Text), out); err != nil {
+	if err := decode(r, out); err != nil {
 		t.Fatalf("%s: unmarshal: %v", name, err)
 	}
 }
@@ -1636,7 +1659,7 @@ func TestSessionHeaderFallback(t *testing.T) {
 		t.Fatalf("header session: %v", err)
 	}
 	var list []map[string]any
-	json.Unmarshal([]byte(r.Content[0].(mcp.TextContent).Text), &list)
+	rows(r, &list)
 	if len(list) != 1 {
 		t.Fatalf("header session saw %d tournaments, want 1", len(list))
 	}

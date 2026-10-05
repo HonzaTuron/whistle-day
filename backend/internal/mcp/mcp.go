@@ -140,6 +140,7 @@ func addCourtTool() mcp.Tool {
 		mcp.WithString("tournament_id", mcp.Required(), mcp.Description("Tournament ID")),
 		mcp.WithString("name", mcp.Required(), mcp.Description("Court name, e.g. 'Court 1'")),
 		mcp.WithNumber("position", mcp.Description("Order on the screen, 0-based (default: after the last one)")),
+		returnsRecord(courtFields),
 	)
 }
 
@@ -185,7 +186,7 @@ func (s *WhistleMCP) addCourt(ctx context.Context, req mcp.CallToolRequest) (*mc
 		return nil, fmt.Errorf("add court: %w", err)
 	}
 
-	return resultJSON(recordToMap(r, "id", "name", "position", "active"))
+	return resultJSON(recordToMap(r, courtFields...))
 }
 
 func listCourtsTool() mcp.Tool {
@@ -195,6 +196,7 @@ func listCourtsTool() mcp.Tool {
 				"update_fixture's court argument takes.",
 		),
 		mcp.WithString("tournament_id", mcp.Required(), mcp.Description("Tournament ID")),
+		returnsList("courts", courtFields),
 	)
 }
 
@@ -210,7 +212,7 @@ func (s *WhistleMCP) listCourts(ctx context.Context, req mcp.CallToolRequest) (*
 	if err != nil {
 		return nil, fmt.Errorf("list courts: %w", err)
 	}
-	return resultJSON(toMapSlice(records, "id", "name", "position", "active"))
+	return resultList("courts", records, courtFields)
 }
 
 func createHandoffTool() mcp.Tool {
@@ -226,6 +228,11 @@ func createHandoffTool() mcp.Tool {
 				"already owns what it creates.",
 		),
 		mcp.WithString("tournament_id", mcp.Required(), mcp.Description("Tournament ID")),
+		returns(objectSchema(map[string]any{
+			"url":     str("The link to give to the person taking the tournament over"),
+			"expires": str("When the link stops working, UTC"),
+			"note":    str("What to tell the person, and what changes once they open it"),
+		}, "url", "expires", "note")),
 	)
 }
 
@@ -274,6 +281,7 @@ func argString(req mcp.CallToolRequest, name string) string {
 func listTournamentsTool() mcp.Tool {
 	return mcp.NewTool("list_tournaments",
 		mcp.WithDescription("List the tournaments this session can act on"),
+		returnsList("tournaments", tournamentSummaryFields),
 	)
 }
 
@@ -295,13 +303,14 @@ func (s *WhistleMCP) listTournaments(ctx context.Context, req mcp.CallToolReques
 	if err != nil {
 		return nil, fmt.Errorf("list tournaments: %w", err)
 	}
-	return resultJSON(toMapSlice(records, "id", "name", "sport", "location", "status", "created"))
+	return resultList("tournaments", records, tournamentSummaryFields)
 }
 
 func getTournamentTool() mcp.Tool {
 	return mcp.NewTool("get_tournament",
 		mcp.WithDescription("Get a tournament by ID"),
 		mcp.WithString("id", mcp.Required(), mcp.Description("Tournament ID")),
+		returnsRecord(tournamentFields),
 	)
 }
 
@@ -314,16 +323,14 @@ func (s *WhistleMCP) getTournament(ctx context.Context, req mcp.CallToolRequest)
 	if err != nil {
 		return nil, fmt.Errorf("tournament not found: %w", err)
 	}
-	return resultJSON(recordToMap(r,
-		"id", "name", "sport", "location", "status",
-		"scoring", "description", "created", "updated",
-	))
+	return resultJSON(recordToMap(r, tournamentFields...))
 }
 
 func listStagesTool() mcp.Tool {
 	return mcp.NewTool("list_stages",
 		mcp.WithDescription("List stages in a tournament"),
 		mcp.WithString("tournament_id", mcp.Required(), mcp.Description("Tournament ID")),
+		returnsList("stages", stageSummaryFields),
 	)
 }
 
@@ -339,13 +346,14 @@ func (s *WhistleMCP) listStages(ctx context.Context, req mcp.CallToolRequest) (*
 	if err != nil {
 		return nil, fmt.Errorf("list stages: %w", err)
 	}
-	return resultJSON(toMapSlice(records, "id", "name", "format", "status", "position", "config"))
+	return resultList("stages", records, stageSummaryFields)
 }
 
 func getStageTool() mcp.Tool {
 	return mcp.NewTool("get_stage",
 		mcp.WithDescription("Get a stage by ID with its pools"),
 		mcp.WithString("id", mcp.Required(), mcp.Description("Stage ID")),
+		returnsRecord(stageFields),
 	)
 }
 
@@ -362,16 +370,14 @@ func (s *WhistleMCP) getStage(ctx context.Context, req mcp.CallToolRequest) (*mc
 	if err != nil {
 		return nil, fmt.Errorf("stage not found: %w", err)
 	}
-	return resultJSON(recordToMap(r,
-		"id", "name", "format", "status", "position", "config",
-		"tournament", "created", "updated",
-	))
+	return resultJSON(recordToMap(r, stageFields...))
 }
 
 func listPoolsTool() mcp.Tool {
 	return mcp.NewTool("list_pools",
 		mcp.WithDescription("List pools in a stage"),
 		mcp.WithString("stage_id", mcp.Required(), mcp.Description("Stage ID")),
+		returnsList("pools", poolFields),
 	)
 }
 
@@ -391,7 +397,7 @@ func (s *WhistleMCP) listPools(ctx context.Context, req mcp.CallToolRequest) (*m
 	if err != nil {
 		return nil, fmt.Errorf("list pools: %w", err)
 	}
-	return resultJSON(toMapSlice(records, "id", "name", "kind", "position", "advance_count"))
+	return resultList("pools", records, poolFields)
 }
 
 func listFixturesTool() mcp.Tool {
@@ -401,6 +407,7 @@ func listFixturesTool() mcp.Tool {
 		mcp.WithString("pool_id", mcp.Description("Pool ID (optional)")),
 		mcp.WithNumber("round", mcp.Description("Round number (optional)")),
 		mcp.WithString("status", mcp.Description("Status filter: pending, ready, live, finished, walkover, bye (optional)")),
+		returnsList("fixtures", fixtureSummaryFields),
 	)
 }
 
@@ -434,17 +441,16 @@ func (s *WhistleMCP) listFixtures(ctx context.Context, req mcp.CallToolRequest) 
 		return nil, fmt.Errorf("list fixtures: %w", err)
 	}
 
-	return resultJSON(toMapSlice(records,
-		"id", "code", "status", "round", "position",
-		"home_entry", "away_entry", "home_score", "away_score",
-		"winner", "court", "stage", "pool",
-	))
+	return resultList("fixtures", records, fixtureSummaryFields)
 }
 
 func getFixtureTool() mcp.Tool {
 	return mcp.NewTool("get_fixture",
 		mcp.WithDescription("Get a fixture by ID with games"),
 		mcp.WithString("id", mcp.Required(), mcp.Description("Fixture ID")),
+		returnsRecord(fixtureFields, map[string]any{
+			"games": arrayOf(recordSchema(gameFields)),
+		}),
 	)
 }
 
@@ -472,15 +478,10 @@ func (s *WhistleMCP) getFixture(ctx context.Context, req mcp.CallToolRequest) (*
 
 	gameList := make([]map[string]any, 0, len(games))
 	for _, g := range games {
-		gameList = append(gameList, recordToMap(g, "id", "number", "home_score", "away_score"))
+		gameList = append(gameList, recordToMap(g, gameFields...))
 	}
 
-	data := recordToMap(r,
-		"id", "code", "status", "round", "position",
-		"home_entry", "away_entry", "home_score", "away_score",
-		"winner", "loser", "court", "scheduled_at",
-		"stage", "pool", "home_slot", "away_slot",
-	)
+	data := recordToMap(r, fixtureFields...)
 	data["games"] = gameList
 	return resultJSON(data)
 }
@@ -489,6 +490,7 @@ func listEntriesTool() mcp.Tool {
 	return mcp.NewTool("list_entries",
 		mcp.WithDescription("List entries (participants) in a tournament"),
 		mcp.WithString("tournament_id", mcp.Required(), mcp.Description("Tournament ID")),
+		returnsList("entries", entryFields),
 	)
 }
 
@@ -504,13 +506,14 @@ func (s *WhistleMCP) listEntries(ctx context.Context, req mcp.CallToolRequest) (
 	if err != nil {
 		return nil, fmt.Errorf("list entries: %w", err)
 	}
-	return resultJSON(toMapSlice(records, "id", "name", "short_name", "club", "seed", "status"))
+	return resultList("entries", records, entryFields)
 }
 
 func listStandingsTool() mcp.Tool {
 	return mcp.NewTool("list_standings",
 		mcp.WithDescription("List standings for a pool"),
 		mcp.WithString("pool_id", mcp.Required(), mcp.Description("Pool ID")),
+		returnsList("standings", standingFields),
 	)
 }
 
@@ -530,10 +533,7 @@ func (s *WhistleMCP) listStandings(ctx context.Context, req mcp.CallToolRequest)
 	if err != nil {
 		return nil, fmt.Errorf("list standings: %w", err)
 	}
-	return resultJSON(toMapSlice(records,
-		"id", "position", "entry", "played", "won", "drawn", "lost",
-		"score_for", "score_against", "points", "qualified",
-	))
+	return resultList("standings", records, standingFields)
 }
 
 func getStageTableTool() mcp.Tool {
@@ -546,6 +546,7 @@ func getStageTableTool() mcp.Tool {
 				"finished — readable throughout, but nothing is seeded from it until then.",
 		),
 		mcp.WithString("stage_id", mcp.Required(), mcp.Description("Stage ID")),
+		returnsList("standings", stageTableFields),
 	)
 }
 
@@ -562,10 +563,7 @@ func (s *WhistleMCP) getStageTable(ctx context.Context, req mcp.CallToolRequest)
 	if err != nil {
 		return nil, fmt.Errorf("get stage table: %w", err)
 	}
-	return resultJSON(toMapSlice(records,
-		"id", "position", "entry", "played", "won", "drawn", "lost",
-		"score_for", "score_against", "points",
-	))
+	return resultList("standings", records, stageTableFields)
 }
 
 func updateFixtureTool() mcp.Tool {
@@ -577,6 +575,7 @@ func updateFixtureTool() mcp.Tool {
 		mcp.WithNumber("away_score", mcp.Description("Away score")),
 		mcp.WithString("winner", mcp.Description("Winner entry ID (for walkover)")),
 		mcp.WithString("court", mcp.Description("Court ID (optional)")),
+		returnsRecord(updatedFixtureFields),
 	)
 }
 
@@ -615,9 +614,7 @@ func (s *WhistleMCP) updateFixture(ctx context.Context, req mcp.CallToolRequest)
 		return nil, fmt.Errorf("save fixture: %w", err)
 	}
 
-	return resultJSON(recordToMap(r,
-		"id", "code", "status", "home_score", "away_score", "winner",
-	))
+	return resultJSON(recordToMap(r, updatedFixtureFields...))
 }
 
 func generateStageTool() mcp.Tool {
@@ -625,6 +622,19 @@ func generateStageTool() mcp.Tool {
 		mcp.WithDescription("Generate pools, slots and fixtures for a stage. Use dry_run=true to preview without saving."),
 		mcp.WithString("stage_id", mcp.Required(), mcp.Description("Stage ID")),
 		mcp.WithBoolean("dry_run", mcp.Description("Preview only, don't write anything")),
+		// Two answers under one schema: a dry run carries the plan, a real
+		// one the counts of what it wrote. Only the stage is in both.
+		returns(objectSchema(map[string]any{
+			"stage":   str("Stage ID"),
+			"dry_run": boolean("True when this was a preview and nothing was written"),
+			"plan": map[string]any{
+				"type":        "object",
+				"description": "The pools, slots and fixtures that would be written. Dry run only.",
+			},
+			"pools":    integer("Pools written"),
+			"slots":    integer("Slots written"),
+			"fixtures": integer("Fixtures written"),
+		}, "stage")),
 	)
 }
 
@@ -676,6 +686,10 @@ func resolveStageTool() mcp.Tool {
 	return mcp.NewTool("resolve_stage",
 		mcp.WithDescription("Re-resolve a stage's fixture propagation and standings. Use after correcting scores."),
 		mcp.WithString("stage_id", mcp.Required(), mcp.Description("Stage ID")),
+		returns(objectSchema(map[string]any{
+			"stage":    str("Stage ID"),
+			"resolved": integer("How many updates the resolve made"),
+		}, "stage", "resolved")),
 	)
 }
 
@@ -716,6 +730,13 @@ func createTournamentTool() mcp.Tool {
 					"Defaults to \"other\", which is a generic table rather than a guess.",
 			),
 		),
+		returnsRecord(createdTournamentFields, map[string]any{
+			"scoring": map[string]any{
+				"type":        "object",
+				"description": "The scoring rules the sport preset set",
+			},
+			"note": str("Which account the tournament was created on"),
+		}),
 	)
 }
 
@@ -824,7 +845,7 @@ func (s *WhistleMCP) createTournament(ctx context.Context, req mcp.CallToolReque
 	// account id and the timestamp were of no use to whoever asked for a
 	// tournament, and the credential that used to be here is the reason
 	// mcp_sessions exists.
-	data := recordToMap(r, "id", "name", "sport", "status")
+	data := recordToMap(r, createdTournamentFields...)
 	data["scoring"] = preset.Scoring
 	if anonymous {
 		data["note"] = "Created on a temporary account that lasts as long as this connection. " +
@@ -842,6 +863,7 @@ func addEntryTool() mcp.Tool {
 		mcp.WithString("tournament_id", mcp.Required(), mcp.Description("Tournament ID")),
 		mcp.WithString("name", mcp.Required(), mcp.Description("Team name")),
 		mcp.WithNumber("seed", mcp.Required(), mcp.Description("Seed (position)")),
+		returnsRecord(createdEntryFields),
 	)
 }
 
@@ -869,7 +891,7 @@ func (s *WhistleMCP) addEntry(ctx context.Context, req mcp.CallToolRequest) (*mc
 		return nil, fmt.Errorf("add entry: %w", err)
 	}
 
-	return resultJSON(recordToMap(r, "id", "name", "seed", "status"))
+	return resultJSON(recordToMap(r, createdEntryFields...))
 }
 
 func createStageTool() mcp.Tool {
@@ -880,6 +902,7 @@ func createStageTool() mcp.Tool {
 		mcp.WithString("format", mcp.Required(), mcp.Description("Format: round_robin, single_elim, double_elim, swiss")),
 		mcp.WithNumber("position", mcp.Required(), mcp.Description("Stage position (0-based)")),
 		mcp.WithString("config", mcp.Description("JSON config, e.g. {\"poolCount\":1}")),
+		returnsRecord(stageSummaryFields),
 	)
 }
 
@@ -919,7 +942,7 @@ func (s *WhistleMCP) createStage(ctx context.Context, req mcp.CallToolRequest) (
 		return nil, fmt.Errorf("create stage: %w", err)
 	}
 
-	return resultJSON(recordToMap(r, "id", "name", "format", "position", "status", "config"))
+	return resultJSON(recordToMap(r, stageSummaryFields...))
 }
 
 func createDisplayTool() mcp.Tool {
@@ -928,6 +951,13 @@ func createDisplayTool() mcp.Tool {
 		mcp.WithString("tournament_id", mcp.Required(), mcp.Description("Tournament ID")),
 		mcp.WithString("name", mcp.Description("Display name (default: Main screen)")),
 		mcp.WithString("token", mcp.Description("URL token (default: auto-generated)")),
+		returns(objectSchema(map[string]any{
+			"id":            str("Display ID"),
+			"name":          str("Display name"),
+			"token":         str("URL token; anybody who has it can open the screen"),
+			"display_url":   str("JSON feed the screen reads"),
+			"projector_url": str("The page to open on the projector"),
+		}, "id", "name", "token", "display_url", "projector_url")),
 	)
 }
 
@@ -980,6 +1010,7 @@ func publishTournamentTool() mcp.Tool {
 	return mcp.NewTool("publish_tournament",
 		mcp.WithDescription("Publish a tournament (set status to live) so the display works"),
 		mcp.WithString("tournament_id", mcp.Required(), mcp.Description("Tournament ID")),
+		returnsRecord(publishedTournamentFields),
 	)
 }
 
@@ -999,7 +1030,7 @@ func (s *WhistleMCP) publishTournament(ctx context.Context, req mcp.CallToolRequ
 		return nil, fmt.Errorf("publish tournament: %w", err)
 	}
 
-	return resultJSON(recordToMap(r, "id", "name", "status"))
+	return resultJSON(recordToMap(r, publishedTournamentFields...))
 }
 
 // ---------------------------------------------------------------------------
@@ -1054,6 +1085,12 @@ func fieldValue(r *core.Record, field string) any {
 
 func resultJSON(data any) (*mcp.CallToolResult, error) {
 	return mcp.NewToolResultJSON(data)
+}
+
+// resultList answers with rows under a name rather than as a bare array,
+// which structuredContent is not allowed to be.
+func resultList(key string, records []*core.Record, fields []string) (*mcp.CallToolResult, error) {
+	return resultJSON(map[string]any{key: toMapSlice(records, fields...)})
 }
 
 func RegisterMCPServer(app core.App) {

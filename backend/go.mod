@@ -6,6 +6,7 @@ require (
 	github.com/mark3labs/mcp-go v1.1.1
 	github.com/pocketbase/dbx v1.12.0
 	github.com/pocketbase/pocketbase v0.40.4
+	github.com/santhosh-tekuri/jsonschema/v6 v6.0.3
 )
 
 require (
@@ -26,7 +27,6 @@ require (
 	github.com/ncruces/go-strftime v1.1.0 // indirect
 	github.com/pocketbase/ozzo-validation/v4 v4.3.0 // indirect
 	github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec // indirect
-	github.com/santhosh-tekuri/jsonschema/v6 v6.0.3 // indirect
 	github.com/spf13/cast v1.10.0 // indirect
 	github.com/spf13/cobra v1.10.2 // indirect
 	github.com/spf13/pflag v1.0.10 // indirect
