@@ -15,7 +15,17 @@ backend/pocketbase
 # IDE
 .idea/
 .vscode/
+
+# Agent tooling. Per-machine config and generated indexes, rewritten by the
+# tools themselves on every run, so tracking them is churn and nothing else.
 .claude/
+.opencode/
+.gemini/
+.gortex/
+opencode.json
+CLAUDE.md
+AGENTS.md
+GEMINI.md
 
 # Vite / TanStack
 apps/web/dist/
