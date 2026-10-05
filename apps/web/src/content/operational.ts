@@ -551,6 +551,18 @@ export const OPERATIONAL_PAGES: Page[] = [
           "Once connected that way, an agent reaches everything that account owns or crews, the same tournaments the web app itself shows after signing in, not a narrower set, and `create_tournament` builds new ones under that real account rather than a fresh throwaway one. Nothing about what a tool can do changes; only whose tournaments it can see does.",
         ],
       },
+      {
+        heading: "Writing code instead of prompting",
+        body: [
+          "The tools sit on an ordinary HTTP API, and a script can call it directly: read a published tournament's tables and fixtures without an account, preview a draw, enter results, or pull a whole projector screen in one request. The [API reference](/api/docs) lists every endpoint with example requests and responses, and the same reference is available as an [OpenAPI document](/api/openapi.json) for generating a client.",
+        ],
+        code: [
+          {
+            label: "curl",
+            code: "curl -X POST https://whistle.day/api/preview \\\n  -H 'Content-Type: application/json' \\\n  -d '{\"format\": \"round_robin\", \"teams\": 4}'",
+          },
+        ],
+      },
     ],
     faq: [
       {
@@ -568,6 +580,10 @@ export const OPERATIONAL_PAGES: Page[] = [
       {
         q: "Is it free?",
         a: "Yes: the MCP server calls the same tournament engine the free web app runs on.",
+      },
+      {
+        q: "Is there an HTTP API as well?",
+        a: "Yes. The MCP tools are a layer over a JSON API that anything can call, documented at [/api/docs](/api/docs) and as OpenAPI at [/api/openapi.json](/api/openapi.json).",
       },
       {
         q: "My agent reconnected and can't find the tournament it made. What then?",

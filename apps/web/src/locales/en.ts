@@ -178,6 +178,7 @@ export const en = {
   "landing.agentsNote":
     "Whistle.day is also an MCP server — point Claude, ChatGPT or any MCP client at it and an agent can create a tournament, add teams and courts, draw a stage and settle matches on its own.",
   "landing.agentsLink": "See the MCP server",
+  "landing.apiLink": "API reference",
   "landing.footer": "Whistle.day, a free tournament organiser.",
   "landing.smithery": "Whistle.day on Smithery",
 

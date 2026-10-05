@@ -1699,6 +1699,15 @@ th,
   max-width: 28rem;
 }
 
+/* Two links side by side under a section's note, stacking when the row is too
+   narrow to hold both. */
+.home__section-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.75rem;
+}
+
 /* --- how it works steps -------------------------------------------------- */
 
 .home__steps {

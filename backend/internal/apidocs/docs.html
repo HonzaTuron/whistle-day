@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{.Title}} reference</title>
+<meta name="description" content="{{.Summary}}">
+<link rel="alternate" type="application/json" href="{{.SpecPath}}" title="OpenAPI 3.1">
+<style>
+  :root {
+    --bg: #ffffff; --panel: #f5f6f4; --text: #16201a; --muted: #5d6a62;
+    --line: #dfe3df; --accent: #0b7a43;
+    --get: #0b6bcb; --post: #0b7a43; --patch: #9a6200; --delete: #b3261e;
+    color-scheme: light dark;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #101512; --panel: #18201b; --text: #e8eee9; --muted: #9aa8a0;
+      --line: #2a352e; --accent: #4fd28d;
+      --get: #6db3ff; --post: #4fd28d; --patch: #f0b24a; --delete: #ff8a80;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font: 16px/1.6 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  .wrap { max-width: 54rem; margin: 0 auto; padding: 2.5rem 1rem 5rem; }
+  a { color: var(--accent); }
+  h1 { font-size: 2rem; letter-spacing: -0.02em; margin: 0.25rem 0 0.5rem; }
+  h2 { font-size: 1.4rem; letter-spacing: -0.01em; margin: 3.5rem 0 0.5rem; padding-top: 1rem; border-top: 1px solid var(--line); }
+  h3 { font-size: 1.05rem; margin: 0; font-weight: 600; }
+  h4 { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin: 1.25rem 0 0.4rem; }
+  p { margin: 0.6rem 0; }
+  .brand { font-weight: 700; text-decoration: none; color: var(--text); }
+  .lede { color: var(--muted); font-size: 1.1rem; margin-top: 0; }
+  code, pre { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.875em; }
+  code { background: var(--panel); padding: 0.1em 0.35em; border-radius: 4px; overflow-wrap: anywhere; }
+  pre { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 0.85rem 1rem; overflow-x: auto; margin: 0.4rem 0; line-height: 1.45; }
+  pre code { background: none; padding: 0; font-size: 1em; overflow-wrap: normal; }
+  .toc { columns: 2; column-gap: 2rem; padding: 0; margin: 1rem 0 0; list-style: none; }
+  .toc li { break-inside: avoid; margin-bottom: 0.25rem; }
+  .op { border: 1px solid var(--line); border-radius: 10px; padding: 1rem 1.1rem; margin: 1rem 0; }
+  .op__line { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.6rem; margin-bottom: 0.35rem; }
+  .op__path { font-weight: 600; background: none; padding: 0; font-size: 0.95rem; }
+  .method { font: 700 0.75rem/1 ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: 0.04em; }
+  .method--GET { color: var(--get); } .method--POST { color: var(--post); }
+  .method--PATCH { color: var(--patch); } .method--DELETE { color: var(--delete); }
+  .badge { font-size: 0.72rem; border: 1px solid var(--line); border-radius: 999px; padding: 0.1rem 0.55rem; color: var(--muted); white-space: nowrap; }
+  .badge--auth { border-color: var(--accent); color: var(--accent); }
+  .table { overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; font-size: 0.92rem; }
+  th, td { text-align: left; vertical-align: top; padding: 0.45rem 0.75rem 0.45rem 0; border-bottom: 1px solid var(--line); }
+  th { font-weight: 600; color: var(--muted); font-size: 0.8rem; }
+  td:first-child { white-space: nowrap; }
+  details { margin: 0.35rem 0; }
+  summary { cursor: pointer; color: var(--muted); font-size: 0.9rem; }
+  .status { font-weight: 600; }
+  .muted { color: var(--muted); }
+  @media (max-width: 40rem) { .toc { columns: 1; } td:first-child { white-space: normal; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<a class="brand" href="/">Whistle.day</a>
+<h1>{{.Title}}</h1>
+<p class="lede">{{.Summary}}</p>
+{{.Intro}}
+
+<ul class="toc">
+  <li><a href="#start">Getting started</a></li>
+  {{- range .Sections}}
+  <li><a href="#{{.Anchor}}">{{.Name}}</a></li>
+  {{- end}}
+  <li><a href="#collections">Collections</a></li>
+  <li><a href="{{.SpecPath}}">OpenAPI document</a></li>
+</ul>
+
+<h2 id="start">Getting started</h2>
+<p>The base address is <code>{{.Server}}</code>. Two requests that need nothing at all, to see the shape of things:</p>
+<pre><code>curl -X POST {{.Server}}/api/preview \
+  -H 'Content-Type: application/json' \
+  -d '{"format": "round_robin", "teams": 4}'
+
+curl '{{.Server}}/api/collections/tournaments/records?perPage=5'</code></pre>
+<p>Everything that writes needs a token. Sign in for one, then send it on every request:</p>
+<pre><code>curl -X POST {{.Server}}/api/collections/users/auth-with-password \
+  -H 'Content-Type: application/json' \
+  -d '{"identity": "you@example.com", "password": "…"}'
+
+curl -X POST {{.Server}}/api/stages/STAGE_ID/generate?dry_run=1 \
+  -H 'Authorization: Bearer TOKEN'</code></pre>
+{{- if .ErrorExample}}
+<p>A refusal is always the same object, with a <code>message</code> written to be shown to a person:</p>
+<pre><code>{{.ErrorExample}}</code></pre>
+{{- end}}
+<p>There is no general rate limit, because a sports hall is two hundred people behind one IP address. The endpoints that do have one say so.</p>
+
+{{range .Sections}}
+<h2 id="{{.Anchor}}">{{.Name}}</h2>
+{{.About}}
+{{range .Ops}}
+<section class="op" id="{{.Anchor}}">
+  <div class="op__line">
+    <span class="method method--{{.Method}}">{{.Method}}</span>
+    <code class="op__path">{{.Path}}</code>
+    {{if .Auth}}<span class="badge badge--auth">token required</span>{{else}}<span class="badge">no token</span>{{end}}
+  </div>
+  <h3>{{.Summary}}</h3>
+  {{.About}}
+  {{- if .Params}}
+  <h4>Parameters</h4>
+  <div class="table"><table>
+    {{- range .Params}}
+    <tr>
+      <td><code>{{.Name}}</code></td>
+      <td class="muted">{{.In}}{{if .Required}}, required{{end}}</td>
+      <td>{{.About}}</td>
+    </tr>
+    {{- end}}
+  </table></div>
+  {{- end}}
+  {{- if .Request}}
+  <h4>Request body</h4>
+  <pre><code>{{.Request}}</code></pre>
+  {{- end}}
+  <h4>Responses</h4>
+  <div class="table"><table>
+    {{- range .Responses}}
+    <tr>
+      <td class="status">{{.Status}}</td>
+      <td>{{.About}}
+        {{- if .Example}}
+        <details><summary>Example</summary><pre><code>{{.Example}}</code></pre></details>
+        {{- end}}
+      </td>
+    </tr>
+    {{- end}}
+  </table></div>
+</section>
+{{end}}
+{{end}}
+
+<h2 id="collections">Collections</h2>
+<p>What the records API reads and writes. A tournament is an ordered list of stages; a stage holds pools; a pool holds slots, and a fixture is played between two of them. The field lists below are read from the running database, so they are what the API returns today.</p>
+<div class="table"><table>
+  <tr><th>Collection</th><th>What it is</th><th>Read</th><th>Write</th></tr>
+  {{- range .Collections}}
+  <tr>
+    <td><a href="#collection-{{.Name}}"><code>{{.Name}}</code></a></td>
+    <td>{{.About}}</td>
+    <td>{{.Read}}</td>
+    <td>{{.Write}}</td>
+  </tr>
+  {{- end}}
+</table></div>
+{{range .Collections}}
+{{- if .Fields}}
+<details id="collection-{{.Name}}">
+  <summary><code>{{.Name}}</code> fields</summary>
+  <div class="table"><table>
+    {{- range .Fields}}
+    <tr><td><code>{{.Name}}</code></td><td class="muted">{{.Kind}}</td></tr>
+    {{- end}}
+  </table></div>
+</details>
+{{- end}}
+{{end}}
+
+</div>
+</body>
+</html>

@@ -1,0 +1,1072 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Whistle.day API",
+    "version": "1.0.0",
+    "summary": "The HTTP API the Whistle.day screens are built on.",
+    "description": "Everything the web app does goes through this API, so anything it can do, a script can do too. It is PocketBase underneath: tournaments, teams, matches and tables are collections read and written through the standard records API, and the operations a collection rule cannot express (drawing a stage, taking a team out, handing a tournament over) are the custom routes listed here.\n\nRequests and responses are JSON. A published tournament is readable by anybody; a draft, and every write, needs a token from somebody who owns the tournament or is on its crew.\n\nThis page is served by the API itself at `/api/docs`, and the same reference is available as an OpenAPI 3.1 document at `/api/openapi.json`. An agent is better served by the MCP server at `/api/mcp`, which wraps the same engine in 21 tools.",
+    "contact": { "name": "Whistle.day", "email": "info@whistle.day", "url": "https://whistle.day" }
+  },
+  "servers": [{ "url": "https://whistle.day" }],
+  "tags": [
+    {
+      "name": "Screens and previews",
+      "description": "Public, read-only endpoints. No account and no token header: a screen is opened by the token in its address, and a preview reads no stored data at all."
+    },
+    {
+      "name": "Authentication",
+      "description": "A token is a PocketBase auth token for the `users` collection. Send it in the `Authorization` header, with or without the `Bearer` prefix. Signing in is rate limited to 5 requests per 10 seconds per IP address."
+    },
+    {
+      "name": "Records",
+      "description": "The PocketBase records API over the collections listed under Collections below. Reading a published tournament needs no token. Listing supports PocketBase's `filter`, `sort`, `expand`, `fields`, `page` and `perPage` parameters."
+    },
+    {
+      "name": "Stages",
+      "description": "Drawing a stage and repairing one. All three need a token from the tournament's owner or crew."
+    },
+    {
+      "name": "Entries",
+      "description": "Taking a team out of a running tournament, putting one back, and fitting in a team that arrived after the draw. Each is one transaction that also retallies every table it touches."
+    },
+    {
+      "name": "Crew",
+      "description": "How a second person gets access to a tournament: the owner shows a join code, and whoever scans it becomes a referee, a scorer or an organiser."
+    },
+    {
+      "name": "Account",
+      "description": "The wizard and the MCP server both start a tournament on a temporary account that nobody signed up for. These endpoints turn that account into a person's, hand it to somebody else, or delete it."
+    },
+    {
+      "name": "Agents",
+      "description": "The MCP server and the OAuth 2.1 authorization server in front of it. Connection instructions for Claude, ChatGPT, Cursor and other clients are on the MCP page at https://whistle.day/mcp."
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "token": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "A PocketBase auth token for the `users` collection, from `POST /api/collections/users/auth-with-password`."
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "description": "Every refusal has this shape. `message` is a sentence written for whoever is holding the phone.",
+        "properties": {
+          "status": { "type": "integer" },
+          "message": { "type": "string" },
+          "data": { "type": "object" }
+        },
+        "example": { "status": 404, "message": "Stage not found.", "data": {} }
+      }
+    }
+  },
+  "paths": {
+    "/api/display/{token}": {
+      "get": {
+        "tags": ["Screens and previews"],
+        "summary": "Everything one projector screen shows",
+        "description": "One assembled payload: the tournament, its stages with their pools, tables and rounds, what is playing now, what is next, recent results, courts and sponsors. Teams are sent once in `entries` and referenced by id everywhere else. A side of a match that nobody has qualified for yet has an empty `entry` and a `label` to draw instead, such as `Winner SF1`.\n\nThe response carries an `ETag`. Send it back in `If-None-Match` and an unchanged tournament answers `304`. A screen whose tournament is still a draft answers `404`, the same as a token that does not exist. This endpoint has no rate limit.",
+        "parameters": [
+          {
+            "name": "token",
+            "in": "path",
+            "required": true,
+            "description": "The screen's token, from the address of its `/display/{token}` page.",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "If-None-Match",
+            "in": "header",
+            "required": false,
+            "description": "The `ETag` of the last response you received.",
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The screen's payload.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "generated_at": "2026-10-03T09:41:12Z",
+                  "tournament": {
+                    "id": "t8w2k1m0q9x4c7z",
+                    "name": "Autumn Cup",
+                    "sport": "volleyball",
+                    "location": "Sports hall B",
+                    "logo": "",
+                    "status": "live"
+                  },
+                  "display": {
+                    "id": "d3n5p7r9t1v2x4z",
+                    "name": "Main wall",
+                    "mode": "auto",
+                    "rotate_seconds": 15,
+                    "scope": { "stage": "", "pool": "", "court": "" },
+                    "theme": { "mode": "dark" },
+                    "panels": []
+                  },
+                  "entries": {
+                    "e1a2b3c4d5f6g7h": {
+                      "id": "e1a2b3c4d5f6g7h",
+                      "name": "Kestrels",
+                      "short_name": "KES",
+                      "club": "",
+                      "logo": "",
+                      "seed": 1
+                    },
+                    "e2b3c4d5f6g7h8j": {
+                      "id": "e2b3c4d5f6g7h8j",
+                      "name": "Otters",
+                      "short_name": "OTT",
+                      "club": "",
+                      "logo": "",
+                      "seed": 2
+                    }
+                  },
+                  "courts": [{ "id": "c9y8x7w6v5u4t3s", "name": "Court 1", "position": 0 }],
+                  "stages": [
+                    {
+                      "id": "s4h6j8k0m2n4p6q",
+                      "position": 0,
+                      "name": "Groups",
+                      "name_kind": "groups",
+                      "format": "round_robin",
+                      "status": "live",
+                      "pools": [
+                        {
+                          "id": "p1q2r3s4t5u6v7w",
+                          "name": "A",
+                          "kind": "group",
+                          "advance_count": 2,
+                          "standings": [
+                            {
+                              "position": 1,
+                              "entry": "e1a2b3c4d5f6g7h",
+                              "played": 1,
+                              "won": 1,
+                              "drawn": 0,
+                              "lost": 0,
+                              "score_for": 2,
+                              "score_against": 0,
+                              "points": 2,
+                              "qualified": false,
+                              "tiebreak": ["points"]
+                            }
+                          ],
+                          "rounds": [
+                            {
+                              "round": 0,
+                              "fixtures": [
+                                {
+                                  "id": "f7g8h9j0k1m2n3p",
+                                  "code": "A1",
+                                  "stage": "s4h6j8k0m2n4p6q",
+                                  "pool": "p1q2r3s4t5u6v7w",
+                                  "round": 0,
+                                  "position": 0,
+                                  "status": "finished",
+                                  "home": { "entry": "e1a2b3c4d5f6g7h", "label": "Kestrels", "score": 2 },
+                                  "away": { "entry": "e2b3c4d5f6g7h8j", "label": "Otters", "score": 0 },
+                                  "winner": "e1a2b3c4d5f6g7h",
+                                  "court": "c9y8x7w6v5u4t3s",
+                                  "scheduled_at": "2026-10-03 09:00:00.000Z",
+                                  "games": [
+                                    { "number": 1, "home": 25, "away": 19 },
+                                    { "number": 2, "home": 25, "away": 22 }
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ],
+                  "now_playing": [],
+                  "next_up": [],
+                  "recent": [],
+                  "sponsors": []
+                }
+              }
+            }
+          },
+          "304": { "description": "Nothing has changed since the `ETag` you sent." },
+          "404": { "description": "No active screen has this token, or its tournament is still a draft." }
+        }
+      }
+    },
+    "/api/preview": {
+      "post": {
+        "tags": ["Screens and previews"],
+        "summary": "Draw a stage that does not exist",
+        "description": "A format, a field and a config in, a plan out. It runs the same generators a real stage does and touches no stored data, so it needs no account. Send either `teams` (a count, numbered `Team 1`, `Team 2`, …) or `names`; `names` wins when both are present.\n\n`format` is one of `round_robin`, `single_elim`, `double_elim` or `swiss`. `config` takes the same keys a stage's `config` does: `poolCount`, `advancePerPool`, `legs`, `thirdPlace`, `consolation` and `rounds`. `seedFrom` is refused, because there is no earlier stage to read. The field is capped at 128 teams and the endpoint at 60 requests a minute per IP address. Responses may be cached for an hour.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "example": { "format": "single_elim", "names": ["Kestrels", "Otters"], "config": { "thirdPlace": false } }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The plan: pools, the slots in them, and the fixtures between those slots. Keys are positional and exist only to link the three lists together.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "format": "single_elim",
+                  "plan": {
+                    "pools": [
+                      {
+                        "key": "pool:main",
+                        "name": "Main",
+                        "name_kind": "main",
+                        "position": 0,
+                        "kind": "winners",
+                        "advance_count": 1
+                      }
+                    ],
+                    "slots": [
+                      {
+                        "key": "slot:0:0",
+                        "pool_key": "pool:main",
+                        "round": 0,
+                        "position": 0,
+                        "label": "Kestrels",
+                        "entry": "preview1",
+                        "source_type": "direct",
+                        "source_fixture_key": "",
+                        "source_pool": "",
+                        "source_stage": "",
+                        "source_position": 1
+                      },
+                      {
+                        "key": "slot:0:1",
+                        "pool_key": "pool:main",
+                        "round": 0,
+                        "position": 1,
+                        "label": "Otters",
+                        "entry": "preview2",
+                        "source_type": "direct",
+                        "source_fixture_key": "",
+                        "source_pool": "",
+                        "source_stage": "",
+                        "source_position": 2
+                      },
+                      {
+                        "key": "slot:1:0",
+                        "pool_key": "pool:main",
+                        "round": 1,
+                        "position": 0,
+                        "label": "Winner F",
+                        "label_kind": "winner_of",
+                        "label_args": { "code": "F" },
+                        "entry": "",
+                        "source_type": "fixture_winner",
+                        "source_fixture_key": "fixture:0:0",
+                        "source_pool": "",
+                        "source_stage": "",
+                        "source_position": 0
+                      }
+                    ],
+                    "fixtures": [
+                      {
+                        "key": "fixture:0:0",
+                        "pool_key": "pool:main",
+                        "round": 0,
+                        "position": 0,
+                        "code": "F",
+                        "home_slot_key": "slot:0:0",
+                        "away_slot_key": "slot:0:1",
+                        "status": "pending"
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "400": { "description": "Fewer than 2 teams, more than 128, an unknown format, `ladder`, or a `seedFrom`." },
+          "429": { "description": "More than 60 requests in a minute from this IP address." }
+        }
+      }
+    },
+    "/api/collections/users/auth-with-password": {
+      "post": {
+        "tags": ["Authentication"],
+        "summary": "Sign in",
+        "description": "PocketBase's own sign-in. `identity` is the email address of the account. The `token` in the answer is what every authenticated request sends in its `Authorization` header.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "example": { "identity": "jana@example.com", "password": "correct horse battery" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "A token and the account it belongs to.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9…",
+                  "record": { "id": "u5k7m9p1r3t5v7x", "collectionName": "users", "email": "jana@example.com", "verified": true }
+                }
+              }
+            }
+          },
+          "400": { "description": "The address or the password is wrong." },
+          "429": { "description": "More than 5 sign-in requests in 10 seconds from this IP address." }
+        }
+      }
+    },
+    "/api/collections/users/auth-refresh": {
+      "post": {
+        "tags": ["Authentication"],
+        "summary": "Trade a token for a fresh one",
+        "description": "PocketBase's own refresh. Send the token you hold; the answer has the same shape as signing in.",
+        "security": [{ "token": [] }],
+        "responses": {
+          "200": { "description": "A new token and the account record." },
+          "401": { "description": "The token is missing, expired, or was invalidated when the account was claimed or handed over." }
+        }
+      }
+    },
+    "/api/collections/{collection}/records": {
+      "get": {
+        "tags": ["Records"],
+        "summary": "List records",
+        "description": "A page of one collection. Records of a published tournament are returned to anybody; records of a draft only to its owner and crew, and without a token they are simply absent from the list rather than refused.\n\n`displays` is the exception: anonymously it returns a screen only when the request carries that screen's `?token=`.",
+        "parameters": [
+          {
+            "name": "collection",
+            "in": "path",
+            "required": true,
+            "description": "One of the names under Collections below.",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "filter",
+            "in": "query",
+            "required": false,
+            "description": "A PocketBase filter expression, for example `tournament = \"t8w2k1m0q9x4c7z\" && status = \"live\"`.",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "description": "Comma-separated fields, `-` for descending: `round,position`.",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "expand",
+            "in": "query",
+            "required": false,
+            "description": "Relations to inline, for example `home_entry,away_entry`.",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "fields",
+            "in": "query",
+            "required": false,
+            "description": "Comma-separated fields to return instead of the whole record.",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "1-based page number. Defaults to 1.",
+            "schema": { "type": "integer" }
+          },
+          {
+            "name": "perPage",
+            "in": "query",
+            "required": false,
+            "description": "Records per page. Defaults to 30.",
+            "schema": { "type": "integer" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "One page.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "page": 1,
+                  "perPage": 30,
+                  "totalItems": 1,
+                  "totalPages": 1,
+                  "items": [
+                    {
+                      "id": "c9y8x7w6v5u4t3s",
+                      "collectionName": "courts",
+                      "tournament": "t8w2k1m0q9x4c7z",
+                      "name": "Court 1",
+                      "position": 0
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": { "description": "The filter or the sort does not parse." },
+          "404": { "description": "No such collection." }
+        }
+      },
+      "post": {
+        "tags": ["Records"],
+        "summary": "Create a record",
+        "description": "Anybody signed in can create a tournament, and becomes its owner. Courts, entries, stages, displays and sponsors are created by the tournament's owner or crew, invites and crew rows by the owner alone. `standings` and `fixture_events` are written by the server and accept nothing.\n\nA stage created here has no matches until `POST /api/stages/{stage}/generate` draws it. An entry created after the draw is not in any stage until `POST /api/entries/{entry}/admit` fits it in.",
+        "security": [{ "token": [] }],
+        "parameters": [
+          {
+            "name": "collection",
+            "in": "path",
+            "required": true,
+            "description": "One of the names under Collections below.",
+            "schema": { "type": "string" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "example": { "tournament": "t8w2k1m0q9x4c7z", "name": "Kestrels", "short_name": "KES", "seed": 1, "status": "registered" }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "The record as stored." },
+          "400": { "description": "A field failed validation, or the collection's create rule refused the request." },
+          "403": { "description": "The collection takes no writes through the API." }
+        }
+      }
+    },
+    "/api/collections/{collection}/records/{id}": {
+      "get": {
+        "tags": ["Records"],
+        "summary": "Read one record",
+        "description": "The same access as listing. A record you may not see answers `404`, not `403`.",
+        "parameters": [
+          {
+            "name": "collection",
+            "in": "path",
+            "required": true,
+            "description": "One of the names under Collections below.",
+            "schema": { "type": "string" }
+          },
+          { "name": "id", "in": "path", "required": true, "description": "The record's id.", "schema": { "type": "string" } },
+          {
+            "name": "expand",
+            "in": "query",
+            "required": false,
+            "description": "Relations to inline.",
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": { "description": "The record." },
+          "404": { "description": "No such record, or not one this request may see." }
+        }
+      },
+      "patch": {
+        "tags": ["Records"],
+        "summary": "Update a record",
+        "description": "Send only the fields that change. Entering a result is a patch to a fixture: settling it is what fills the slots that were waiting on it, rebuilds the tables, draws the next Swiss round and seeds a playoff from a finished group, all before the response is sent.\n\nA level score is refused with `400` when the tournament's scoring does not allow draws, and always in a knockout stage. A best-of series accepts only the scores a series can end on.",
+        "security": [{ "token": [] }],
+        "parameters": [
+          {
+            "name": "collection",
+            "in": "path",
+            "required": true,
+            "description": "One of the names under Collections below.",
+            "schema": { "type": "string" }
+          },
+          { "name": "id", "in": "path", "required": true, "description": "The record's id.", "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "example": { "home_score": 2, "away_score": 1, "status": "finished" }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "The record as stored." },
+          "400": { "description": "A field failed validation, or the result is one the format cannot end on." },
+          "404": { "description": "No such record, or not one this token may change." }
+        }
+      },
+      "delete": {
+        "tags": ["Records"],
+        "summary": "Delete a record",
+        "description": "Deleting a tournament deletes everything under it. Deleting a crew row removes that person's access immediately.",
+        "security": [{ "token": [] }],
+        "parameters": [
+          {
+            "name": "collection",
+            "in": "path",
+            "required": true,
+            "description": "One of the names under Collections below.",
+            "schema": { "type": "string" }
+          },
+          { "name": "id", "in": "path", "required": true, "description": "The record's id.", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "204": { "description": "Deleted." },
+          "404": { "description": "No such record, or not one this token may delete." }
+        }
+      }
+    },
+    "/api/realtime": {
+      "get": {
+        "tags": ["Records"],
+        "summary": "Be told when a tournament changes",
+        "description": "PocketBase's server-sent event stream. The first event is `PB_CONNECT` and carries a `clientId`; post that id back with the topics you want. Whistle.day broadcasts on `tournament/{id}` whenever anything a screen renders is written. The message says that something changed and never what, so the thing to do on receiving one is to read `GET /api/display/{token}` or the records again.\n\nKeep a slow poll underneath: a connection that looks open and has stopped delivering is the failure worth planning for.",
+        "responses": {
+          "200": { "description": "An open `text/event-stream`." }
+        }
+      },
+      "post": {
+        "tags": ["Records"],
+        "summary": "Choose what the stream delivers",
+        "description": "Sets the subscriptions of an open stream, replacing whatever it had.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "example": { "clientId": "kX2bQ9…", "subscriptions": ["tournament/t8w2k1m0q9x4c7z"] }
+            }
+          }
+        },
+        "responses": {
+          "204": { "description": "Subscribed." },
+          "404": { "description": "No open stream has this `clientId`." }
+        }
+      }
+    },
+    "/api/stages/{stage}/generate": {
+      "post": {
+        "tags": ["Stages"],
+        "summary": "Draw a stage",
+        "description": "Writes the stage's pools, slots and fixtures from its `format`, its `config` and the tournament's entries, then fills in whatever can already be resolved. With `?dry_run=1` nothing is written and the answer is the plan itself, in the shape `POST /api/preview` returns, so a preview and the real draw come out of the same generator.\n\nA playoff seeded from an earlier stage sets `config.seedFrom` to `{ \"stage\": \"<id>\", \"advancePerPool\": 2 }` and is filled from that stage's tables as its groups finish.",
+        "security": [{ "token": [] }],
+        "parameters": [
+          { "name": "stage", "in": "path", "required": true, "description": "The stage's id.", "schema": { "type": "string" } },
+          {
+            "name": "dry_run",
+            "in": "query",
+            "required": false,
+            "description": "`1` or `true` to return the plan without writing it.",
+            "schema": { "type": "string", "enum": ["1", "true"] }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "How much was written. With `dry_run`, `{ \"stage\", \"dry_run\": true, \"plan\" }` instead.",
+            "content": {
+              "application/json": { "example": { "stage": "s4h6j8k0m2n4p6q", "pools": 2, "slots": 8, "fixtures": 12 } }
+            }
+          },
+          "400": { "description": "The stage cannot be drawn as configured, or it already holds played fixtures." },
+          "401": { "description": "No token." },
+          "403": { "description": "The token's account is not on this tournament's crew." },
+          "404": { "description": "No such stage." }
+        }
+      }
+    },
+    "/api/stages/{stage}/resolve": {
+      "post": {
+        "tags": ["Stages"],
+        "summary": "Re-resolve a stage",
+        "description": "Recomputes who goes where from the results already entered. Results resolve themselves as they are written, so this is the repair path: after a score is corrected, or when a slot was written after the fixture it reads from. Safe to call twice.",
+        "security": [{ "token": [] }],
+        "parameters": [
+          { "name": "stage", "in": "path", "required": true, "description": "The stage's id.", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "How many slots were filled.",
+            "content": { "application/json": { "example": { "stage": "s4h6j8k0m2n4p6q", "resolved": 3 } } }
+          },
+          "401": { "description": "No token." },
+          "403": { "description": "The token's account is not on this tournament's crew." },
+          "404": { "description": "No such stage." }
+        }
+      }
+    },
+    "/api/stages/{stage}/pair": {
+      "post": {
+        "tags": ["Stages"],
+        "summary": "Draw the next Swiss round",
+        "description": "A Swiss stage draws each round itself when the last result of the round before it is entered, so this too is a repair path. It depends only on rounds that are complete, which makes it safe to call twice.",
+        "security": [{ "token": [] }],
+        "parameters": [
+          { "name": "stage", "in": "path", "required": true, "description": "The stage's id.", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "`round` is the round drawn, or `-1` when there was nothing to draw: the round in progress is not finished, or the stage has played out. `rematch` is true when the field ran out of fresh opponents and the round repeats a meeting.",
+            "content": {
+              "application/json": { "example": { "stage": "s4h6j8k0m2n4p6q", "round": 2, "rematch": false } }
+            }
+          },
+          "400": { "description": "The stage is not a Swiss stage." },
+          "401": { "description": "No token." },
+          "403": { "description": "The token's account is not on this tournament's crew." },
+          "404": { "description": "No such stage." }
+        }
+      }
+    },
+    "/api/entries/{entry}/withdraw": {
+      "post": {
+        "tags": ["Entries"],
+        "summary": "Take a team out",
+        "description": "Closes every match the team had left and retallies every stage, in one transaction. `policy` has no default, because the two answers rank everybody else differently: `forfeit` lets what they played stand and gives the rest to their opponents as walkovers; `void` strikes every match they were in, on both sides. `status` is `withdrawn` (the default) or `disqualified`.",
+        "security": [{ "token": [] }],
+        "parameters": [
+          { "name": "entry", "in": "path", "required": true, "description": "The entry's id.", "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "example": { "policy": "forfeit", "status": "withdrawn" } } }
+        },
+        "responses": {
+          "200": {
+            "description": "The entry's new state.",
+            "content": {
+              "application/json": {
+                "example": { "entry": "e1a2b3c4d5f6g7h", "status": "withdrawn", "policy": "forfeit" }
+              }
+            }
+          },
+          "400": { "description": "`policy` is missing or is neither `forfeit` nor `void`." },
+          "401": { "description": "No token." },
+          "403": { "description": "The token's account is not on this tournament's crew." },
+          "404": { "description": "No such entry." }
+        }
+      }
+    },
+    "/api/entries/{entry}/reinstate": {
+      "post": {
+        "tags": ["Entries"],
+        "summary": "Put a team back",
+        "description": "Undoes exactly what taking them out did, and nothing else: the matches that withdrawal closed are reopened and the tables are rebuilt.",
+        "security": [{ "token": [] }],
+        "parameters": [
+          { "name": "entry", "in": "path", "required": true, "description": "The entry's id.", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "The entry's new state.",
+            "content": { "application/json": { "example": { "entry": "e1a2b3c4d5f6g7h", "status": "active" } } }
+          },
+          "400": { "description": "The team could not be put back." },
+          "401": { "description": "No token." },
+          "403": { "description": "The token's account is not on this tournament's crew." },
+          "404": { "description": "No such entry." }
+        }
+      }
+    },
+    "/api/entries/{entry}/admit": {
+      "post": {
+        "tags": ["Entries"],
+        "summary": "Fit in a team that arrived after the draw",
+        "description": "Create the entry through the records API first, then call this. What it does depends on the format: in a round robin the team joins the smallest group and gets a match against everybody in it; in a Swiss it takes a seat in the table and is paired from the next round; a knockout drawn from the entries is drawn again, and only while nobody has played in it.\n\nEvery stage is checked before anything is written, so a refusal leaves the tournament untouched. A team already in a stage is left where it is.",
+        "security": [{ "token": [] }],
+        "parameters": [
+          { "name": "entry", "in": "path", "required": true, "description": "The entry's id.", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "The stages the team was admitted to.",
+            "content": {
+              "application/json": { "example": { "entry": "e3c4d5f6g7h8j9k", "stages": ["s4h6j8k0m2n4p6q"] } }
+            }
+          },
+          "400": { "description": "A stage cannot take them, most often because a knockout has already started. The message says which." },
+          "401": { "description": "No token." },
+          "403": { "description": "The token's account is not on this tournament's crew." },
+          "404": { "description": "No such entry." }
+        }
+      }
+    },
+    "/api/staff/invite/{token}": {
+      "get": {
+        "tags": ["Crew"],
+        "summary": "What a join code is for",
+        "description": "The name of the tournament and the role on offer, and nothing else about the event. Public, so that a join screen can say what is being accepted before anybody accepts it. A withdrawn code answers the same `404` as one that never existed.",
+        "parameters": [
+          { "name": "token", "in": "path", "required": true, "description": "The join code's token.", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "The invitation. `role` is `organizer`, `referee` or `scorer`.",
+            "content": { "application/json": { "example": { "name": "Autumn Cup", "role": "referee" } } }
+          },
+          "404": { "description": "This invitation is not valid." }
+        }
+      }
+    },
+    "/api/staff/join": {
+      "post": {
+        "tags": ["Crew"],
+        "summary": "Accept a join code",
+        "description": "Adds the signed-in account to the tournament's crew in the role the code carries. `name` is what the rest of the crew sees beside the results this person enters; left empty it falls back to the role. Scanning a different role's code changes the role instead of adding a second row, and the owner scanning their own code changes nothing.",
+        "security": [{ "token": [] }],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "example": { "token": "Zk4mP9qR2sT7vX1b", "name": "Jana" } } }
+        },
+        "responses": {
+          "200": {
+            "description": "The tournament joined and the role held in it.",
+            "content": {
+              "application/json": {
+                "example": { "tournament": "t8w2k1m0q9x4c7z", "name": "Autumn Cup", "role": "referee" }
+              }
+            }
+          },
+          "401": { "description": "No token." },
+          "404": { "description": "This invitation is not valid." }
+        }
+      }
+    },
+    "/api/organiser/claim": {
+      "post": {
+        "tags": ["Account"],
+        "summary": "Put an email and a password on a temporary account",
+        "description": "Turns the account the wizard made into one somebody can sign in with. It works only on an account that has never had an address. Every token issued before the claim stops working, so sign in again with the new address and password. A confirmation email is sent, and the account works before it is confirmed.\n\nA refusal does not say whether the address is already in use.",
+        "security": [{ "token": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": { "example": { "email": "jana@example.com", "password": "correct horse battery" } }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Claimed.",
+            "content": { "application/json": { "example": { "email": "jana@example.com" } } }
+          },
+          "400": { "description": "The account already has an email, the password is shorter than 8 characters, or the address cannot be used." },
+          "401": { "description": "No token." }
+        }
+      }
+    },
+    "/api/organiser/handoff": {
+      "post": {
+        "tags": ["Account"],
+        "summary": "Make a link that hands a tournament to a person",
+        "description": "For an account that cannot claim itself, which in practice is one an agent is holding. The owner mints a link, sends it to whoever is running the day, and that person sets their own email and password on it. The link is single-use and expires after 24 hours; minting another burns the one before it.",
+        "security": [{ "token": [] }],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "example": { "tournament": "t8w2k1m0q9x4c7z" } } }
+        },
+        "responses": {
+          "200": {
+            "description": "The link.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "token": "4f9c…",
+                  "url": "https://whistle.day/claim/4f9c…",
+                  "expires": "2026-10-04 09:41:12.000Z"
+                }
+              }
+            }
+          },
+          "400": { "description": "The account already belongs to somebody, so there is nothing to hand over." },
+          "401": { "description": "No token." },
+          "403": { "description": "Only the owner can hand a tournament over." },
+          "404": { "description": "No such tournament." }
+        }
+      }
+    },
+    "/api/organiser/handoff/{token}": {
+      "get": {
+        "tags": ["Account"],
+        "summary": "What a handoff link is for",
+        "description": "The name of the tournament on offer. Public, because the person opening the link has no account yet.",
+        "parameters": [
+          { "name": "token", "in": "path", "required": true, "description": "The token from the link.", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "The tournament's name.",
+            "content": { "application/json": { "example": { "tournament": "Autumn Cup" } } }
+          },
+          "404": { "description": "The link has been used, has expired, or never existed." }
+        }
+      }
+    },
+    "/api/organiser/handoff/{token}/claim": {
+      "post": {
+        "tags": ["Account"],
+        "summary": "Take a tournament over with an email and a password",
+        "description": "Public: the link is the credential. The account behind it gets the address and password sent here, the link is spent, and every token the previous holder had stops working. Sign in afterwards with what was just set.",
+        "parameters": [
+          { "name": "token", "in": "path", "required": true, "description": "The token from the link.", "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": { "example": { "email": "jana@example.com", "password": "correct horse battery" } }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Claimed.",
+            "content": {
+              "application/json": { "example": { "email": "jana@example.com", "tournament": "t8w2k1m0q9x4c7z" } }
+            }
+          },
+          "400": { "description": "The password is shorter than 8 characters, the address cannot be used, or the tournament already belongs to somebody." },
+          "404": { "description": "The link has been used, has expired, or never existed." }
+        }
+      }
+    },
+    "/api/organiser/handoff/{token}/oauth-session": {
+      "post": {
+        "tags": ["Account"],
+        "summary": "Start taking a tournament over with Google or Facebook",
+        "description": "The first of two requests either side of the provider's redirect. It returns a token for the account behind the link, so that completing PocketBase's own OAuth2 sign-in with it links the provider to that account instead of creating a new one. Nothing about the account changes here and the link is not spent.",
+        "parameters": [
+          { "name": "token", "in": "path", "required": true, "description": "The token from the link.", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "A token for the account being handed over.",
+            "content": { "application/json": { "example": { "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9…" } } }
+          },
+          "400": { "description": "The tournament already belongs to somebody." },
+          "404": { "description": "The link has been used, has expired, or never existed." }
+        }
+      }
+    },
+    "/api/organiser/handoff/{token}/finish": {
+      "post": {
+        "tags": ["Account"],
+        "summary": "Finish taking a tournament over with Google or Facebook",
+        "description": "The second request, sent with the token from `oauth-session` once the provider has been linked. The link is spent, the account's old password and tokens stop working, and the answer carries the one token that still does. `email` is optional: send the address the provider returned to put it on the account.",
+        "security": [{ "token": [] }],
+        "parameters": [
+          { "name": "token", "in": "path", "required": true, "description": "The token from the link.", "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": { "application/json": { "example": { "email": "jana@example.com" } } }
+        },
+        "responses": {
+          "200": {
+            "description": "Claimed, with a fresh token.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9…",
+                  "email": "jana@example.com",
+                  "tournament": "t8w2k1m0q9x4c7z"
+                }
+              }
+            }
+          },
+          "400": { "description": "The address cannot be used." },
+          "401": { "description": "No token." },
+          "403": { "description": "The token did not come from this link." },
+          "404": { "description": "The link has been used, has expired, or never existed." }
+        }
+      }
+    },
+    "/api/organiser/account": {
+      "delete": {
+        "tags": ["Account"],
+        "summary": "Delete the account and everything it owns",
+        "description": "Permanent. Every tournament the account owns is deleted with its courts, teams, stages, matches, tables, screens and crew; the account is removed from the crews it was on, and from any match it was down to referee.",
+        "security": [{ "token": [] }],
+        "responses": {
+          "200": { "description": "Deleted.", "content": { "application/json": { "example": { "deleted": true } } } },
+          "401": { "description": "No token." }
+        }
+      }
+    },
+    "/api/organiser/delete": {
+      "post": {
+        "tags": ["Account"],
+        "summary": "Delete the account, for clients that cannot send DELETE",
+        "description": "The same operation as `DELETE /api/organiser/account`.",
+        "security": [{ "token": [] }],
+        "responses": {
+          "200": { "description": "Deleted.", "content": { "application/json": { "example": { "deleted": true } } } },
+          "401": { "description": "No token." }
+        }
+      }
+    },
+    "/api/mcp": {
+      "post": {
+        "tags": ["Agents"],
+        "summary": "Send an MCP request",
+        "description": "The MCP server, over Streamable HTTP: JSON-RPC in the body, the session in the `Mcp-Session-Id` header the server hands out on `initialize`. No credential is needed to start: `create_tournament` makes a temporary account and the session remembers it. A client that has been through the OAuth flow below sends its access token as `Authorization: Bearer` and works on that account instead. Limited to 120 requests a minute per IP address.",
+        "responses": {
+          "200": { "description": "A JSON-RPC response, as JSON or as an event stream." },
+          "429": { "description": "More than 120 requests in a minute from this IP address." }
+        }
+      },
+      "get": {
+        "tags": ["Agents"],
+        "summary": "Open the stream an MCP client listens on",
+        "description": "Server-to-client messages for the session in `Mcp-Session-Id`.",
+        "responses": { "200": { "description": "An open `text/event-stream`." } }
+      },
+      "delete": {
+        "tags": ["Agents"],
+        "summary": "End an MCP session",
+        "description": "Ends the session in `Mcp-Session-Id`. A temporary account lasts as long as the session that made it, so call the `create_handoff` tool first to keep the tournament.",
+        "responses": { "200": { "description": "The session is closed." } }
+      }
+    },
+    "/.well-known/oauth-protected-resource": {
+      "get": {
+        "tags": ["Agents"],
+        "summary": "Where the MCP server's tokens come from",
+        "description": "Protected resource metadata (RFC 9728): names `/api/mcp` as the resource and this host as its authorization server.",
+        "responses": { "200": { "description": "The metadata document." } }
+      }
+    },
+    "/.well-known/oauth-authorization-server": {
+      "get": {
+        "tags": ["Agents"],
+        "summary": "The OAuth endpoints and what they support",
+        "description": "Authorization server metadata (RFC 8414), and the authoritative list of the endpoints below. Authorization code with PKCE (`S256`) and refresh tokens, public clients only, one scope: `tournaments`.",
+        "responses": { "200": { "description": "The metadata document." } }
+      }
+    },
+    "/oauth/register": {
+      "post": {
+        "tags": ["Agents"],
+        "summary": "Register an OAuth client",
+        "description": "Dynamic client registration (RFC 7591). Send `redirect_uris` and a `client_name`; the answer carries the `client_id` to use from then on. There is no client secret.",
+        "responses": {
+          "201": { "description": "The registered client." },
+          "400": { "description": "The registration is not acceptable, most often because of a redirect URI." }
+        }
+      }
+    },
+    "/oauth/authorize": {
+      "get": {
+        "tags": ["Agents"],
+        "summary": "Ask a person to connect their account",
+        "description": "The authorization endpoint. Send the browser here with a standard authorization code request carrying a PKCE `code_challenge`; the person signs in, approves, and is sent back to the client's `redirect_uri` with a `code`.",
+        "responses": {
+          "302": { "description": "A redirect, to the consent screen or back to the client." },
+          "400": { "description": "The client or its redirect URI is not recognised." }
+        }
+      }
+    },
+    "/oauth/token": {
+      "post": {
+        "tags": ["Agents"],
+        "summary": "Exchange a code or a refresh token",
+        "description": "The token endpoint, taking `grant_type=authorization_code` with the PKCE `code_verifier`, or `grant_type=refresh_token`. Refresh tokens rotate: each one is good once, and using a spent one revokes the whole family.",
+        "responses": {
+          "200": { "description": "An access token for `/api/mcp` and a refresh token." },
+          "400": { "description": "An OAuth error object, such as `invalid_grant`." }
+        }
+      }
+    }
+  },
+  "x-collections": [
+    {
+      "name": "tournaments",
+      "about": "The event: its name, sport, status, and how matches are scored and ties are broken.",
+      "read": "Anybody once published; owner and crew while a draft",
+      "write": "Any signed-in account creates one. Owner and crew update, the owner deletes"
+    },
+    {
+      "name": "courts",
+      "about": "Playing areas, named as the venue names them.",
+      "read": "Anybody once published",
+      "write": "Owner and crew"
+    },
+    {
+      "name": "entries",
+      "about": "A participant, team or individual. `short_name` is what a projector draws.",
+      "read": "Anybody once published",
+      "write": "Owner and crew"
+    },
+    {
+      "name": "stages",
+      "about": "A phase of the tournament. A tournament is an ordered list of them, each with its own `format` and `config`.",
+      "read": "Anybody once published",
+      "write": "Owner and crew"
+    },
+    {
+      "name": "pools",
+      "about": "A self-contained part of a stage: one round-robin group, or one side of a bracket.",
+      "read": "Anybody once published",
+      "write": "Owner and crew; normally written by drawing the stage"
+    },
+    {
+      "name": "slots",
+      "about": "A position that gets filled later, such as the winner of a semi-final or first place in group A. `entry` is empty until its source resolves.",
+      "read": "Anybody once published",
+      "write": "Owner and crew; normally written by drawing the stage"
+    },
+    {
+      "name": "fixtures",
+      "about": "A match. Entering a result is a patch to one of these.",
+      "read": "Anybody once published",
+      "write": "Owner and crew"
+    },
+    {
+      "name": "games",
+      "about": "The sets, legs or maps inside a match.",
+      "read": "Anybody once published",
+      "write": "Owner and crew"
+    },
+    {
+      "name": "standings",
+      "about": "A table, rebuilt from scratch after every result. `tiebreak` records which criteria placed each row.",
+      "read": "Anybody once published",
+      "write": "The server only"
+    },
+    {
+      "name": "fixture_events",
+      "about": "An append-only record of who changed a result, from what, to what.",
+      "read": "Anybody once published",
+      "write": "The server only"
+    },
+    {
+      "name": "sponsors",
+      "about": "The businesses credited on a tournament's closing screen.",
+      "read": "Anybody once published",
+      "write": "Owner and crew"
+    },
+    {
+      "name": "displays",
+      "about": "A projector screen and how it is configured: which panels, how fast it rotates, what it is narrowed to.",
+      "read": "Whoever sends the screen's `?token=`, and the owner and crew",
+      "write": "Owner and crew"
+    },
+    {
+      "name": "staff",
+      "about": "The crew: who may operate a tournament, in which role, and the name they gave when they joined.",
+      "read": "Owner and crew",
+      "write": "The owner. People join through `POST /api/staff/join`"
+    },
+    {
+      "name": "invites",
+      "about": "A join code: one token per role.",
+      "read": "The owner",
+      "write": "The owner"
+    }
+  ]
+}

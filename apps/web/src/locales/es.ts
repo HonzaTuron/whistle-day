@@ -171,6 +171,7 @@ export const es: Record<keyof Catalog, Message> = {
   "landing.agentsNote":
     "Whistle.day también es un servidor MCP: apunta Claude, ChatGPT o cualquier cliente MCP y un agente puede crear un torneo, anotar equipos y canchas, sortear una fase y cerrar partidos solo.",
   "landing.agentsLink": "Ver el servidor MCP",
+  "landing.apiLink": "Referencia de la API",
   "landing.footer": "Whistle.day, un organizador de torneos gratis.",
   "landing.smithery": "Whistle.day en Smithery",
 

@@ -7,13 +7,17 @@ the tournament logic compiled in.
 backend/
 ├── main.go                     app entry, hook + route registration
 ├── migrations/                 the schema — this is the source of truth
-└── internal/tournament/
-    ├── generate.go             bracket + round-robin generators, plan commit
-    ├── standings.go            table computation, tiebreaks, pool_rank slots
-    ├── resolve.go              outcome derivation, slot propagation, hooks
-    ├── realtime.go             nudges screens when what they show changes
-    ├── display.go              the assembled projector payload
-    └── routes.go               generate, resolve and display endpoints
+├── internal/tournament/
+│   ├── generate.go             bracket + round-robin generators, plan commit
+│   ├── standings.go            table computation, tiebreaks, pool_rank slots
+│   ├── resolve.go              outcome derivation, slot propagation, hooks
+│   ├── realtime.go             nudges screens when what they show changes
+│   ├── display.go              the assembled projector payload
+│   └── routes.go               generate, resolve and display endpoints
+└── internal/apidocs/
+    ├── openapi.json            the public API reference — edit this one
+    ├── docs.html               the page /api/docs renders it into
+    └── apidocs.go              serves both, adding fields from the live schema
 ```
 
 `pb_data/` and the compiled `pocketbase` binary are gitignored.

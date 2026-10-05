@@ -248,9 +248,16 @@ export function Landing() {
         <section className="home__section home__section--center">
           <h2 className="home__section-title">{t("landing.agentsTitle")}</h2>
           <p className="home__section-note">{t("landing.agentsNote")}</p>
-          <Link to="/$" params={{ _splat: "mcp" }} className="btn btn--quiet">
-            {t("landing.agentsLink")}
-          </Link>
+          <div className="home__section-actions">
+            <Link to="/$" params={{ _splat: "mcp" }} className="btn btn--quiet">
+              {t("landing.agentsLink")}
+            </Link>
+            {/* A plain anchor: the reference is served by the API, not by a
+                route in this app, so the router has nothing to match. */}
+            <a href="/api/docs" className="btn btn--quiet">
+              {t("landing.apiLink")}
+            </a>
+          </div>
         </section>
       </main>
 

@@ -8,6 +8,7 @@ import (
 	"github.com/pocketbase/pocketbase"
 	"github.com/pocketbase/pocketbase/plugins/migratecmd"
 
+	"whistleday/backend/internal/apidocs"
 	"whistleday/backend/internal/mcp"
 	"whistleday/backend/internal/oauth"
 	"whistleday/backend/internal/tournament"
@@ -36,6 +37,7 @@ func main() {
 	mcp.RegisterMCPServer(app)
 	oauth.RegisterOAuthServer(app)
 	oauth.RegisterSweep(app)
+	apidocs.RegisterRoutes(app)
 
 	if err := app.Start(); err != nil {
 		log.Fatal(err)

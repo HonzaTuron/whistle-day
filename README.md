@@ -154,6 +154,12 @@ its final positions.
 | `POST /api/preview` | Draw a stage that does not exist: a format, a field size and a config in, a plan out. Public and unauthenticated because it reads and writes nothing, capped at 128 teams because a round robin is quadratic. Runs the same four generators a real stage does, which is what lets a marketing page show a bracket without being able to promise one the hall would not get. |
 | `GET /api/display/{token}` | The whole projector screen in one response. Public — the token is the only credential. Read it with `If-None-Match`; an unchanged tournament answers 304. |
 | `GET /api/realtime` | PocketBase's stream. A screen subscribes to `tournament/{id}` and is told when to re-read the line above — the nudge carries no data of its own. |
+| `GET /api/docs` | The public reference for all of the above and the collection API, as a page. Rendered from `backend/internal/apidocs/openapi.json`, with each collection's fields read from the running schema. |
+| `GET /api/openapi.json` | The same reference as an OpenAPI 3.1 document. |
+
+Adding a route means adding it to `openapi.json`: `TestEveryRouteIsDocumented`
+reads the registrations out of the source and fails on one the reference does
+not list.
 
 ## An agent can run one too
 
