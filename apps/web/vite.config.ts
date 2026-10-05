@@ -3,8 +3,9 @@ import react from "@vitejs/plugin-react";
 import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 import { defineConfig } from "vite";
 import { VitePWA } from "vite-plugin-pwa";
+import { llmsTxt } from "./build/llms-txt";
 import { serviceWorker } from "./build/service-worker";
-import { MARKETING_PATHS } from "./src/content/index.ts";
+import { HOME_UPDATED, MARKETING_LASTMOD, MARKETING_PATHS } from "./src/content/index.ts";
 import { isAppRoute } from "./src/lib/routes.ts";
 
 /**
@@ -68,9 +69,12 @@ export default defineConfig({
         filter: ({ path }: { path: string }) => !isAppRoute(path),
       },
 
+      // `lastmod` is the day the page's content changed, not the day of this
+      // build — the default stamps all of them with today, on every deploy.
       pages: ["/", ...MARKETING_PATHS].map((path) => ({
         path,
         prerender: { enabled: true },
+        sitemap: { lastmod: path === "/" ? HOME_UPDATED : MARKETING_LASTMOD[path] },
       })),
 
       sitemap: {
@@ -121,6 +125,8 @@ export default defineConfig({
     }),
 
     serviceWorker(),
+
+    llmsTxt(),
   ],
 
   server: {

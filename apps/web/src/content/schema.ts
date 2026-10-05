@@ -1,9 +1,10 @@
 /**
  * JSON-LD for the marketing pages.
  *
- * Three types, picked by what the page actually is rather than by sprinkling
- * every schema onto every page: a `FAQPage` when there are questions, a
- * `HowTo` for the guides that describe a procedure, and `BreadcrumbList`
+ * Picked by what the page actually is rather than by sprinkling every schema
+ * onto every page: a `FAQPage` when there are questions, a `HowTo` for the
+ * guides that describe a procedure, an `Article` for a guide and a `WebPage`
+ * otherwise so the page states when it last changed, and `BreadcrumbList`
  * everywhere so a result shows where the page sits rather than a bare URL.
  *
  * Marking up a FAQ that is not on the page, or a HowTo with no steps, is the
@@ -22,6 +23,29 @@ const json = (value: unknown): ScriptTag => ({
   type: "application/ld+json",
   children: JSON.stringify(value),
 });
+
+/**
+ * Who publishes the site, stated once on the homepage and pointed at by `@id`
+ * from everywhere else, so every page names the same entity rather than a new
+ * anonymous one each time.
+ *
+ * There is no `sameAs` because there is nothing yet to point it at. Add the
+ * profiles here when they exist; a link to an account that is not ours is
+ * worse than no link.
+ */
+const organizationId = (site: string) => `${site}/#organization`;
+
+export function organization(site: string): ScriptTag {
+  return json({
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    "@id": organizationId(site),
+    name: "Whistle.day",
+    url: site,
+    logo: `${site}/pwa-512.png`,
+    email: "info@whistle.day",
+  });
+}
 
 /** "guide/how-many-swiss-rounds" → Guides. Drives the breadcrumb trail. */
 function trail(page: Page): { name: string; slug: string }[] {
@@ -55,6 +79,26 @@ export function structuredData(page: Page, site: string): ScriptTag[] {
           item: url,
         },
       ],
+    }),
+  );
+
+  // A guide is an article; everything else is a page that says when it last
+  // changed. Either way the date is the one printed under the heading.
+  tags.push(
+    json({
+      "@context": "https://schema.org",
+      "@type": page.kind === "guide" ? "Article" : "WebPage",
+      ...(page.kind === "guide" ? { headline: page.h1 } : { name: page.h1 }),
+      description: page.description,
+      url,
+      mainEntityOfPage: url,
+      inLanguage: page.locale ?? "en",
+      ...(page.published ? { datePublished: page.published } : {}),
+      ...(page.updated ? { dateModified: page.updated } : {}),
+      ...(page.kind === "guide"
+        ? { image: `${site}/og.png`, author: { "@id": organizationId(site) } }
+        : {}),
+      publisher: { "@id": organizationId(site) },
     }),
   );
 

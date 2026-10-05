@@ -4511,6 +4511,12 @@ th,
   color: var(--muted);
 }
 
+.doc__updated {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
 /* --- the facts panel ------------------------------------------------------
    On a parametric page these three or four numbers *are* the answer, so they
    sit above the prose and above the call to action. Making somebody scroll

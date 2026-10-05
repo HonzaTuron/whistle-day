@@ -35,6 +35,7 @@ const CHROME = {
     cta: "Set this up now",
     ctaNote: "Free, and there is no account to make first. About a minute to the QR code.",
     faq: "Common questions",
+    updated: "Updated",
     related: "See also",
     footer: "Free tournament organiser. No account, no ads, no cap.",
     privacy: "Privacy",
@@ -45,6 +46,7 @@ const CHROME = {
     cta: "Crear este torneo",
     ctaNote: "Gratis, y no hay que crear una cuenta antes. Un minuto hasta el código QR.",
     faq: "Preguntas frecuentes",
+    updated: "Actualizado el",
     related: "Ver también",
     footer: "Organizador de torneos gratis. Sin cuenta, sin anuncios, sin tope.",
     privacy: "Privacidad",
@@ -56,6 +58,18 @@ const CHROME = {
 function chromeOf(page: Page) {
   return page.locale === "es" ? CHROME.es : CHROME.en;
 }
+
+/**
+ * "2026-09-17" → "17 September 2026", in the page's language.
+ *
+ * Pinned to UTC so the prerendered date and the hydrated one are the same day
+ * whichever side of midnight the visitor's clock is on.
+ */
+const longDate = (day: string, locale: Locale | undefined) =>
+  new Intl.DateTimeFormat(locale === "es" ? "es" : "en-GB", {
+    dateStyle: "long",
+    timeZone: "UTC",
+  }).format(new Date(`${day}T00:00:00Z`));
 
 const isSportId = (value: string | undefined): value is SportId =>
   SPORTS.some((sport) => sport.id === value);
@@ -71,6 +85,12 @@ export function PageView({ page }: { page: Page }) {
           <header className="doc__head">
             <h1 className="doc__title">{page.h1}</h1>
             <p className="doc__lede">{renderInlineMarkdown(page.lede)}</p>
+            {page.updated && (
+              <p className="doc__updated">
+                {chrome.updated}{" "}
+                <time dateTime={page.updated}>{longDate(page.updated, page.locale)}</time>
+              </p>
+            )}
           </header>
 
           {page.facts && page.facts.length > 0 && (

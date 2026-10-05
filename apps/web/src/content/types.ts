@@ -129,6 +129,16 @@ export interface Page {
   ctaNote?: string;
   /** Slugs of pages worth offering next. Rendered as links; must resolve. */
   related?: string[];
+  /**
+   * When the page first went up and when its content last changed, as
+   * `YYYY-MM-DD`. Stamped per collection in `content/index.ts`; set one here
+   * only when a single page moves on its own.
+   *
+   * These are typed in rather than taken from the build clock. A sitemap that
+   * says every page changed today, every day, is a date nobody believes.
+   */
+  published?: string;
+  updated?: string;
 }
 
 /** The URL a page lives at, with its leading slash. */

@@ -24,17 +24,27 @@ import { PRINTABLE_PAGES } from "./printables";
 import { SPORT_PAGES } from "./sports";
 import type { Page } from "./types";
 
+/**
+ * Stamp a collection with the dates its file was first published and last
+ * edited. A page that carries its own date keeps it.
+ *
+ * Bump `updated` in the same commit that changes the copy — not on a reformat,
+ * and not on a deploy. The visible "Updated" line, the JSON-LD and the sitemap
+ * all read these, so a date moved without a reason is a claim made three times.
+ */
+const dated = (pages: Page[], published: string, updated: string): Page[] =>
+  pages.map((page) => ({ published, updated, ...page }));
+
 const ALL: Page[] = [
-  HUB,
-  ...FORMAT_PAGES,
-  ...PARAMETRIC_PAGES,
-  ...SPORT_PAGES,
-  ...PADEL_ES_PAGES,
-  ...OPERATIONAL_PAGES,
-  ...GUIDE_PAGES,
-  ...COMPARISON_PAGES,
-  ...PRINTABLE_PAGES,
-  ...LEGAL_PAGES,
+  ...dated([HUB, ...FORMAT_PAGES], "2026-09-04", "2026-09-17"),
+  ...dated(PARAMETRIC_PAGES, "2026-09-04", "2026-09-17"),
+  ...dated(SPORT_PAGES, "2026-09-04", "2026-09-21"),
+  ...dated(PADEL_ES_PAGES, "2026-09-21", "2026-09-21"),
+  ...dated(OPERATIONAL_PAGES, "2026-09-04", "2026-10-05"),
+  ...dated(GUIDE_PAGES, "2026-09-04", "2026-09-17"),
+  ...dated(COMPARISON_PAGES, "2026-09-04", "2026-09-17"),
+  ...dated(PRINTABLE_PAGES, "2026-09-04", "2026-09-17"),
+  ...dated(LEGAL_PAGES, "2026-09-08", "2026-10-01"),
 ];
 
 /**
@@ -117,6 +127,17 @@ export const pagesOfKind = (kind: Page["kind"]) =>
  * the destination rather than the redirect.
  */
 export const MARKETING_PATHS: string[] = PAGES.map((page) => `/${page.slug}`);
+
+/**
+ * The same URLs with the date each one last changed, for the sitemap's
+ * `<lastmod>`. Left to itself the sitemap stamps every URL with the build day.
+ */
+export const MARKETING_LASTMOD: Record<string, string | undefined> = Object.fromEntries(
+  PAGES.map((page) => [`/${page.slug}`, page.updated]),
+);
+
+/** The homepage is a screen rather than a `Page`, so its date lives here. */
+export const HOME_UPDATED = "2026-10-05";
 
 /**
  * The language a prerendered marketing page is written in, if it is not

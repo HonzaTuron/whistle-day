@@ -1,4 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { HOME_UPDATED } from "../content";
+import { organization } from "../content/schema";
 import { Landing } from "../screens/Landing";
 import { isLocale, type Locale } from "../lib/i18n";
 
@@ -44,6 +46,7 @@ export const Route = createFileRoute("/")({
     ],
     links: [{ rel: "canonical", href: "https://whistle.day" }],
     scripts: [
+      organization("https://whistle.day"),
       {
         type: "application/ld+json",
         children: JSON.stringify({
@@ -51,6 +54,8 @@ export const Route = createFileRoute("/")({
           "@type": "WebSite",
           name: "Whistle.day",
           url: "https://whistle.day",
+          publisher: { "@id": "https://whistle.day/#organization" },
+          dateModified: HOME_UPDATED,
         }),
       },
       {
