@@ -27,6 +27,7 @@ import {
 } from "../api/oauth";
 import { requestPasswordReset, resendVerification } from "../api/recovery";
 import { AccountLegal } from "../components/AccountLegal";
+import { ClubCard } from "../components/ClubCard";
 import { GoogleIcon } from "../components/GoogleIcon";
 import { SiteNav } from "../components/marketing/SiteNav";
 
@@ -349,6 +350,22 @@ export function Account({ next }: { next?: string } = {}) {
                 ))}
               </ul>
             )}
+            {/*
+              Only for an account somebody can sign back into. A club owned by
+              the throwaway device account would be lost with this browser,
+              and that branch never reaches here.
+            */}
+            {session && owned !== null ? (
+              <ClubCard
+                session={session}
+                tournaments={owned}
+                onListed={(listed) =>
+                  setOwned((all) =>
+                    all ? all.map((one) => (one.id === listed.id ? listed : one)) : all,
+                  )
+                }
+              />
+            ) : null}
             {confirmingDelete ? (
               <div className="account__danger-card" role="alert">
                 <h3>{t("account.deleteConfirmTitle")}</h3>

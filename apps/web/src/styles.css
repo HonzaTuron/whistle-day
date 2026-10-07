@@ -3740,6 +3740,208 @@ th,
   opacity: 0.5;
 }
 
+/* ==========================================================================
+   The club
+   ========================================================================== */
+
+/* The card on the account screen. It sits inside `.account__owned`, whose
+   rule turns every button into a full-width row; the text buttons in here
+   are taken back out of that. */
+.clubcard {
+  display: grid;
+  gap: 0.75rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--line);
+}
+
+.clubcard h2,
+.clubcard h3 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.clubcard h3 {
+  margin-top: 0.5rem;
+  font-size: 0.85rem;
+}
+
+.clubcard .account__link {
+  width: auto;
+  min-height: 0;
+  display: inline;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  font-weight: 400;
+}
+
+.clubcard__head {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.clubcard__who {
+  min-width: 0;
+  display: grid;
+  gap: 0.15rem;
+}
+
+.clubcard__who a {
+  overflow-wrap: anywhere;
+}
+
+.clubcard__colour {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.clubcard__colour input {
+  width: 44px;
+  min-height: 44px;
+  padding: 0.2rem;
+  cursor: pointer;
+}
+
+.clubcard__list label {
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0 1rem;
+  border: 1px solid var(--line);
+  border-radius: 0.7rem;
+  background: var(--surface);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.clubcard__list input {
+  flex: 0 0 auto;
+  width: 1.15rem;
+  height: 1.15rem;
+  accent-color: var(--accent);
+}
+
+.clubcard__list span {
+  flex: 1;
+  min-width: 0;
+}
+
+/* The public page. `--club-accent` is the club's own colour when it has one,
+   and is only ever drawn as a rule or a ring — see screens/Club.tsx. */
+.club {
+  --club-accent: var(--accent);
+  min-height: 100%;
+  max-width: 40rem;
+  margin: 0 auto;
+  display: grid;
+  align-content: start;
+  gap: 1.75rem;
+  padding: calc(env(safe-area-inset-top) + 2.5rem) 1.25rem
+    calc(2rem + env(safe-area-inset-bottom));
+}
+
+.club__head {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding-bottom: 1.25rem;
+  border-bottom: 3px solid var(--club-accent);
+}
+
+.club__head h1 {
+  margin: 0;
+  font-size: 1.8rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  overflow-wrap: anywhere;
+}
+
+.club__head p {
+  margin: 0.5rem 0 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.club__logo {
+  flex: 0 0 auto;
+  width: 72px;
+  height: 72px;
+  border-radius: 1rem;
+  object-fit: contain;
+  background: var(--surface);
+  box-shadow: 0 0 0 2px var(--club-accent);
+}
+
+.club section {
+  display: grid;
+  gap: 0.6rem;
+}
+
+.club h2 {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.club ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.35rem;
+}
+
+.club__row {
+  min-height: 60px;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 0.15rem 0.75rem;
+  padding: 0.6rem 1rem;
+  border: 1px solid var(--line);
+  border-radius: 0.7rem;
+  background: var(--surface);
+  color: var(--text);
+  text-decoration: none;
+}
+
+a.club__row:hover,
+a.club__row:focus-visible {
+  border-color: var(--club-accent);
+}
+
+.club__name {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.club__row small {
+  grid-column: 1;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.club__live {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  color: var(--live);
+  font-size: 0.7rem;
+  font-style: normal;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
 
 .landing__account {
   margin-top: 1.5rem;

@@ -226,6 +226,33 @@ export const cs: Record<keyof Catalog, Message> = {
   "account.termsOfService": "podmínkami služby",
   "account.privacyPolicy": "zásadami ochrany soukromí",
   "account.and": "a",
+  // The club an account runs its tournaments as, and its public page.
+  "club.title": "Stránka klubu",
+  "club.intro":
+    "Jedna adresa pro všechny turnaje vašeho klubu. Nic se na ní neobjeví, dokud to nezaškrtnete.",
+  "club.name": "Název klubu",
+  "club.address": "Adresa",
+  "club.addressHint":
+    "Stránka bude na {address}. Malá písmena, číslice a pomlčky. Později ji nejde změnit, protože právě ona skončí na plakátu.",
+  "club.addressRefused":
+    "Tahle adresa je obsazená nebo ji nejde použít. Zkuste jinou.",
+  "club.create": "Vytvořit stránku klubu",
+  "club.save": "Uložit",
+  "club.changeLogo": "Změnit logo klubu",
+  "club.colour": "Barva klubu",
+  "club.colourReset": "Použít výchozí",
+  "club.listTitle": "Na stránce klubu",
+  "club.listHint":
+    "Zaškrtnutím se turnaj stane veřejným: kdokoli s adresou klubu si otevře jeho výsledky.",
+  "club.listEmpty": "Tady se objeví turnaje, které vlastníte.",
+  "club.listDraft": "nezahájen, do té doby skrytý",
+  "club.listRefused":
+    "Na stránku klubu může turnaj dát jen jeho vlastník.",
+  "club.missing": "Na téhle adrese žádný klub není",
+  "club.missingBody": "Zkontrolujte odkaz, nebo se zeptejte toho, kdo vám ho poslal.",
+  "club.empty": "Zatím tu nic není.",
+  "club.current": "Právě probíhá a chystá se",
+  "club.past": "Odehrané turnaje",
   "claim.title": "{tournament} je váš",
   "claim.body":
     "Tenhle turnaj je založený na účtu, který zatím nikomu nepatří. Dejte na něj e-mail a heslo a je váš — los, výsledky i obrazovky, všechno.",

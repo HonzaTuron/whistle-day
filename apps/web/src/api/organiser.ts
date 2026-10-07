@@ -269,6 +269,11 @@ export interface TournamentRecord {
    * difference between the two is who may hand out the join codes.
    */
   owner: Id;
+  /**
+   * The club whose page this is listed on, or "" for none. Only the owner of
+   * both may change it; the server refuses anybody else.
+   */
+  club: Id | "";
 }
 
 /**
@@ -486,6 +491,75 @@ export const renameCourt = (session: Session, id: Id, name: string) =>
 
 export const removeCourt = (session: Session, id: Id) =>
   remove(session, "courts", id);
+
+// ---------------------------------------------------------------------------
+// the club a run of tournaments belongs to
+// ---------------------------------------------------------------------------
+
+export interface ClubRecord {
+  id: Id;
+  name: string;
+  /** The address: `/c/{slug}`. Chosen by the club, unique across all of them. */
+  slug: string;
+  owner: Id;
+  logo: string;
+  /** `#rrggbb`, or "" for the app's own. */
+  accent: string;
+}
+
+export interface ClubPageTournament {
+  id: Id;
+  name: string;
+  sport: string;
+  location: string;
+  status: string;
+  /** When it is played if anybody said, when it was made otherwise. */
+  date: string;
+  /** A screen token for `/m/{token}`, or "" when the tournament has none. */
+  screen: string;
+}
+
+/** What `GET /api/clubs/{slug}` answers: the public page, assembled. */
+export interface ClubPage {
+  club: { id: Id; name: string; slug: string; accent: string; logo: string };
+  tournaments: ClubPageTournament[];
+}
+
+/** The clubs this account owns, oldest first. The screens only use the first. */
+export const myClubs = (session: Session) =>
+  records<ClubRecord>(session, "clubs", {
+    filter: filter("owner = {:me}", { me: session.userId }),
+    sort: "created",
+  });
+
+export const createClub = (session: Session, club: { name: string; slug: string }) =>
+  create<ClubRecord>(session, "clubs", { ...club, owner: session.userId });
+
+/**
+ * `logo` follows the sponsor rule: left out of the patch it keeps what is
+ * uploaded, `null` clears it.
+ */
+export const updateClub = (
+  session: Session,
+  id: Id,
+  patch: { name?: string; accent?: string; logo?: File | null },
+) => update<ClubRecord>(session, "clubs", id, patch);
+
+export const clubLogoUrl = (club: ClubRecord): string =>
+  club.logo ? pb().files.getURL(club, club.logo, { thumb: "100x100" }) : "";
+
+/**
+ * Put a tournament on a club's page, or take it off with `null`.
+ *
+ * This is what makes it public: the page hands out a way in to every
+ * tournament it lists.
+ */
+export const listOnClub = (session: Session, tournament: Id, club: Id | null) =>
+  update<TournamentRecord>(session, "tournaments", tournament, { club: club ?? "" });
+
+/** The public page. No session: it is the same for whoever asks. */
+export const loadClubPage = (slug: string) =>
+  send<ClubPage>(null, `/api/clubs/${encodeURIComponent(slug)}`);
 
 // ---------------------------------------------------------------------------
 // the closing panel's sponsors

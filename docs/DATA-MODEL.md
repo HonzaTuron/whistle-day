@@ -43,7 +43,8 @@ erDiagram
 
 | Collection | What it is |
 |---|---|
-| `tournaments` | The event. Owner, sport, scoring and tiebreak config. |
+| `tournaments` | The event. Owner, sport, scoring and tiebreak config. `club` lists it on a club's page. |
+| `clubs` | Who runs a series of tournaments: a name, an address, a logo and a colour. |
 | `staff` | Who may operate it (`organizer` / `referee` / `scorer`), and the name they gave when they joined. |
 | `invites` | A join code: one unguessable token per role, scanned off the organiser's phone. |
 | `courts` | Playing areas. Used by the schedule and the projector. |
@@ -170,6 +171,36 @@ which is exactly right: `PoolComplete` goes false, nothing new is seeded off it,
 and `ResolvePoolRanks` overwrites the qualifiers when it completes for the
 second time. That is also why a *played* knockout refuses — its slots would be
 rewritten under a bracket that has results in it.
+
+## What a club is, and is not
+
+A tournament stands alone: its own owner, crew and screens. `clubs` is the row
+that says the March cup and the April cup were the same people. It owns nothing
+below itself. `tournaments.club` is an optional relation that does not cascade,
+so a tournament is still operated through `owner` and `staff` exactly as
+before, and closing a club clears the field and keeps every result.
+
+**Listing is a decision, per tournament.** The page at `/c/{slug}` is public and
+gives each tournament it lists a link to one of its screens, which is the same
+as handing out the display token. So nothing is listed because of who made it;
+the owner ticks it. A draft is left off even when ticked, as a draft's screen
+answers 404.
+
+**The collection is owner-only, reads included.** The public page is
+`GET /api/clubs/{slug}`, which answers for one slug somebody already has rather
+than letting every club be paged through, and which is the only place a display
+token is read on somebody else's behalf.
+
+**Who may set `club` is checked in a hook, not a rule.** `tournaments.updateRule`
+admits the crew and cannot tell one field from another. `clubChangeFault` in
+`backend/internal/tournament/club.go` lets a write through untouched unless it
+changes `club`, and then requires the account to own both the tournament and
+the club it is pointing at. Either half missing is a way to fill somebody
+else's page, or to publish a tournament its owner had not.
+
+The slug is chosen by the club and has no random tail, unlike a tournament's:
+it is the one address here that gets printed on a poster. The web app asks for
+it once and does not offer to change it.
 
 ## How a second person gets in
 

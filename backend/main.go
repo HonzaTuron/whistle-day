@@ -33,6 +33,7 @@ func main() {
 	tournament.RegisterSubscriptionGuard(app)
 	tournament.RegisterRoutes(app)
 	tournament.RegisterHandoffRoutes(app)
+	tournament.RegisterClubs(app)
 	tournament.RegisterSweep(app)
 	mcp.RegisterMCPServer(app)
 	oauth.RegisterOAuthServer(app)

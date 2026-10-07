@@ -19,6 +19,7 @@ describe("isAppRoute", () => {
       "/t/abc123",
       "/display/hala-1",
       "/m/hala-1",
+      "/c/tj-sokol-brno",
       "/join/wxyz",
       "/account",
       "/new",

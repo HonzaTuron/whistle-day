@@ -214,6 +214,33 @@ export const es: Record<keyof Catalog, Message> = {
   "account.termsOfService": "Términos del servicio",
   "account.privacyPolicy": "Política de privacidad",
   "account.and": "y",
+  // The club an account runs its tournaments as, and its public page.
+  "club.title": "Página del club",
+  "club.intro":
+    "Una sola dirección para todos los torneos de tu club. No aparece nada en ella hasta que lo marques.",
+  "club.name": "Nombre del club",
+  "club.address": "Dirección",
+  "club.addressHint":
+    "La página estará en {address}. Minúsculas, números y guiones. No se puede cambiar después, porque es lo que acaba en el cartel.",
+  "club.addressRefused":
+    "Esa dirección ya está en uso o no se puede usar. Prueba con otra.",
+  "club.create": "Crear la página del club",
+  "club.save": "Guardar",
+  "club.changeLogo": "Cambiar el logo del club",
+  "club.colour": "Color del club",
+  "club.colourReset": "Usar el predeterminado",
+  "club.listTitle": "En la página del club",
+  "club.listHint":
+    "Al marcar un torneo lo haces público: cualquiera con la dirección del club puede abrir sus resultados.",
+  "club.listEmpty": "Aquí aparecerán los torneos que te pertenecen.",
+  "club.listDraft": "sin empezar, oculto hasta entonces",
+  "club.listRefused":
+    "Solo quien es dueño del torneo puede ponerlo en la página del club.",
+  "club.missing": "No hay ningún club en esta dirección",
+  "club.missingBody": "Revisa el enlace o pregunta a quien te lo envió.",
+  "club.empty": "Todavía no hay nada aquí.",
+  "club.current": "En curso y próximos",
+  "club.past": "Torneos anteriores",
   "claim.title": "{tournament} es tuyo",
   "claim.body":
     "Este torneo se armó en una cuenta que todavía no es de nadie. Ponle un correo y una contraseña y es tuyo: el sorteo, los resultados y las pantallas, todo.",

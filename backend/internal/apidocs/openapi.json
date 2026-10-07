@@ -199,6 +199,52 @@
         }
       }
     },
+    "/api/clubs/{slug}": {
+      "get": {
+        "tags": ["Screens and previews"],
+        "summary": "A club and the tournaments it has run",
+        "description": "The club's name, colour and logo, and every tournament its owner has listed on it, newest first. A draft is left out. `date` is when the tournament is played if that was ever set, and when it was created otherwise. `screen` is the token of one of the tournament's active screens, for `/m/{screen}` or `GET /api/display/{token}`, and is empty when it has none.\n\nThere is no endpoint that lists clubs: this one answers for a slug you already have.",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "description": "The club's slug, from the address of its `/c/{slug}` page.",
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The club's page.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "club": {
+                    "id": "c4h7k2m9p1r3t5v",
+                    "name": "TJ Sokol Brno",
+                    "slug": "tj-sokol-brno",
+                    "accent": "#0b7a43",
+                    "logo": "/api/files/pbc_1219621782/c4h7k2m9p1r3t5v/crest_a1b2c3d4e5.png"
+                  },
+                  "tournaments": [
+                    {
+                      "id": "t8w2k1m0q9x4c7z",
+                      "name": "Autumn Cup",
+                      "sport": "volleyball",
+                      "location": "Sports hall B",
+                      "status": "live",
+                      "date": "2026-10-03T08:00:00Z",
+                      "screen": "hala-1"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "404": { "description": "No club has this slug." }
+        }
+      }
+    },
     "/api/preview": {
       "post": {
         "tags": ["Screens and previews"],
@@ -988,7 +1034,13 @@
       "name": "tournaments",
       "about": "The event: its name, sport, status, and how matches are scored and ties are broken.",
       "read": "Anybody once published; owner and crew while a draft",
-      "write": "Any signed-in account creates one. Owner and crew update, the owner deletes"
+      "write": "Any signed-in account creates one. Owner and crew update, the owner deletes. Only the owner sets `club`"
+    },
+    {
+      "name": "clubs",
+      "about": "Who runs a series of tournaments, and the address they are listed together at. A tournament's `club` puts it on that page.",
+      "read": "The owner. Everybody else reads one through `GET /api/clubs/{slug}`",
+      "write": "The owner"
     },
     {
       "name": "courts",

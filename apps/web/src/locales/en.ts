@@ -222,6 +222,33 @@ export const en = {
   "account.termsOfService": "Terms of Service",
   "account.privacyPolicy": "Privacy Policy",
   "account.and": "and",
+  // The club an account runs its tournaments as, and its public page.
+  "club.title": "Club page",
+  "club.intro":
+    "One address for every tournament your club runs. Nothing appears on it until you tick it.",
+  "club.name": "Club name",
+  "club.address": "Address",
+  "club.addressHint":
+    "The page will be at {address}. Lowercase letters, numbers and dashes. It cannot be changed later, because it is what ends up on the poster.",
+  "club.addressRefused":
+    "That address is taken or cannot be used. Try another one.",
+  "club.create": "Create club page",
+  "club.save": "Save",
+  "club.changeLogo": "Change the club logo",
+  "club.colour": "Club colour",
+  "club.colourReset": "Use the default",
+  "club.listTitle": "On the club page",
+  "club.listHint":
+    "Ticking a tournament makes it public: anybody with the club's address can open its results.",
+  "club.listEmpty": "Tournaments you own will be listed here.",
+  "club.listDraft": "not started, hidden until it is",
+  "club.listRefused":
+    "Only the owner of the tournament can put it on the club page.",
+  "club.missing": "No club at this address",
+  "club.missingBody": "Check the link, or ask whoever sent it.",
+  "club.empty": "Nothing has been listed here yet.",
+  "club.current": "On now and coming up",
+  "club.past": "Past tournaments",
   // Being handed a tournament somebody else set up.
   "claim.title": "{tournament} is yours",
   "claim.body":

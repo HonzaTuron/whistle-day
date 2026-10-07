@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as SplatRouteImport } from './routes/$'
 import { Route as AccountRouteImport } from './routes/account'
 import { Route as NewRouteImport } from './routes/new'
+import { Route as CSlugRouteImport } from './routes/c.$slug'
 import { Route as ClaimTokenRouteImport } from './routes/claim.$token'
 import { Route as DisplayTokenRouteImport } from './routes/display.$token'
 import { Route as JoinTokenRouteImport } from './routes/join.$token'
@@ -40,6 +41,11 @@ const AccountRoute = AccountRouteImport.update({
 const NewRoute = NewRouteImport.update({
   id: '/new',
   path: '/new',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CSlugRoute = CSlugRouteImport.update({
+  id: '/c/$slug',
+  path: '/c/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ClaimTokenRoute = ClaimTokenRouteImport.update({
@@ -88,6 +94,7 @@ export interface FileRoutesByFullPath {
   '/$': typeof SplatRoute
   '/account': typeof AccountRoute
   '/new': typeof NewRoute
+  '/c/$slug': typeof CSlugRoute
   '/claim/$token': typeof ClaimTokenRoute
   '/display/$token': typeof DisplayTokenRoute
   '/join/$token': typeof JoinTokenRoute
@@ -102,6 +109,7 @@ export interface FileRoutesByTo {
   '/$': typeof SplatRoute
   '/account': typeof AccountRoute
   '/new': typeof NewRoute
+  '/c/$slug': typeof CSlugRoute
   '/claim/$token': typeof ClaimTokenRoute
   '/display/$token': typeof DisplayTokenRoute
   '/join/$token': typeof JoinTokenRoute
@@ -117,6 +125,7 @@ export interface FileRoutesById {
   '/$': typeof SplatRoute
   '/account': typeof AccountRoute
   '/new': typeof NewRoute
+  '/c/$slug': typeof CSlugRoute
   '/claim/$token': typeof ClaimTokenRoute
   '/display/$token': typeof DisplayTokenRoute
   '/join/$token': typeof JoinTokenRoute
@@ -133,6 +142,7 @@ export interface FileRouteTypes {
     | '/$'
     | '/account'
     | '/new'
+    | '/c/$slug'
     | '/claim/$token'
     | '/display/$token'
     | '/join/$token'
@@ -147,6 +157,7 @@ export interface FileRouteTypes {
     | '/$'
     | '/account'
     | '/new'
+    | '/c/$slug'
     | '/claim/$token'
     | '/display/$token'
     | '/join/$token'
@@ -161,6 +172,7 @@ export interface FileRouteTypes {
     | '/$'
     | '/account'
     | '/new'
+    | '/c/$slug'
     | '/claim/$token'
     | '/display/$token'
     | '/join/$token'
@@ -176,6 +188,7 @@ export interface RootRouteChildren {
   SplatRoute: typeof SplatRoute
   AccountRoute: typeof AccountRoute
   NewRoute: typeof NewRoute
+  CSlugRoute: typeof CSlugRoute
   ClaimTokenRoute: typeof ClaimTokenRoute
   DisplayTokenRoute: typeof DisplayTokenRoute
   JoinTokenRoute: typeof JoinTokenRoute
@@ -214,6 +227,13 @@ declare module '@tanstack/react-router' {
       path: '/new'
       fullPath: '/new'
       preLoaderRoute: typeof NewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/c/$slug': {
+      id: '/c/$slug'
+      path: '/c/$slug'
+      fullPath: '/c/$slug'
+      preLoaderRoute: typeof CSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/claim/$token': {
@@ -280,6 +300,7 @@ const rootRouteChildren: RootRouteChildren = {
   SplatRoute: SplatRoute,
   AccountRoute: AccountRoute,
   NewRoute: NewRoute,
+  CSlugRoute: CSlugRoute,
   ClaimTokenRoute: ClaimTokenRoute,
   DisplayTokenRoute: DisplayTokenRoute,
   JoinTokenRoute: JoinTokenRoute,
