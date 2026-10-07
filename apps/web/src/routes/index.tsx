@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { HOME_UPDATED } from "../content";
-import { organization } from "../content/schema";
+import { organization, webApplication, website } from "../content/schema";
 import { Landing } from "../screens/Landing";
 import { isLocale, type Locale } from "../lib/i18n";
 
@@ -47,33 +47,8 @@ export const Route = createFileRoute("/")({
     links: [{ rel: "canonical", href: "https://whistle.day" }],
     scripts: [
       organization("https://whistle.day"),
-      {
-        type: "application/ld+json",
-        children: JSON.stringify({
-          "@context": "https://schema.org",
-          "@type": "WebSite",
-          name: "Whistle.day",
-          url: "https://whistle.day",
-          publisher: { "@id": "https://whistle.day/#organization" },
-          dateModified: HOME_UPDATED,
-        }),
-      },
-      {
-        type: "application/ld+json",
-        children: JSON.stringify({
-          "@context": "https://schema.org",
-          "@type": "WebApplication",
-          name: "Whistle.day",
-          url: "https://whistle.day",
-          applicationCategory: "SportsApplication",
-          operatingSystem: "All",
-          offers: {
-            "@type": "Offer",
-            price: "0",
-            priceCurrency: "USD",
-          },
-        }),
-      },
+      website("https://whistle.day", HOME_UPDATED),
+      webApplication("https://whistle.day"),
     ],
   }),
   component: Landing,

@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { HOME_UPDATED, MARKETING_LASTMOD, PAGES } from "./index";
 import { llmsTxt } from "./llms";
-import { structuredData } from "./schema";
+import { organization, structuredData, webApplication, website } from "./schema";
 
 /**
  * The things a crawler reads that a person never checks: the link list, the
@@ -52,5 +52,25 @@ describe("page dates", () => {
       expect(node?.dateModified).toBe(page.updated);
       expect(node?.publisher).toEqual({ "@id": `${SITE}/#organization` });
     }
+  });
+});
+
+describe("homepage entity graph", () => {
+  const parse = (tag: { children: string }) => JSON.parse(tag.children);
+  const org = parse(organization(SITE));
+  const site = parse(website(SITE, HOME_UPDATED));
+  const app = parse(webApplication(SITE));
+
+  test("the app points at the site, and both at the organisation", () => {
+    expect(site.publisher).toEqual({ "@id": org["@id"] });
+    expect(app.publisher).toEqual({ "@id": org["@id"] });
+    expect(app.author).toEqual({ "@id": org["@id"] });
+    expect(app.isPartOf).toEqual({ "@id": site["@id"] });
+    expect(new Set([org["@id"], site["@id"], app["@id"]]).size).toBe(3);
+  });
+
+  test("the brand is findable without its dot", () => {
+    expect(site.alternateName).toContain("Whistle Day");
+    expect(site.alternateName).toContain("whistleday");
   });
 });

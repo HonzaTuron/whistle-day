@@ -29,11 +29,14 @@ const json = (value: unknown): ScriptTag => ({
  * from everywhere else, so every page names the same entity rather than a new
  * anonymous one each time.
  *
- * There is no `sameAs` because there is nothing yet to point it at. Add the
- * profiles here when they exist; a link to an account that is not ours is
- * worse than no link.
+ * `sameAs` lists only profiles that are ours and that a stranger can open. The
+ * GitHub repository is private, so it is not here: a link that 404s, or one to
+ * an account that is not ours, is worse than no link. Add the others as they
+ * are created.
  */
 const organizationId = (site: string) => `${site}/#organization`;
+const websiteId = (site: string) => `${site}/#website`;
+const applicationId = (site: string) => `${site}/#application`;
 
 export function organization(site: string): ScriptTag {
   return json({
@@ -41,9 +44,77 @@ export function organization(site: string): ScriptTag {
     "@type": "Organization",
     "@id": organizationId(site),
     name: "Whistle.day",
+    alternateName: ["Whistle Day", "whistleday"],
     url: site,
     logo: `${site}/pwa-512.png`,
     email: "info@whistle.day",
+    sameAs: ["https://smithery.ai/servers/turon-honza/whistle-day"],
+    contactPoint: {
+      "@type": "ContactPoint",
+      email: "info@whistle.day",
+      contactType: "customer support",
+      availableLanguage: ["en", "cs", "es"],
+    },
+  });
+}
+
+/**
+ * The site itself, homepage only. The alternate names are the ways the brand
+ * is typed without its dot, so a search for "whistle day" lands on the same
+ * entity.
+ */
+export function website(site: string, dateModified: string): ScriptTag {
+  return json({
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "@id": websiteId(site),
+    name: "Whistle.day",
+    alternateName: ["Whistle Day", "whistleday"],
+    url: site,
+    inLanguage: ["en", "cs", "es"],
+    publisher: { "@id": organizationId(site) },
+    dateModified,
+  });
+}
+
+/**
+ * The app, homepage only, tied to the site it lives on and the organisation
+ * behind it so the three read as one graph rather than three strangers.
+ *
+ * `image` rather than `screenshot`: og.png is a brand card, not a capture of
+ * the interface. Swap in real screenshots when there are some to point at.
+ */
+export function webApplication(site: string): ScriptTag {
+  return json({
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "@id": applicationId(site),
+    name: "Whistle.day",
+    alternateName: ["Whistle Day", "whistleday"],
+    url: site,
+    image: `${site}/og.png`,
+    applicationCategory: "SportsApplication",
+    applicationSubCategory: "Sports & Event Tournament Management",
+    operatingSystem: "All",
+    browserRequirements: "Requires JavaScript",
+    inLanguage: ["en", "cs", "es"],
+    isAccessibleForFree: true,
+    isPartOf: { "@id": websiteId(site) },
+    author: { "@id": organizationId(site) },
+    publisher: { "@id": organizationId(site) },
+    offers: {
+      "@type": "Offer",
+      price: "0",
+      priceCurrency: "USD",
+    },
+    featureList: [
+      "Round Robin, Swiss, Single & Double Elimination brackets",
+      "Live match scoring from any phone",
+      "Court scheduling",
+      "Self-driving projector and TV hall display",
+      "No account required to start, no ads, free",
+      "Model Context Protocol (MCP) server",
+    ],
   });
 }
 
@@ -154,6 +225,7 @@ export function structuredData(page: Page, site: string): ScriptTag[] {
         operatingSystem: "Web, Mobile",
         url: isMcp ? `${site}/mcp` : site,
         description: page.description,
+        publisher: { "@id": organizationId(site) },
         offers: {
           "@type": "Offer",
           price: "0",
