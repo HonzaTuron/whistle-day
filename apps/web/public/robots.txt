@@ -6,6 +6,7 @@ Disallow: /account
 Disallow: /new
 Disallow: /new/
 Allow: /
+Content-Signal: search=yes, ai-input=yes, ai-train=no
 
 # Meta / Facebook AI and external crawlers
 User-agent: meta-externalagent
@@ -15,6 +16,7 @@ Disallow: /m/
 Disallow: /account
 Disallow: /new
 Disallow: /new/
+Content-Signal: search=yes, ai-input=yes, ai-train=no
 
 User-agent: Meta-ExternalAgent
 Disallow: /t/
@@ -23,6 +25,7 @@ Disallow: /m/
 Disallow: /account
 Disallow: /new
 Disallow: /new/
+Content-Signal: search=yes, ai-input=yes, ai-train=no
 
 User-agent: facebookexternalhit
 Disallow: /t/
@@ -31,6 +34,7 @@ Disallow: /m/
 Disallow: /account
 Disallow: /new
 Disallow: /new/
+Content-Signal: search=yes, ai-input=yes, ai-train=no
 
 User-agent: FacebookBot
 Disallow: /t/
@@ -39,5 +43,6 @@ Disallow: /m/
 Disallow: /account
 Disallow: /new
 Disallow: /new/
+Content-Signal: search=yes, ai-input=yes, ai-train=no
 
 Sitemap: https://whistle.day/sitemap.xml
