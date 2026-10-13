@@ -3,6 +3,7 @@ import react from "@vitejs/plugin-react";
 import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 import { defineConfig } from "vite";
 import { VitePWA } from "vite-plugin-pwa";
+import { agentSkills } from "./build/agent-skills";
 import { llmsTxt } from "./build/llms-txt";
 import { markdownPages } from "./build/markdown";
 import { serviceWorker } from "./build/service-worker";
@@ -130,6 +131,8 @@ export default defineConfig({
     llmsTxt(),
 
     markdownPages(),
+
+    agentSkills(),
   ],
 
   server: {
