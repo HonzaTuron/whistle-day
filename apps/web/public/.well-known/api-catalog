@@ -1,0 +1,22 @@
+{
+  "linkset": [
+    {
+      "anchor": "https://whistle.day/api",
+      "service-desc": [
+        { "href": "https://whistle.day/api/openapi.json", "type": "application/json" }
+      ],
+      "service-doc": [
+        { "href": "https://whistle.day/api/docs", "type": "text/html" }
+      ],
+      "status": [
+        { "href": "https://whistle.day/api/health", "type": "application/json" }
+      ]
+    },
+    {
+      "anchor": "https://whistle.day/api/mcp",
+      "service-doc": [
+        { "href": "https://whistle.day/mcp", "type": "text/html" }
+      ]
+    }
+  ]
+}

@@ -171,6 +171,13 @@ whistle.day, www.whistle.day {
 			@openai path /.well-known/openai-apps-challenge
 			header @openai Content-Type "text/plain; charset=utf-8"
 
+			# The API catalog (RFC 9727), which is how a tool that knows only
+			# the domain finds `/api/openapi.json` and `/api/docs`. The RFC
+			# fixes both the path, which has no extension, and the type. The
+			# file is `apps/web/public/.well-known/api-catalog`.
+			@catalog path /.well-known/api-catalog
+			header @catalog Content-Type `application/linkset+json; profile="https://www.rfc-editor.org/info/rfc9727"`
+
 			rewrite {file_match.relative}
 			file_server
 		}
