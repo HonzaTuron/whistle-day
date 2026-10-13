@@ -115,6 +115,7 @@ func discoverResource(e *core.RequestEvent) error {
 	return e.JSON(http.StatusOK, map[string]any{
 		"resource":                 base + mcpResource,
 		"authorization_servers":    []string{base},
+		"scopes_supported":         []string{"tournaments"},
 		"bearer_methods_supported": []string{"header"},
 		"resource_documentation":   base + "/mcp",
 	})

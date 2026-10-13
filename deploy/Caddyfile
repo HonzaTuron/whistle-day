@@ -178,6 +178,12 @@ whistle.day, www.whistle.day {
 			@catalog path /.well-known/api-catalog
 			header @catalog Content-Type `application/linkset+json; profile="https://www.rfc-editor.org/info/rfc9727"`
 
+			# How an agent signs in, at the address the auth.md convention
+			# looks for it. Typed here rather than left to whether the box's
+			# mime table has heard of markdown.
+			@authmd path /auth.md
+			header @authmd Content-Type "text/markdown; charset=utf-8"
+
 			rewrite {file_match.relative}
 			file_server
 		}

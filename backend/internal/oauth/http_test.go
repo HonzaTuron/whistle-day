@@ -26,7 +26,10 @@ func TestDiscoveryDocuments(t *testing.T) {
 		Method:          http.MethodGet,
 		URL:             "/.well-known/oauth-protected-resource",
 		ExpectedStatus:  200,
-		ExpectedContent: []string{`"resource"`, `/api/mcp`, `"authorization_servers"`},
+		ExpectedContent: []string{
+			`"resource"`, `/api/mcp`, `"authorization_servers"`,
+			`"scopes_supported":["tournaments"]`, `"bearer_methods_supported":["header"]`,
+		},
 		TestAppFactory:  bootedApp,
 	}
 	resource.Test(t)
