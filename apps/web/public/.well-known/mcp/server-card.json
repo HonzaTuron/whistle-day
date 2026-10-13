@@ -1,0 +1,21 @@
+{
+  "serverInfo": {
+    "name": "Whistle.day",
+    "version": "1.0.0"
+  },
+  "description": "Run a sports tournament: create it, add teams and courts, draw groups, brackets or a Swiss, enter results, and publish live tables and projector screens.",
+  "documentationUrl": "https://whistle.day/mcp",
+  "transport": {
+    "type": "streamable-http",
+    "endpoint": "https://whistle.day/api/mcp"
+  },
+  "capabilities": {
+    "tools": { "listChanged": true },
+    "prompts": {},
+    "logging": {}
+  },
+  "authentication": {
+    "required": false,
+    "schemes": ["oauth2"]
+  }
+}
