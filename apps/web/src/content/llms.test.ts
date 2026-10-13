@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { HOME_UPDATED, MARKETING_LASTMOD, PAGES } from "./index";
 import { llmsTxt } from "./llms";
+import { pageMarkdown } from "./markdown";
 import { organization, structuredData, webApplication, website } from "./schema";
 
 /**
@@ -72,5 +73,28 @@ describe("homepage entity graph", () => {
   test("the brand is findable without its dot", () => {
     expect(site.alternateName).toContain("Whistle Day");
     expect(site.alternateName).toContain("whistleday");
+  });
+});
+
+describe("markdown for agents", () => {
+  test("every page prints its heading, its lede and its sections", () => {
+    for (const page of PAGES) {
+      const text = pageMarkdown(page, SITE);
+      expect(text.startsWith(`# ${page.h1}\n\n`)).toBe(true);
+      for (const section of page.sections ?? []) expect(text).toContain(`## ${section.heading}\n`);
+      for (const item of page.faq ?? []) expect(text).toContain(`### ${item.q}\n`);
+    }
+  });
+
+  test("no link is left pointing at a site the text is no longer on", () => {
+    for (const page of PAGES) expect(pageMarkdown(page, SITE)).not.toContain("](/");
+  });
+
+  test("the call to action carries the page's defaults into the wizard", () => {
+    const page = PAGES.find((candidate) => candidate.generator?.preset && candidate.locale === "es")!;
+    expect(pageMarkdown(page, SITE)).toContain(
+      `](${SITE}/new?preset=${page.generator!.preset}`,
+    );
+    expect(pageMarkdown(page, SITE)).toContain("lang=es)");
   });
 });

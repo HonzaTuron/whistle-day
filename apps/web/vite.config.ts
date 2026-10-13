@@ -4,6 +4,7 @@ import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 import { defineConfig } from "vite";
 import { VitePWA } from "vite-plugin-pwa";
 import { llmsTxt } from "./build/llms-txt";
+import { markdownPages } from "./build/markdown";
 import { serviceWorker } from "./build/service-worker";
 import { HOME_UPDATED, MARKETING_LASTMOD, MARKETING_PATHS } from "./src/content/index.ts";
 import { isAppRoute } from "./src/lib/routes.ts";
@@ -127,6 +128,8 @@ export default defineConfig({
     serviceWorker(),
 
     llmsTxt(),
+
+    markdownPages(),
   ],
 
   server: {

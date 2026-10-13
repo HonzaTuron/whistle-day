@@ -114,6 +114,36 @@ whistle.day, www.whistle.day {
 	handle {
 		root * /srv/whistleday/client
 
+		# A reader that asks for markdown gets it. The build writes an
+		# `index.md` beside every prerendered `index.html` — see
+		# `apps/web/build/markdown.ts` — so a page can be negotiated exactly
+		# when that file exists, and everything else, the app screens
+		# included, is HTML whatever was asked for. No browser sends this
+		# header, so a substring match is the whole negotiation.
+		#
+		# `Vary` goes on both answers: they are one URL, and a cache that
+		# kept one of them for the other would hand an agent a document or a
+		# person a text file.
+		@negotiable file {
+			try_files {path}/index.md
+		}
+		header @negotiable +Vary Accept
+
+		@markdown {
+			header Accept *text/markdown*
+			file {
+				try_files {path}/index.md
+			}
+		}
+		handle @markdown {
+			# A `.md` has no type the box is sure to know.
+			header Content-Type "text/markdown; charset=utf-8"
+			header Cache-Control "public, max-age=0, must-revalidate"
+
+			rewrite {file_match.relative}
+			file_server
+		}
+
 		@static file {
 			try_files {path} {path}/index.html
 		}
