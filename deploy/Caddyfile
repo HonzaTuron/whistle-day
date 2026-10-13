@@ -129,6 +129,14 @@ whistle.day, www.whistle.day {
 		}
 		header @negotiable +Vary Accept
 
+		# The front door says where the machine-readable things are (RFC
+		# 8288, and RFC 9727 §3 for the first of them), so an agent that
+		# has fetched only `/` need not guess at paths. Set out here rather
+		# than inside either answer below, because the homepage is one URL
+		# with two bodies and both of them are the front door.
+		@home path /
+		header @home Link `</.well-known/api-catalog>; rel="api-catalog", </api/openapi.json>; rel="service-desc"; type="application/json", </api/docs>; rel="service-doc"; type="text/html", </llms.txt>; rel="describedby"; type="text/plain"`
+
 		@markdown {
 			header Accept *text/markdown*
 			file {
