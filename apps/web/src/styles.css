@@ -2146,7 +2146,9 @@ th,
 
 .wiz__footer {
   position: sticky;
-  bottom: 0;
+  /* Lifted above an on-screen keyboard that is laid over the page rather
+     than shrinking it (iOS); 0 everywhere else. */
+  bottom: var(--keyboard-inset, 0px);
   display: grid;
   gap: 0.4rem;
   padding: 0.75rem 1.25rem calc(0.75rem + env(safe-area-inset-bottom));
@@ -4656,6 +4658,25 @@ a.club__row:focus-visible {
   min-height: 1.8rem;
   padding: 0 0.6rem;
   font-size: 0.75rem;
+}
+
+/* Folded: just the language you are in. Sized to sit in a header's corner
+   without reaching the title or the progress next to it. */
+.appchrome__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  min-height: 1.8rem;
+  padding: 0 0.55rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  box-shadow: 0 1px 6px color-mix(in srgb, #000 18%, transparent);
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
 }
 
 .appchrome__build {

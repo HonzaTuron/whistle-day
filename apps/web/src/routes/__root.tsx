@@ -36,6 +36,16 @@ const ICON_LINKS = [
   { rel: "manifest", href: "/manifest.webmanifest" },
 ] as const;
 
+/* `resizes-content` so an on-screen keyboard shrinks the page instead of
+   being laid over it. Android browsers otherwise keep the layout at full
+   height, and anything pinned to the bottom — the wizard's "add team" button —
+   ends up underneath the keyboard while it is being typed into. */
+const VIEWPORT = {
+  name: "viewport",
+  content:
+    "width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content",
+} as const;
+
 export const Route = createRootRoute({
   // A not-found bubbles up to this route (the nearest ancestor with a
   // `notFoundComponent`) and lands on *this* match rather than the leaf
@@ -47,10 +57,7 @@ export const Route = createRootRoute({
       ? {
           meta: [
             { charSet: "utf-8" },
-            {
-              name: "viewport",
-              content: "width=device-width, initial-scale=1, viewport-fit=cover",
-            },
+            VIEWPORT,
             { name: "apple-mobile-web-app-capable", content: "yes" },
             { title: "Page not found — Whistle.day" },
             {
@@ -64,10 +71,7 @@ export const Route = createRootRoute({
       : {
           meta: [
             { charSet: "utf-8" },
-            {
-              name: "viewport",
-              content: "width=device-width, initial-scale=1, viewport-fit=cover",
-            },
+            VIEWPORT,
             { name: "apple-mobile-web-app-capable", content: "yes" },
             { title: "Whistle.day — run a tournament off a phone" },
             {

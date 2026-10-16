@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useEffect, useRef, type ReactNode, type RefObject } from "react";
 import { useT } from "../../lib/i18n";
 
 /**
@@ -23,12 +23,45 @@ interface Props {
   footer: ReactNode;
 }
 
+/**
+ * How much of the bottom of the layout the on-screen keyboard is covering.
+ *
+ * Android is told to resize the page for the keyboard (see the viewport meta),
+ * so there this stays 0. iOS Safari ignores that and lays the keyboard over
+ * the page, which would leave a footer pinned to the layout's bottom edge
+ * hidden under it — exactly when someone is typing teams one after another and
+ * needs the "add" button. The gap between the layout and the visual viewport
+ * is the keyboard, and the footer is lifted by that much.
+ */
+function useKeyboardInset(target: RefObject<HTMLElement | null>) {
+  useEffect(() => {
+    const viewport = window.visualViewport;
+    const element = target.current;
+    if (!viewport || !element) return;
+
+    const update = () => {
+      const covered = window.innerHeight - viewport.height - viewport.offsetTop;
+      element.style.setProperty("--keyboard-inset", `${Math.max(0, Math.round(covered))}px`);
+    };
+
+    update();
+    viewport.addEventListener("resize", update);
+    viewport.addEventListener("scroll", update);
+    return () => {
+      viewport.removeEventListener("resize", update);
+      viewport.removeEventListener("scroll", update);
+    };
+  }, [target]);
+}
+
 export function WizardShell({ step, title, hint, onBack, children, footer }: Props) {
   const t = useT();
   const index = WIZARD_STEPS.indexOf(step);
+  const frame = useRef<HTMLDivElement>(null);
+  useKeyboardInset(frame);
 
   return (
-    <div className="wiz">
+    <div className="wiz" ref={frame}>
       <header className="wiz__bar">
         {onBack ? (
           <button

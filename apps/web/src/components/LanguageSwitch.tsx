@@ -12,7 +12,14 @@ import { LOCALE_FLAG, LOCALE_NAMES, LOCALE_SHORT, LOCALES, useI18n } from "../li
  * Not a dropdown: a row of flags is still one glance, and a dropdown would be
  * a click spent finding out what the options are.
  */
-export function LanguageSwitch({ className = "" }: { className?: string }) {
+export function LanguageSwitch({
+  className = "",
+  onPick,
+}: {
+  className?: string;
+  /** Called after a language is picked, so a collapsible host can close. */
+  onPick?: () => void;
+}) {
   const { locale, setLocale, t } = useI18n();
 
   return (
@@ -31,7 +38,10 @@ export function LanguageSwitch({ className = "" }: { className?: string }) {
           // Czech is looking for "Čeština", not for "Czech".
           lang={option}
           title={LOCALE_NAMES[option]}
-          onClick={() => setLocale(option)}
+          onClick={() => {
+            setLocale(option);
+            onPick?.();
+          }}
         >
           <span className="langswitch__flag" aria-hidden="true">
             {LOCALE_FLAG[option]}
