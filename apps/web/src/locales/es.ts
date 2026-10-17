@@ -217,14 +217,14 @@ export const es: Record<keyof Catalog, Message> = {
   // The club an account runs its tournaments as, and its public page.
   "club.title": "Página del club",
   "club.intro":
-    "Una sola dirección para todos los torneos de tu club. No aparece nada en ella hasta que lo marques.",
+    "Una sola dirección para todos los torneos de tu club, como whistle.day/c/tu-club. Lleva un minuto y no aparece nada en ella hasta que lo decidas.",
   "club.name": "Nombre del club",
   "club.address": "Dirección",
   "club.addressHint":
-    "La página estará en {address}. Minúsculas, números y guiones. No se puede cambiar después, porque es lo que acaba en el cartel.",
+    "Minúsculas, números y guiones. No se puede cambiar después, porque es lo que acaba en el cartel.",
   "club.addressRefused":
     "Esa dirección ya está en uso o no se puede usar. Prueba con otra.",
-  "club.create": "Crear la página del club",
+  "club.create": "Crear la página",
   "club.save": "Guardar",
   "club.changeLogo": "Cambiar el logo del club",
   "club.colour": "Color del club",
@@ -236,6 +236,26 @@ export const es: Record<keyof Catalog, Message> = {
   "club.listDraft": "sin empezar, oculto hasta entonces",
   "club.listRefused":
     "Solo quien es dueño del torneo puede ponerlo en la página del club.",
+  "club.setUp": "Crear la página del club",
+  // Setting up a club page: screens/ClubSetup.tsx.
+  "clubSetup.nameTitle": "¿Cómo se llama tu club?",
+  "clubSetup.nameHint": "Encabeza la página, y la dirección sale de él.",
+  "clubSetup.namePlaceholder": "Club de Pádel Coruña",
+  "clubSetup.changeAddress": "Cambiar",
+  "clubSetup.addressShort": "Al menos 3 letras o números",
+  "clubSetup.addressChecking": "Comprobando…",
+  "clubSetup.addressFree": "Libre",
+  "clubSetup.addressTaken": "Ocupada, prueba otra",
+  "clubSetup.listTitle": "¿Pones torneos en ella?",
+  "clubSetup.listPublish": {
+    one: "Poner {count} torneo en la página",
+    other: "Poner {count} torneos en la página",
+  },
+  "clubSetup.listSkip": "Ahora no",
+  "clubSetup.doneEyebrow": "La página del club está lista",
+  "clubSetup.doneNote": "Aquí aparecerán los torneos que marques en tu cuenta.",
+  "clubSetup.doneOpen": "Abrir la página",
+  "clubSetup.doneStyle": "Añadir logo y color",
   "club.missing": "No hay ningún club en esta dirección",
   "club.missingBody": "Revisa el enlace o pregunta a quien te lo envió.",
   "club.empty": "Todavía no hay nada aquí.",

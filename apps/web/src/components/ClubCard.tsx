@@ -4,7 +4,6 @@ import { useT } from "../lib/i18n";
 import {
   ApiError,
   clubLogoUrl,
-  createClub,
   listOnClub,
   myClubs,
   updateClub,
@@ -12,7 +11,6 @@ import {
   type Session,
   type TournamentRecord,
 } from "../api/organiser";
-import { CLUB_SLUG_MAX, clubSlug, isClubSlug } from "../lib/club";
 
 interface Props {
   session: Session;
@@ -30,11 +28,12 @@ const APP_ACCENT = "#15803d";
 /**
  * The club this account runs its tournaments as, on the account screen.
  *
- * Two states and nothing between them. With no club there is a name and an
- * address to choose; with one there is what the page looks like and which
- * tournaments are on it. The address is asked for once and not offered again:
- * it is the thing that ends up on a poster, and a field that invites editing
- * it is a field that breaks every link already handed out.
+ * Two states and nothing between them. With no club there is what a page is
+ * for and the way to set one up (screens/ClubSetup.tsx), not a form dropped
+ * between the tournaments and signing out; with one there is what the page
+ * looks like and which tournaments are on it. The address is not offered
+ * here at all: it is the thing that ends up on a poster, and a field that
+ * invites editing it is a field that breaks every link already handed out.
  *
  * Listing is per tournament and starts empty. The page is public and carries
  * a way in to each board on it, so a tournament gets there because somebody
@@ -45,9 +44,6 @@ export function ClubCard({ session, tournaments, onListed }: Props) {
   const [club, setClub] = useState<ClubRecord | null | undefined>(undefined);
   const [name, setName] = useState("");
   const [accent, setAccent] = useState("");
-  const [slug, setSlug] = useState("");
-  // Until the address is typed into, it follows the name.
-  const [slugTyped, setSlugTyped] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -95,62 +91,15 @@ export function ClubCard({ session, tournaments, onListed }: Props) {
 
   if (club === undefined) return null;
 
+  // Setting one up is a flow of its own; here it is only offered.
   if (club === null) {
-    const address = slugTyped ? slug : clubSlug(name);
-    const ready = name.trim().length > 0 && isClubSlug(address) && !busy;
-
     return (
       <section className="clubcard">
         <h2>{t("club.title")}</h2>
         <p className="account__hint">{t("club.intro")}</p>
-
-        <form
-          className="account__form"
-          onSubmit={(event) => {
-            event.preventDefault();
-            if (!ready) return;
-            void attempt(async () => {
-              setClub(await createClub(session, { name: name.trim(), slug: address }));
-            }, t("club.addressRefused"));
-          }}
-        >
-          <label>
-            <span>{t("club.name")}</span>
-            <input
-              name="club"
-              value={name}
-              maxLength={120}
-              autoComplete="organization"
-              onChange={(event) => setName(event.target.value)}
-            />
-          </label>
-          <label>
-            <span>{t("club.address")}</span>
-            <input
-              name="slug"
-              value={address}
-              maxLength={CLUB_SLUG_MAX}
-              autoComplete="off"
-              autoCapitalize="none"
-              spellCheck={false}
-              onChange={(event) => {
-                setSlugTyped(true);
-                setSlug(event.target.value.toLowerCase());
-              }}
-            />
-          </label>
-          <p className="account__hint">
-            {t("club.addressHint", { address: `whistle.day/c/${address || "…"}` })}
-          </p>
-          {error ? (
-            <p className="account__warning" role="alert">
-              {error}
-            </p>
-          ) : null}
-          <button type="submit" className="btn btn--quiet btn--block" disabled={!ready}>
-            {t(busy ? "common.moment" : "club.create")}
-          </button>
-        </form>
+        <Link to="/club/new" className="btn btn--quiet btn--block">
+          {t("club.setUp")}
+        </Link>
       </section>
     );
   }

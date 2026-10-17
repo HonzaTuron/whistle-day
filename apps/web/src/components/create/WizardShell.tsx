@@ -15,7 +15,9 @@ export const WIZARD_STEPS = ["name", "teams", "courts", "format"] as const;
 export type WizardStep = (typeof WIZARD_STEPS)[number];
 
 interface Props {
-  step: WizardStep;
+  step: string;
+  /** The pips across the top. The tournament wizard's own unless a flow brings its own. */
+  steps?: readonly string[];
   title: string;
   hint?: string;
   onBack?: () => void;
@@ -54,9 +56,17 @@ function useKeyboardInset(target: RefObject<HTMLElement | null>) {
   }, [target]);
 }
 
-export function WizardShell({ step, title, hint, onBack, children, footer }: Props) {
+export function WizardShell({
+  step,
+  steps = WIZARD_STEPS,
+  title,
+  hint,
+  onBack,
+  children,
+  footer,
+}: Props) {
   const t = useT();
-  const index = WIZARD_STEPS.indexOf(step);
+  const index = steps.indexOf(step);
   const frame = useRef<HTMLDivElement>(null);
   useKeyboardInset(frame);
 
@@ -80,10 +90,10 @@ export function WizardShell({ step, title, hint, onBack, children, footer }: Pro
           className="wiz__progress"
           aria-label={t("wizard.step", {
             current: index + 1,
-            total: WIZARD_STEPS.length,
+            total: steps.length,
           })}
         >
-          {WIZARD_STEPS.map((name, i) => (
+          {steps.map((name, i) => (
             <li
               key={name}
               className={

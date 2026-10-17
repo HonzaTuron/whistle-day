@@ -229,14 +229,14 @@ export const cs: Record<keyof Catalog, Message> = {
   // The club an account runs its tournaments as, and its public page.
   "club.title": "Stránka klubu",
   "club.intro":
-    "Jedna adresa pro všechny turnaje vašeho klubu. Nic se na ní neobjeví, dokud to nezaškrtnete.",
+    "Jedna adresa pro všechny turnaje vašeho klubu, třeba whistle.day/c/vas-klub. Zabere minutu a nic se na ni nedostane, dokud to sami nezaškrtnete.",
   "club.name": "Název klubu",
   "club.address": "Adresa",
   "club.addressHint":
-    "Stránka bude na {address}. Malá písmena, číslice a pomlčky. Později ji nejde změnit, protože právě ona skončí na plakátu.",
+    "Malá písmena, číslice a pomlčky. Později ji nejde změnit, protože právě ona skončí na plakátu.",
   "club.addressRefused":
     "Tahle adresa je obsazená nebo ji nejde použít. Zkuste jinou.",
-  "club.create": "Vytvořit stránku klubu",
+  "club.create": "Vytvořit stránku",
   "club.save": "Uložit",
   "club.changeLogo": "Změnit logo klubu",
   "club.colour": "Barva klubu",
@@ -248,6 +248,27 @@ export const cs: Record<keyof Catalog, Message> = {
   "club.listDraft": "nezahájen, do té doby skrytý",
   "club.listRefused":
     "Na stránku klubu může turnaj dát jen jeho vlastník.",
+  "club.setUp": "Založit stránku klubu",
+  // Setting up a club page: screens/ClubSetup.tsx.
+  "clubSetup.nameTitle": "Jak se váš klub jmenuje?",
+  "clubSetup.nameHint": "Bude v záhlaví stránky a vznikne z něj adresa.",
+  "clubSetup.namePlaceholder": "TJ Sokol Brno",
+  "clubSetup.changeAddress": "Změnit",
+  "clubSetup.addressShort": "Aspoň 3 písmena nebo číslice",
+  "clubSetup.addressChecking": "Ověřuji…",
+  "clubSetup.addressFree": "Volná",
+  "clubSetup.addressTaken": "Obsazená, zkuste jinou",
+  "clubSetup.listTitle": "Dát na ni turnaje?",
+  "clubSetup.listPublish": {
+    one: "Dát {count} turnaj na stránku",
+    few: "Dát {count} turnaje na stránku",
+    other: "Dát {count} turnajů na stránku",
+  },
+  "clubSetup.listSkip": "Teď ne",
+  "clubSetup.doneEyebrow": "Stránka klubu je hotová",
+  "clubSetup.doneNote": "Objeví se tu turnaje, které zaškrtnete v účtu.",
+  "clubSetup.doneOpen": "Otevřít stránku",
+  "clubSetup.doneStyle": "Přidat logo a barvu",
   "club.missing": "Na téhle adrese žádný klub není",
   "club.missingBody": "Zkontrolujte odkaz, nebo se zeptejte toho, kdo vám ho poslal.",
   "club.empty": "Zatím tu nic není.",

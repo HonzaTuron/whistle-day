@@ -225,14 +225,14 @@ export const en = {
   // The club an account runs its tournaments as, and its public page.
   "club.title": "Club page",
   "club.intro":
-    "One address for every tournament your club runs. Nothing appears on it until you tick it.",
+    "One address for all your club's tournaments, like whistle.day/c/your-club. Takes a minute, and nothing goes on it until you say so.",
   "club.name": "Club name",
   "club.address": "Address",
   "club.addressHint":
-    "The page will be at {address}. Lowercase letters, numbers and dashes. It cannot be changed later, because it is what ends up on the poster.",
+    "Lowercase letters, numbers and dashes. It cannot be changed later, because it is what ends up on the poster.",
   "club.addressRefused":
     "That address is taken or cannot be used. Try another one.",
-  "club.create": "Create club page",
+  "club.create": "Create the page",
   "club.save": "Save",
   "club.changeLogo": "Change the club logo",
   "club.colour": "Club colour",
@@ -244,6 +244,26 @@ export const en = {
   "club.listDraft": "not started, hidden until it is",
   "club.listRefused":
     "Only the owner of the tournament can put it on the club page.",
+  "club.setUp": "Set up a club page",
+  // Setting up a club page: screens/ClubSetup.tsx.
+  "clubSetup.nameTitle": "What is your club called?",
+  "clubSetup.nameHint": "It heads the page, and the address is made from it.",
+  "clubSetup.namePlaceholder": "Riverside Badminton Club",
+  "clubSetup.changeAddress": "Change",
+  "clubSetup.addressShort": "At least 3 letters or numbers",
+  "clubSetup.addressChecking": "Checking…",
+  "clubSetup.addressFree": "Free",
+  "clubSetup.addressTaken": "Taken, try another",
+  "clubSetup.listTitle": "Put tournaments on it?",
+  "clubSetup.listPublish": {
+    one: "Put {count} tournament on the page",
+    other: "Put {count} tournaments on the page",
+  },
+  "clubSetup.listSkip": "Not now",
+  "clubSetup.doneEyebrow": "Your club page is ready",
+  "clubSetup.doneNote": "Tournaments you tick on the account screen show up here.",
+  "clubSetup.doneOpen": "Open the page",
+  "clubSetup.doneStyle": "Add a logo and colour",
   "club.missing": "No club at this address",
   "club.missingBody": "Check the link, or ask whoever sent it.",
   "club.empty": "Nothing has been listed here yet.",

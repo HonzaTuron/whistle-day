@@ -15,6 +15,7 @@ import { Route as AccountRouteImport } from './routes/account'
 import { Route as NewRouteImport } from './routes/new'
 import { Route as CSlugRouteImport } from './routes/c.$slug'
 import { Route as ClaimTokenRouteImport } from './routes/claim.$token'
+import { Route as ClubNewRouteImport } from './routes/club.new'
 import { Route as DisplayTokenRouteImport } from './routes/display.$token'
 import { Route as JoinTokenRouteImport } from './routes/join.$token'
 import { Route as MTokenRouteImport } from './routes/m.$token'
@@ -51,6 +52,11 @@ const CSlugRoute = CSlugRouteImport.update({
 const ClaimTokenRoute = ClaimTokenRouteImport.update({
   id: '/claim/$token',
   path: '/claim/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ClubNewRoute = ClubNewRouteImport.update({
+  id: '/club/new',
+  path: '/club/new',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DisplayTokenRoute = DisplayTokenRouteImport.update({
@@ -96,6 +102,7 @@ export interface FileRoutesByFullPath {
   '/new': typeof NewRoute
   '/c/$slug': typeof CSlugRoute
   '/claim/$token': typeof ClaimTokenRoute
+  '/club/new': typeof ClubNewRoute
   '/display/$token': typeof DisplayTokenRoute
   '/join/$token': typeof JoinTokenRoute
   '/m/$token': typeof MTokenRoute
@@ -111,6 +118,7 @@ export interface FileRoutesByTo {
   '/new': typeof NewRoute
   '/c/$slug': typeof CSlugRoute
   '/claim/$token': typeof ClaimTokenRoute
+  '/club/new': typeof ClubNewRoute
   '/display/$token': typeof DisplayTokenRoute
   '/join/$token': typeof JoinTokenRoute
   '/m/$token': typeof MTokenRoute
@@ -127,6 +135,7 @@ export interface FileRoutesById {
   '/new': typeof NewRoute
   '/c/$slug': typeof CSlugRoute
   '/claim/$token': typeof ClaimTokenRoute
+  '/club/new': typeof ClubNewRoute
   '/display/$token': typeof DisplayTokenRoute
   '/join/$token': typeof JoinTokenRoute
   '/m/$token': typeof MTokenRoute
@@ -144,6 +153,7 @@ export interface FileRouteTypes {
     | '/new'
     | '/c/$slug'
     | '/claim/$token'
+    | '/club/new'
     | '/display/$token'
     | '/join/$token'
     | '/m/$token'
@@ -159,6 +169,7 @@ export interface FileRouteTypes {
     | '/new'
     | '/c/$slug'
     | '/claim/$token'
+    | '/club/new'
     | '/display/$token'
     | '/join/$token'
     | '/m/$token'
@@ -174,6 +185,7 @@ export interface FileRouteTypes {
     | '/new'
     | '/c/$slug'
     | '/claim/$token'
+    | '/club/new'
     | '/display/$token'
     | '/join/$token'
     | '/m/$token'
@@ -190,6 +202,7 @@ export interface RootRouteChildren {
   NewRoute: typeof NewRoute
   CSlugRoute: typeof CSlugRoute
   ClaimTokenRoute: typeof ClaimTokenRoute
+  ClubNewRoute: typeof ClubNewRoute
   DisplayTokenRoute: typeof DisplayTokenRoute
   JoinTokenRoute: typeof JoinTokenRoute
   MTokenRoute: typeof MTokenRoute
@@ -241,6 +254,13 @@ declare module '@tanstack/react-router' {
       path: '/claim/$token'
       fullPath: '/claim/$token'
       preLoaderRoute: typeof ClaimTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/club/new': {
+      id: '/club/new'
+      path: '/club/new'
+      fullPath: '/club/new'
+      preLoaderRoute: typeof ClubNewRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/display/$token': {
@@ -302,6 +322,7 @@ const rootRouteChildren: RootRouteChildren = {
   NewRoute: NewRoute,
   CSlugRoute: CSlugRoute,
   ClaimTokenRoute: ClaimTokenRoute,
+  ClubNewRoute: ClubNewRoute,
   DisplayTokenRoute: DisplayTokenRoute,
   JoinTokenRoute: JoinTokenRoute,
   MTokenRoute: MTokenRoute,

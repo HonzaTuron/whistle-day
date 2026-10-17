@@ -2,8 +2,8 @@
  * Which addresses are one organiser's live data, and which are pages.
  *
  * Everything under `/t`, `/display`, `/m`, `/join`, `/account`, `/new`,
- * `/claim`, `/verify` and `/reset` is a tournament somebody is running, or an
- * account being recovered — behind a token, different on every request, and
+ * `/club`, `/claim`, `/verify` and `/reset` is a tournament somebody is
+ * running, an account being recovered, or a club page being set up — behind a token, different on every request, and
  * nothing a crawler or an analytics script has any business with. `/c` is a
  * club's page, which has no token but is read from the database on every
  * request and lists those same tournaments. Everything else is static per
@@ -16,7 +16,7 @@
  * go. A route that drifted between those two would be either a live board in
  * a search index or a projector phoning a third party all afternoon.
  */
-export const APP_ROUTES = /^\/(t|display|m|c|join|account|new|claim|verify|reset)(\/|$)/;
+export const APP_ROUTES = /^\/(t|display|m|c|club|join|account|new|claim|verify|reset)(\/|$)/;
 
 /**
  * The crawler hands paths in with their query string attached, and every

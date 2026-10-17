@@ -3835,6 +3835,54 @@ th,
   min-width: 0;
 }
 
+/* Setting up a club page. The address sits under the name as it will be
+   printed, so changing it is an exception rather than a second field. */
+.clubsetup__address {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.25rem 0.6rem;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.clubsetup__url {
+  font-family: var(--numeric);
+  overflow-wrap: anywhere;
+}
+
+.clubsetup__url strong {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.clubsetup__status {
+  font-size: 0.75rem;
+  font-weight: 650;
+}
+
+.clubsetup__status--free {
+  color: var(--accent);
+}
+
+.clubsetup__status--taken {
+  color: var(--live);
+}
+
+.clubsetup__list {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.clubsetup__list small {
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-weight: 400;
+}
+
 /* The public page. `--club-accent` is the club's own colour when it has one,
    and is only ever drawn as a rule or a ring — see screens/Club.tsx. */
 .club {
