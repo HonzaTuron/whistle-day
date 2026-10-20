@@ -27,7 +27,9 @@ Whistle.day supports round robin, single elimination, double elimination and
 Swiss formats, in any order (a group stage feeding a playoff, for example).
 Results entered from a phone at the court propagate to tables, brackets and
 projector screens in under a second. Every tournament gets a shareable link
-and a QR code; no signup is required until an organiser wants to keep it.`;
+and a QR code; no signup is required until an organiser wants to keep it.
+
+The source is at https://github.com/HonzaTuron/whistle-day, under AGPL-3.0.`;
 
 /** In the order they are printed. A kind that is absent here is not listed. */
 const SECTIONS: { heading: string; kinds: PageKind[] }[] = [

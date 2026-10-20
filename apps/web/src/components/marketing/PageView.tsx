@@ -159,6 +159,13 @@ export function PageView({ page }: { page: Page }) {
               <a href="mailto:info@whistle.day" className="doc__foot-sublink">
                 info@whistle.day
               </a>
+              <a
+                href="https://github.com/HonzaTuron/whistle-day"
+                rel="noopener"
+                className="doc__foot-sublink"
+              >
+                GitHub
+              </a>
               <Link to="/$" params={{ _splat: "privacy" }} className="doc__foot-sublink">
                 {chrome.privacy}
               </Link>

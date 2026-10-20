@@ -1,7 +1,8 @@
 # Whistle.day
 
 Tournament organiser with arbitrary stage ordering — groups, playoff, Swiss, in
-any sequence — and a public projector view.
+any sequence — and a public projector view. Running at
+**[whistle.day](https://whistle.day)**.
 
 **Status: a whole tournament runs off a phone — or off as many phones as there
 are courts.** Name it, say what is being played, add the teams one by one, pick

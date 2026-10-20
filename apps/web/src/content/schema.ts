@@ -29,10 +29,9 @@ const json = (value: unknown): ScriptTag => ({
  * from everywhere else, so every page names the same entity rather than a new
  * anonymous one each time.
  *
- * `sameAs` lists only profiles that are ours and that a stranger can open. The
- * GitHub repository is private, so it is not here: a link that 404s, or one to
- * an account that is not ours, is worse than no link. Add the others as they
- * are created.
+ * `sameAs` lists only profiles that are ours and that a stranger can open: a
+ * link that 404s, or one to an account that is not ours, is worse than no
+ * link. Add the others as they are created.
  */
 const organizationId = (site: string) => `${site}/#organization`;
 const websiteId = (site: string) => `${site}/#website`;
@@ -48,7 +47,10 @@ export function organization(site: string): ScriptTag {
     url: site,
     logo: `${site}/pwa-512.png`,
     email: "info@whistle.day",
-    sameAs: ["https://smithery.ai/servers/turon-honza/whistle-day"],
+    sameAs: [
+      "https://github.com/HonzaTuron/whistle-day",
+      "https://smithery.ai/servers/turon-honza/whistle-day",
+    ],
     contactPoint: {
       "@type": "ContactPoint",
       email: "info@whistle.day",
