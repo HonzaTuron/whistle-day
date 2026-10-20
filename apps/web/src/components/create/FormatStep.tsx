@@ -1,4 +1,4 @@
-import { estimate, formatDuration, PRESETS, type PresetId } from "../../lib/presets";
+import { estimate, formatDuration, PRESETS, suits, type PresetId } from "../../lib/presets";
 import type { LaunchStep } from "../../api/launch";
 import { courtsKeys, courtsUnitFor } from "../../lib/courts";
 import { useT, type MessageKey } from "../../lib/i18n";
@@ -67,8 +67,9 @@ export function FormatStep({
     >
       <div className="presets" role="radiogroup" aria-label={t("wizard.formatLegend")}>
         {PRESETS.map((preset) => {
-          const enough = teams >= preset.minTeams;
+          const enough = suits(preset, teams);
           const cost = estimate(preset, teams, courts);
+          const caveat = teams >= preset.minTeams ? preset.caveat?.(teams) : undefined;
 
           return (
             <label
@@ -106,7 +107,7 @@ export function FormatStep({
                 </>
               ) : (
                 <span className="preset__shape">
-                  {t("wizard.formatNeeds", { count: preset.minTeams })}
+                  {caveat ? t(caveat) : t("wizard.formatNeeds", { count: preset.minTeams })}
                 </span>
               )}
             </label>

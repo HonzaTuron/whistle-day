@@ -425,6 +425,8 @@ export const es: Record<keyof Catalog, Message> = {
   "preset.knockout.blurb":
     "Pierdes una vez y quedas afuera. La forma más rápida de tener un ganador, y el que menos juega quien queda mal sorteado.",
   "preset.knockout.shape": "{round} hasta la final, más el partido por el tercer puesto",
+  "preset.knockout.three":
+    "Con tres equipos no: uno pasaría a la final sin jugar.",
 
   "preset.double.title": "Doble eliminación",
   "preset.double.tag": "Dos vidas",

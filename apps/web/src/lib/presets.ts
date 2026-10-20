@@ -45,6 +45,11 @@ export interface Preset {
   tag: MessageKey;
   blurb: MessageKey;
   minTeams: number;
+  /**
+   * Set where the field is big enough but the format still should not be run:
+   * the card is disabled and says why, in place of "needs N teams".
+   */
+  caveat?: (teams: number) => MessageKey | undefined;
   /** "2 groups of 4, then semi-finals" — the shape, for this many teams. */
   shape: (t: Translate, teams: number) => string;
   matches: (teams: number) => number;
@@ -107,6 +112,10 @@ export const PRESETS: Preset[] = [
     tag: "preset.knockout.tag",
     blurb: "preset.knockout.blurb",
     minTeams: 2,
+    // Three teams is one semi-final and a bye straight into the final: the
+    // draw decides who plays once and who plays twice, and that is most of
+    // the result decided before a ball is hit.
+    caveat: (teams) => (teams === 3 ? "preset.knockout.three" : undefined),
     shape: (t, teams) => t("preset.knockout.shape", { round: roundName(t, teams) }),
     matches: knockoutMatches,
     stages: () => [
@@ -247,7 +256,11 @@ export const presetById = (id: PresetId) =>
   PRESETS.find((preset) => preset.id === id) ?? PRESETS[1]!;
 
 export const availablePresets = (teams: number) =>
-  PRESETS.filter((preset) => teams >= preset.minTeams);
+  PRESETS.filter((preset) => suits(preset, teams));
+
+/** Big enough to draw, and nothing against running it. */
+export const suits = (preset: Preset, teams: number) =>
+  teams >= preset.minTeams && !preset.caveat?.(teams);
 
 /**
  * What to have selected when the format screen opens. Enough teams for groups

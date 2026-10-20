@@ -59,6 +59,9 @@ function singleElim(teams: number): Page {
   const rounds = knockoutRounds(teams);
   const path = knockoutPath(teams);
   const matches = knockoutMatches(teams);
+  // Three teams is the one size where the honest advice is not to run a
+  // bracket at all: the bye is a free pass to the final, handed out by the draw.
+  const three = teams === 3;
 
   return {
     slug: `${teams}-team-single-elimination-bracket`,
@@ -73,10 +76,22 @@ function singleElim(teams: number): Page {
       `${path.join(", then ")}. ` +
       (byes > 0
         ? `${teams} is not a power of two, so the bracket is drawn at ${bracketSize(teams)} and ${plural(byes, "team")} skip the first round.`
-        : `${teams} is a power of two, so the bracket is full and nobody sits out.`),
-    generator: { preset: "knockout", teams },
+        : `${teams} is a power of two, so the bracket is full and nobody sits out.`) +
+      (three ? " With three teams, play everyone plays everyone instead." : ""),
+    generator: { preset: three ? "everyone" : "knockout", teams },
     facts: factsFor("knockout", teams),
     sections: [
+      ...(three
+        ? [
+            {
+              heading: "Why three teams should not play a knockout",
+              body: [
+                "Two teams play a semi-final and the third goes straight into the final without playing. Whoever the draw hands the bye has won a match for free and is fresh for the final; the other two have to win twice. The draw decides more of the result than the games do.",
+                "A round robin is three matches, one more than the bracket, and every team plays twice. Nobody is waved through, and the table settles it. The generator below starts you on that.",
+              ],
+            },
+          ]
+        : []),
       {
         heading: byes > 0 ? `Where the ${plural(byes, "bye")} go` : "A full bracket",
         body:
@@ -127,6 +142,7 @@ function singleElim(teams: number): Page {
       "single-elimination-bracket-generator",
       neighbours(teams, SINGLE_ELIM).map((n) => `${n}-team-single-elimination-bracket`),
       DOUBLE_ELIM.includes(teams) ? [`${teams}-team-double-elimination-bracket`] : [],
+      three ? [`${teams}-team-round-robin-schedule`] : [],
       ["guide/how-to-seed-a-bracket"],
     ),
   };

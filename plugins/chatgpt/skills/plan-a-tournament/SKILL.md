@@ -18,7 +18,10 @@ Ask only for what is missing, in one message:
 - How many courts, pitches or tables there are.
 - The format: `round_robin`, `single_elim`, `double_elim` or `swiss`. If the
   user has no preference, suggest round robin for up to about six teams and
-  groups followed by a knockout for more, and let them choose.
+  groups followed by a knockout for more, and let them choose. Never suggest
+  `single_elim` for three teams: one team gets a bye straight into the final,
+  so the draw decides more than the games. The web wizard does not offer it
+  either; if they ask for it, say so and offer round robin instead.
 
 ## Steps
 

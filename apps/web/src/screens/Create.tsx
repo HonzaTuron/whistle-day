@@ -26,7 +26,7 @@ import { FormatStep } from "../components/create/FormatStep";
 import { NameStep } from "../components/create/NameStep";
 import { TeamsStep } from "../components/create/TeamsStep";
 import { useI18n, useT } from "../lib/i18n";
-import { defaultPreset, presetById, type PresetId } from "../lib/presets";
+import { defaultPreset, presetById, suits, type PresetId } from "../lib/presets";
 import {
   DEFAULT_SPORT,
   drawsAllowed,
@@ -245,9 +245,10 @@ export function Create({ initialPreset, initialSport }: Props = {}) {
       setCourts(saved);
       // The format the page advertised wins, but only while the field is
       // actually big enough for it — arriving from "16 team Swiss" and then
-      // entering five teams has to fall back to something that can be drawn.
+      // entering five teams has to fall back to something that can be drawn,
+      // and arriving from "3 team bracket" to something worth drawing.
       setPreset(
-        initialPreset && teams.length >= presetById(initialPreset).minTeams
+        initialPreset && suits(presetById(initialPreset), teams.length)
           ? initialPreset
           : defaultPreset(teams.length),
       );

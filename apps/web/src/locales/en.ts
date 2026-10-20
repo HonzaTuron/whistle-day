@@ -440,6 +440,8 @@ export const en = {
   "preset.knockout.blurb":
     "Lose once and you are out. The quickest way to a winner, and the least playing time for whoever draws badly.",
   "preset.knockout.shape": "{round} through to the final, plus a third-place match",
+  "preset.knockout.three":
+    "Not with three teams: one would go straight to the final without playing.",
 
   "preset.double.title": "Double elimination",
   "preset.double.tag": "Two lives",

@@ -447,6 +447,8 @@ export const cs: Record<keyof Catalog, Message> = {
   "preset.knockout.blurb":
     "Jedna prohra a končíte. Nejrychlejší cesta k vítězi a nejmíň odehraného času pro ty, kdo si špatně vylosují.",
   "preset.knockout.shape": "{round} až do finále, plus zápas o třetí místo",
+  "preset.knockout.three":
+    "Se třemi týmy ne: jeden by šel do finále bez zápasu.",
 
   "preset.double.title": "Dvojité vyřazení",
   "preset.double.tag": "Dva životy",
