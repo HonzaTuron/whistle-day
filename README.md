@@ -496,3 +496,8 @@ a draw without a round trip. They are now Go only, and preview goes through
    optional LLM/vision pass for messy chat chatter or a photo of a paper
    registration sheet — would turn fifty taps into one paste and an editable
    preview.
+
+## License
+
+[AGPL-3.0-or-later](LICENSE). Run it, change it, host it: if people use your
+modified copy over a network, they are entitled to its source too.
