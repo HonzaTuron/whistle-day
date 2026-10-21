@@ -17,8 +17,8 @@ import { bracketSize, byeCount, factsFor, knockoutPath, plural } from "./shape";
 import { combinations, knockoutMatches } from "../lib/presets";
 import type { Page } from "./types";
 
-const BRACKETS = [4, 8, 16, 32];
-const ROUND_ROBINS = [4, 5, 6, 8, 10, 12];
+export const BRACKETS = [4, 8, 16, 32];
+export const ROUND_ROBINS = [4, 5, 6, 8, 10, 12];
 
 function printableBracket(teams: number): Page {
   const matches = knockoutMatches(teams);

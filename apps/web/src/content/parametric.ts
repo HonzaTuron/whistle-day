@@ -37,6 +37,7 @@ import {
   presetById,
   swissRounds,
 } from "../lib/presets";
+import { BRACKETS, ROUND_ROBINS } from "./printables";
 import type { Page } from "./types";
 
 /** Field sizes worth a page of their own, per format. */
@@ -141,6 +142,7 @@ function singleElim(teams: number): Page {
     related: relatives(
       "single-elimination-bracket-generator",
       neighbours(teams, SINGLE_ELIM).map((n) => `${n}-team-single-elimination-bracket`),
+      BRACKETS.includes(teams) ? [`printable/${teams}-team-bracket`] : [],
       DOUBLE_ELIM.includes(teams) ? [`${teams}-team-double-elimination-bracket`] : [],
       three ? [`${teams}-team-round-robin-schedule`] : [],
       ["guide/how-to-seed-a-bracket"],
@@ -278,6 +280,7 @@ function roundRobin(teams: number): Page {
     related: relatives(
       "round-robin-generator",
       neighbours(teams, ROUND_ROBIN).map((n) => `${n}-team-round-robin-schedule`),
+      ROUND_ROBINS.includes(teams) ? [`printable/${teams}-team-round-robin-schedule`] : [],
       GROUPS.includes(teams) ? [`${teams}-team-group-stage-and-playoff`] : [],
       ["league-table-generator", "guide/byes-in-a-round-robin"],
     ),

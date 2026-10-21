@@ -123,6 +123,7 @@ export const FORMAT_PAGES: Page[] = [
     related: [
       "6-team-round-robin-schedule",
       "8-team-round-robin-schedule",
+      "printable/round-robin-schedule",
       "league-table-generator",
       "group-stage-knockout-generator",
       "guide/group-stage-tiebreakers-explained",
@@ -180,6 +181,8 @@ export const FORMAT_PAGES: Page[] = [
       "8-team-single-elimination-bracket",
       "16-team-single-elimination-bracket",
       "12-team-single-elimination-bracket",
+      "printable/8-team-bracket",
+      "printable/16-team-bracket",
       "double-elimination-bracket-generator",
       "guide/how-to-seed-a-bracket",
     ],
