@@ -5,6 +5,18 @@ import { roundTitle } from "../../lib/bracket";
 import { useT } from "../../lib/i18n";
 import { parsePastedTeams } from "../../lib/teams";
 
+/** The fields `POST /api/preview` will draw: two teams up to its limit. */
+const MIN_TEAMS = 2;
+const MAX_TEAMS = 128;
+
+/** The field size asked for in the URL, if it is one the sheet can draw. */
+function sizeFromUrl(): number | undefined {
+  const asked = Number(new URLSearchParams(window.location.search).get("teams"));
+  return Number.isInteger(asked) && asked >= MIN_TEAMS && asked <= MAX_TEAMS
+    ? asked
+    : undefined;
+}
+
 /**
  * A blank sheet, drawn by the server, for printing and filling in by hand.
  *
@@ -26,15 +38,45 @@ export function PrintableSheet({
   teams: number;
 }) {
   const [teamCount, setTeamCount] = useState(teams);
+  const [countDraft, setCountDraft] = useState<string | null>(null);
   const [names, setNames] = useState<string[]>([]);
   const [showPaste, setShowPaste] = useState(false);
   const [bulkText, setBulkText] = useState("");
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
+  const settled = useRef(false);
 
+  // The page is prerendered at its own size, so `?teams=` is read after
+  // hydration rather than during it: rendering the asked-for size on the first
+  // pass would disagree with the HTML the server sent.
   useEffect(() => {
-    setTeamCount(teams);
+    setTeamCount(sizeFromUrl() ?? teams);
     setNames([]);
+    settled.current = false;
   }, [teams]);
+
+  // And written back, so the sheet somebody sized can be sent to somebody
+  // else. The page's own size is the bare URL. The first run is skipped: it
+  // sees the prerendered size, not the one just read, and would erase it.
+  useEffect(() => {
+    if (!settled.current) {
+      settled.current = true;
+      return;
+    }
+    const url = new URL(window.location.href);
+    if (teamCount === teams) url.searchParams.delete("teams");
+    else url.searchParams.set("teams", String(teamCount));
+    if (url.href !== window.location.href) {
+      window.history.replaceState(window.history.state, "", url);
+    }
+  }, [teamCount, teams]);
+
+  const changeCount = (value: string) => {
+    setCountDraft(value);
+    const next = Number(value);
+    if (Number.isInteger(next) && next >= MIN_TEAMS && next <= MAX_TEAMS) {
+      setTeamCount(next);
+    }
+  };
 
   const filledCount = names
     .slice(0, teamCount)
@@ -83,13 +125,13 @@ export function PrintableSheet({
       event.preventDefault();
       setNames((current) => {
         const next = [...current];
-        for (let i = 0; i < parsed.length && index + i < 128; i++) {
+        for (let i = 0; i < parsed.length && index + i < MAX_TEAMS; i++) {
           next[index + i] = parsed[i].slice(0, 40);
         }
         return next;
       });
       setTeamCount((current) =>
-        Math.min(128, Math.max(current, index + parsed.length)),
+        Math.min(MAX_TEAMS, Math.max(current, index + parsed.length)),
       );
     }
   };
@@ -100,7 +142,7 @@ export function PrintableSheet({
   ) => {
     if (event.key === "Enter") {
       event.preventDefault();
-      if (index === teamCount - 1 && teamCount < 128) {
+      if (index === teamCount - 1 && teamCount < MAX_TEAMS) {
         const nextCount = teamCount + 1;
         setTeamCount(nextCount);
         setTimeout(() => {
@@ -113,7 +155,7 @@ export function PrintableSheet({
   };
 
   const addTeam = () => {
-    if (teamCount >= 128) return;
+    if (teamCount >= MAX_TEAMS) return;
     const nextCount = teamCount + 1;
     setTeamCount(nextCount);
     setTimeout(() => {
@@ -122,20 +164,20 @@ export function PrintableSheet({
   };
 
   const removeTeam = (index: number) => {
-    if (teamCount <= 2) return;
+    if (teamCount <= MIN_TEAMS) return;
     setNames((current) => {
       const next = [...current];
       next.splice(index, 1);
       return next;
     });
-    setTeamCount((current) => Math.max(2, current - 1));
+    setTeamCount((current) => Math.max(MIN_TEAMS, current - 1));
   };
 
   const applyBulkText = () => {
     const parsed = parsePastedTeams(bulkText);
     if (parsed.length > 0) {
-      setNames(parsed.slice(0, 128).map((s) => s.slice(0, 40)));
-      setTeamCount(Math.min(128, Math.max(2, parsed.length)));
+      setNames(parsed.slice(0, MAX_TEAMS).map((s) => s.slice(0, 40)));
+      setTeamCount(Math.min(MAX_TEAMS, Math.max(MIN_TEAMS, parsed.length)));
       setBulkText("");
       setShowPaste(false);
     }
@@ -144,6 +186,20 @@ export function PrintableSheet({
   return (
     <div className="print-sheet">
       <div className="print-sheet__controls">
+        <label className="print-sheet__count">
+          <span className="print-sheet__count-label">Number of teams</span>
+          <input
+            type="number"
+            inputMode="numeric"
+            className="wiz__input print-sheet__count-input"
+            min={MIN_TEAMS}
+            max={MAX_TEAMS}
+            value={countDraft ?? String(teamCount)}
+            onChange={(event) => changeCount(event.target.value)}
+            onBlur={() => setCountDraft(null)}
+          />
+        </label>
+
         <h2 className="doc__heading">Put your own teams on it</h2>
         <p className="doc__para">
           Optional — the sheet prints with numbered places if you leave this
@@ -168,7 +224,7 @@ export function PrintableSheet({
                 maxLength={40}
                 autoComplete="off"
               />
-              {teamCount > 2 && (
+              {teamCount > MIN_TEAMS && (
                 <button
                   type="button"
                   className="print-sheet__name-remove"
@@ -188,7 +244,7 @@ export function PrintableSheet({
             type="button"
             className="btn btn--quiet btn--small"
             onClick={addTeam}
-            disabled={teamCount >= 128}
+            disabled={teamCount >= MAX_TEAMS}
           >
             + Add team
           </button>

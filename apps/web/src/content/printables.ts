@@ -68,6 +68,7 @@ function printableBracket(teams: number): Page {
     related: [
       `${teams}-team-single-elimination-bracket`,
       "single-elimination-bracket-generator",
+      "printable/bracket",
       "printable/round-robin-schedule",
       "guide/how-to-seed-a-bracket",
     ],
@@ -129,6 +130,33 @@ export const PRINTABLE_PAGES: Page[] = [
   ...BRACKETS.map(printableBracket),
   ...ROUND_ROBINS.map(printableRoundRobin),
   {
+    slug: "printable/bracket",
+    kind: "printable",
+    title: "Printable Bracket: Any Number of Teams, Byes Included",
+    h1: "Printable bracket",
+    description:
+      "Print a blank knockout bracket for any number of teams, with the byes placed for you and ruled score boxes. Free, no signup.",
+    lede:
+      "Set the number of teams and print the draw: the bracket is sized up to the next power of two, the byes go to the top seeds, and every match has boxes for the score.",
+    generator: { preset: "knockout", teams: 8 },
+    facts: factsFor("knockout", 8),
+    sections: [
+      {
+        heading: "Any field, not just the tidy ones",
+        body: [
+          "Four, eight, sixteen and thirty-two fill a bracket exactly, and hardly any tournament has one of those. Five teams is a bracket of eight with three byes; twelve is sixteen with four. The sheet is drawn by the same generator the app uses, so the byes land where they would in a real draw rather than wherever a template happened to put them.",
+          "Change the number above and the sheet redraws. The link in the address bar changes with it, so the sheet you sized can be sent to whoever is printing it.",
+        ],
+      },
+    ],
+    related: [
+      "printable/8-team-bracket",
+      "printable/16-team-bracket",
+      "single-elimination-bracket-generator",
+      "guide/how-to-seed-a-bracket",
+    ],
+  },
+  {
     slug: "printable/round-robin-schedule",
     kind: "printable",
     title: "Printable Round Robin Schedule: Any Number of Teams",
@@ -136,7 +164,7 @@ export const PRINTABLE_PAGES: Page[] = [
     description:
       "Print a blank round robin schedule for any number of teams, grouped by round with score boxes. Free, no signup.",
     lede:
-      "Pick a field size and print the fixtures: every pair once, laid out round by round, with ruled boxes for the scores.",
+      "Set the number of teams and print the fixtures: every pair once, laid out round by round, with ruled boxes for the scores.",
     generator: { preset: "everyone", teams: 8 },
     facts: factsFor("everyone", 8),
     sections: [
@@ -144,6 +172,7 @@ export const PRINTABLE_PAGES: Page[] = [
         heading: "Sized for the field you actually have",
         body: [
           "A round robin grows fast: six teams is 15 matches, ten is 45, sixteen is 120. The sheet is drawn for whatever size you ask for, so it is worth checking the fixture count against the hours and courts you have before printing anything.",
+          "Change the number above and the sheet redraws. The link in the address bar changes with it, so the sheet you sized can be sent to whoever is printing it.",
         ],
       },
     ],

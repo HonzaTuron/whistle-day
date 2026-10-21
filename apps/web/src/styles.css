@@ -5071,6 +5071,20 @@ a.club__row:focus-visible {
   background: var(--surface);
 }
 
+.print-sheet__count {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.print-sheet__count-label {
+  font-weight: 600;
+}
+
+.print-sheet__count-input {
+  width: 6rem;
+}
+
 .print-sheet__names {
   margin: 0;
   padding: 0;

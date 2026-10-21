@@ -12,7 +12,7 @@
  * arrival from `POST /api/preview` and is not in the prerendered HTML either.
  */
 
-import { pageBySlug } from "./index";
+import { relatedLink, relatedTitle, type RelatedLink } from "./index";
 import type { Page } from "./types";
 
 /** The same words `PageView` puts around the content, in the page's language. */
@@ -74,11 +74,18 @@ export function pageMarkdown(page: Page, site: string): string {
     for (const item of page.faq) blocks.push(`### ${item.q}`, absolute(item.a, site));
   }
 
-  const related = (page.related ?? []).map(pageBySlug).filter((p): p is Page => p !== undefined);
+  const related = (page.related ?? [])
+    .map(relatedLink)
+    .filter((link): link is RelatedLink => link !== undefined);
   if (related.length > 0) {
     blocks.push(
       `## ${chrome.related}`,
-      related.map((item) => `- [${item.h1}](${site}/${item.slug})`).join("\n"),
+      related
+        .map((link) => {
+          const query = link.teams ? `?teams=${link.teams}` : "";
+          return `- [${relatedTitle(link)}](${site}/${link.page.slug}${query})`;
+        })
+        .join("\n"),
     );
   }
 

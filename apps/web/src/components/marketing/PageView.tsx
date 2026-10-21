@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { useState } from "react";
-import { pageBySlug } from "../../content";
+import { relatedLink, relatedTitle, type RelatedLink } from "../../content";
 import type { CodeBlock, Page } from "../../content/types";
 import { PrintableSheet } from "./PrintableSheet";
 import { SiteNav } from "./SiteNav";
@@ -109,6 +109,7 @@ export function PageView({ page }: { page: Page }) {
 
           {page.kind === "printable" && page.generator?.teams ? (
             <PrintableSheet
+              key={page.slug}
               request={{
                 format: FORMAT_OF[page.generator.preset],
                 teams: page.generator.teams,
@@ -250,8 +251,8 @@ function CodeBlockView({ block }: { block: CodeBlock }) {
 
 function Related({ page }: { page: Page }) {
   const related = (page.related ?? [])
-    .map(pageBySlug)
-    .filter((p): p is Page => p !== undefined);
+    .map(relatedLink)
+    .filter((link): link is RelatedLink => link !== undefined);
 
   if (related.length === 0) return null;
 
@@ -260,10 +261,15 @@ function Related({ page }: { page: Page }) {
     <nav className="doc__related" aria-label={heading}>
       <h2 className="doc__heading">{heading}</h2>
       <ul className="doc__related-list">
-        {related.map((item) => (
-          <li key={item.slug}>
-            <Link to="/$" params={{ _splat: item.slug }} className="doc__related-link">
-              {item.h1}
+        {related.map((link) => (
+          <li key={link.page.slug}>
+            <Link
+              to="/$"
+              params={{ _splat: link.page.slug }}
+              search={link.teams ? { teams: link.teams } : {}}
+              className="doc__related-link"
+            >
+              {relatedTitle(link)}
             </Link>
           </li>
         ))}

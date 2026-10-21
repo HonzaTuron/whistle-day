@@ -43,7 +43,7 @@ const ALL: Page[] = [
   ...dated(OPERATIONAL_PAGES, "2026-09-04", "2026-10-05"),
   ...dated(GUIDE_PAGES, "2026-09-04", "2026-09-17"),
   ...dated(COMPARISON_PAGES, "2026-09-04", "2026-09-17"),
-  ...dated(PRINTABLE_PAGES, "2026-09-04", "2026-09-17"),
+  ...dated(PRINTABLE_PAGES, "2026-09-04", "2026-10-21"),
   ...dated(LEGAL_PAGES, "2026-09-08", "2026-10-01"),
 ];
 
@@ -80,7 +80,10 @@ const BY_SLUG = new Map(ALL.map((page) => [page.slug, page]));
  */
 export const PAGES: Page[] = ALL.map((page) => ({
   ...page,
-  related: page.related?.filter((slug) => BY_SLUG.has(slug) && slug !== page.slug),
+  related: page.related?.filter((entry) => {
+    const slug = slugOf(entry);
+    return BY_SLUG.has(slug) && slug !== page.slug;
+  }),
   // The English padel page is the other half of the Spanish generator. Set
   // here so the two hreflang links cannot point at a slug the other does not
   // have — both slugs are in ALL, or this throws below when the alternate
@@ -110,6 +113,32 @@ export const SLUG_ALIASES: Record<string, string> = {
 export function pageBySlug(slug: string): Page | undefined {
   return RESOLVED.get(SLUG_ALIASES[slug] ?? slug);
 }
+
+/**
+ * A `related` entry is a slug, or a slug asking for a field size:
+ * "printable/bracket?teams=12". That is how a page about twelve teams points
+ * at a sheet drawn for twelve without a printable page for every size.
+ */
+export interface RelatedLink {
+  page: Page;
+  teams?: number;
+}
+
+function slugOf(entry: string): string {
+  return entry.split("?")[0]!;
+}
+
+/** A `related` entry, resolved to its page and the size it asks for. */
+export function relatedLink(entry: string): RelatedLink | undefined {
+  const page = pageBySlug(slugOf(entry));
+  if (!page) return undefined;
+  const teams = Number(new URLSearchParams(entry.split("?")[1]).get("teams"));
+  return Number.isInteger(teams) && teams > 0 ? { page, teams } : { page };
+}
+
+/** The words a related link is shown with. */
+export const relatedTitle = ({ page, teams }: RelatedLink): string =>
+  teams ? `${page.h1} for ${teams} teams` : page.h1;
 
 /** Where an alias should redirect to, or undefined if the slug is canonical. */
 export function canonicalSlug(slug: string): string | undefined {
