@@ -374,9 +374,14 @@ function Rounds({
 }) {
   const t = useT();
 
-  const rounds = useMemo(() => {
-    const isBye = (key: string) => slots.get(key)?.source_type === "bye";
+  const isBye = (key: string) => slots.get(key)?.source_type === "bye";
 
+  const fixtureByKey = useMemo(
+    () => new Map(fixtures.map((fixture) => [fixture.key, fixture])),
+    [fixtures],
+  );
+
+  const rounds = useMemo(() => {
     const byRound = new Map<number, FixtureDraft[]>();
     for (const fixture of fixtures) {
       if (isBye(fixture.home_slot_key) || isBye(fixture.away_slot_key)) continue;
@@ -387,9 +392,18 @@ function Rounds({
     return [...byRound.entries()].sort(([a], [b]) => a - b);
   }, [fixtures, slots]);
 
-  const side = (key: string) => {
+  const side = (key: string): string => {
     const slot = slots.get(key);
     if (!slot) return "TBD";
+
+    // 0. A bye is not on the sheet, so "Winner R161" would point at a match
+    // nobody can find. Whoever drew the bye is its winner: name them instead.
+    if (slot.source_type === "fixture_winner") {
+      const fed = fixtureByKey.get(slot.source_fixture_key);
+      if (fed && isBye(fed.home_slot_key) !== isBye(fed.away_slot_key)) {
+        return side(isBye(fed.home_slot_key) ? fed.away_slot_key : fed.home_slot_key);
+      }
+    }
 
     // 1. If slot has entry ID matching preview{N}
     const previewMatch = slot.entry?.match(/^preview(\d+)$/);
