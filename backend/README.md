@@ -1,7 +1,11 @@
 # backend
 
+[English](README.md) | [Čeština](README.cs.md) | [Español](README.es.md)
+
 PocketBase used as a **Go framework**. `go build` produces a server binary with
 the tournament logic compiled in.
+
+> **AI Agent & MCP Support:** The backend exposes a full Model Context Protocol server at `/api/mcp` (`backend/internal/mcp`), enabling autonomous AI agents like Claude Code and ChatGPT to create and run tournaments through natural language. Learn more at **[whistle.day/mcp](https://whistle.day/mcp)**.
 
 ```
 backend/

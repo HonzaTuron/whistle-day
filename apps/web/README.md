@@ -1,6 +1,10 @@
 # @whistleday/web
 
+[English](README.md) | [Čeština](README.cs.md) | [Español](README.es.md)
+
 Two public screens, and the two the organiser drives them from.
+
+> **AI Agent Control:** While these web screens provide the human UI, tournaments can also be created, configured, and managed autonomously by AI agents (Claude, ChatGPT, etc.) via MCP. See **[whistle.day/mcp](https://whistle.day/mcp)** for full details and client setup guides.
 
 | Route | For |
 |---|---|

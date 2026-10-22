@@ -1,6 +1,10 @@
 # @whistleday/engine
 
-Shared domain types for the frontend. **Types only** — there is no logic here.
+[English](README.md) | [Čeština](README.cs.md) | [Español](README.es.md)
+
+Shared domain types for the frontend and client tooling. **Types only** — there is no logic here.
+
+> **AI Agent & MCP Tooling:** These models and types mirror the structures returned by the backend and used by AI agents operating via the Model Context Protocol. See **[whistle.day/mcp](https://whistle.day/mcp)** for details on agent capabilities.
 
 Bracket generation, standings and slot resolution all live in Go
 (`backend/internal/tournament/`). They used to be duplicated in TypeScript so

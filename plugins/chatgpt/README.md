@@ -1,9 +1,13 @@
 # The ChatGPT plugin
 
+[English](README.md) | [Čeština](README.cs.md) | [Español](README.es.md)
+
 This directory is the package OpenAI's plugin directory takes: a manifest, the
 address of the MCP server, two skills and two icons. There is no code in it.
 Everything the plugin does is `/api/mcp`, the same server every other MCP
 client talks to.
+
+> **AI Agent Overview:** Whistle.day can be operated by AI agents across multiple ecosystems. For client configuration instructions and agent workflows, visit **[whistle.day/mcp](https://whistle.day/mcp)**.
 
 | | |
 |---|---|

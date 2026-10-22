@@ -1,5 +1,7 @@
 # Deploying Whistle.day
 
+[English](README.md) | [Čeština](README.cs.md) | [Español](README.es.md)
+
 Three processes on one box. That is not a starting point to grow out of — it
 is what SQLite picks for you. The API is a single writer on a local disk, so
 there is no second machine to add, and picking a host for scaling you cannot
@@ -11,6 +13,8 @@ an NVMe.
 | `caddy` | `:80`, `:443` | TLS, the static files, and the routing |
 | `whistleday-api` | `127.0.0.1:8090` | PocketBase: the API, the realtime stream, MCP |
 | `whistleday-web` | `127.0.0.1:3000` | renders the app screens |
+
+> **AI Agent Endpoint:** The production deployment exposes the Model Context Protocol endpoint at `https://whistle.day/api/mcp`. AI agents can manage tournaments directly; see **[whistle.day/mcp](https://whistle.day/mcp)** for setup and documentation.
 
 The hundred and twenty-three marketing pages are rendered at build time and
 served from disk; they never reach a process. Only `/t`, `/display`, `/m`,

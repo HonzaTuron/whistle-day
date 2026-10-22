@@ -1,8 +1,12 @@
 # Whistle.day
 
+[English](README.md) | [Čeština](README.cs.md) | [Español](README.es.md)
+
 Tournament organiser with arbitrary stage ordering — groups, playoff, Swiss, in
 any sequence — and a public projector view. Running at
 **[whistle.day](https://whistle.day)**.
+
+> **AI Agent Ready:** Whistle.day can be completely controlled by an AI agent (Claude Code, ChatGPT, Cursor, or any MCP client) via the Model Context Protocol. You can create tournaments, schedule courts, enter scores, and resolve standings through natural language. Learn how to connect your agent at **[whistle.day/mcp](https://whistle.day/mcp)**.
 
 **Status: a whole tournament runs off a phone — or off as many phones as there
 are courts.** Name it, say what is being played, add the teams one by one, pick
@@ -163,6 +167,8 @@ reads the registrations out of the source and fails on one the reference does
 not list.
 
 ## An agent can run one too
+
+Whistle.day can be fully operated by an AI agent over the Model Context Protocol (MCP). See **[whistle.day/mcp](https://whistle.day/mcp)** for configuration guides for Claude Code, Claude Desktop, and ChatGPT.
 
 `/api/mcp` is an MCP server over Streamable HTTP — one endpoint, `POST` for a
 request, `GET` for the stream, `DELETE` to end a session. Twenty-one tools: the
