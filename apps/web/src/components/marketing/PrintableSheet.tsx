@@ -2,12 +2,71 @@ import type { FixtureDraft, SlotDraft, StagePlan } from "@whistleday/engine";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { usePreview, type PreviewRequest } from "../../api/preview";
 import { roundTitle } from "../../lib/bracket";
-import { useT } from "../../lib/i18n";
+import { translate, type Locale, type MessageKey, type Vars } from "../../lib/i18n";
 import { parsePastedTeams } from "../../lib/teams";
 
 /** The fields `POST /api/preview` will draw: two teams up to its limit. */
 const MIN_TEAMS = 2;
 const MAX_TEAMS = 128;
+
+const PRINT_I18N = {
+  en: {
+    teamCount: "Number of teams",
+    putTeamsHeading: "Put your own teams on it",
+    putTeamsPara:
+      "Optional — the sheet prints with numbered places if you leave this empty. You can paste a list of clubs into any box, add more teams, or type them in.",
+    placeholder: "Team",
+    addTeam: "+ Add team",
+    pasteTeams: "Paste list of teams",
+    hidePaste: "Hide paste box",
+    clearNames: "Clear names",
+    pastePlaceholder: "Paste team or club names here (one per line, or comma-separated)…",
+    applyTeams: "Apply teams",
+    cancel: "Cancel",
+    printSheet: (n: number) => `Print this sheet (${n} teams)`,
+    drawing: "Drawing it…",
+    failed: (msg: string) =>
+      `The draw could not be fetched (${msg}). The numbers above are still right — they are worked out here rather than asked for.`,
+    round: (n: number) => `Round ${n}`,
+  },
+  cs: {
+    teamCount: "Počet týmů",
+    putTeamsHeading: "Doplňte vlastní týmy",
+    putTeamsPara:
+      "Volitelné – pokud pole necháte prázdné, formulář se vytiskne s očíslovanými pozicemi (Tým 1, Tým 2...). Můžete vložit seznam týmů nebo je vepsat ručně.",
+    placeholder: "Tým",
+    addTeam: "+ Přidat tým",
+    pasteTeams: "Vložit seznam týmů",
+    hidePaste: "Skrýt pole pro vložení",
+    clearNames: "Vymazat názvy",
+    pastePlaceholder: "Vložte sem názvy týmů nebo klubů (jeden na řádek nebo oddělené čárkou)…",
+    applyTeams: "Použít týmy",
+    cancel: "Zrušit",
+    printSheet: (n: number) => `Vytisknout tento rozpis (${n} týmů)`,
+    drawing: "Generuji rozpis…",
+    failed: (msg: string) =>
+      `Rozpis se nepodařilo načíst (${msg}). Čísla nahoře jsou stále správná – počítají se přímo zde.`,
+    round: (n: number) => `${n}. kolo`,
+  },
+  es: {
+    teamCount: "Número de equipos",
+    putTeamsHeading: "Pon tus propios equipos",
+    putTeamsPara:
+      "Opcional: la hoja se imprime con puestos numerados si lo dejas vacío. Puedes pegar una lista de clubes, añadir más equipos o escribirlos.",
+    placeholder: "Equipo",
+    addTeam: "+ Añadir equipo",
+    pasteTeams: "Pegar lista de equipos",
+    hidePaste: "Ocultar cuadro",
+    clearNames: "Borrar nombres",
+    pastePlaceholder: "Pega los nombres aquí (uno por línea o separados por comas)…",
+    applyTeams: "Aplicar equipos",
+    cancel: "Cancelar",
+    printSheet: (n: number) => `Imprimir esta hoja (${n} equipos)`,
+    drawing: "Generando…",
+    failed: (msg: string) => `No se pudo obtener el cuadro (${msg}).`,
+    round: (n: number) => `Ronda ${n}`,
+  },
+};
 
 /** The field size asked for in the URL, if it is one the sheet can draw. */
 function sizeFromUrl(): number | undefined {
@@ -33,9 +92,11 @@ function sizeFromUrl(): number | undefined {
 export function PrintableSheet({
   request,
   teams,
+  locale = "en",
 }: {
   request: PreviewRequest;
   teams: number;
+  locale?: Locale;
 }) {
   const [teamCount, setTeamCount] = useState(teams);
   const [countDraft, setCountDraft] = useState<string | null>(null);
@@ -44,6 +105,8 @@ export function PrintableSheet({
   const [bulkText, setBulkText] = useState("");
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
   const settled = useRef(false);
+
+  const ui = PRINT_I18N[locale] ?? PRINT_I18N.en;
 
   // The page is prerendered at its own size, so `?teams=` is read after
   // hydration rather than during it: rendering the asked-for size on the first
@@ -86,9 +149,9 @@ export function PrintableSheet({
     () =>
       Array.from(
         { length: teamCount },
-        (_, i) => (names[i]?.trim() || `Team ${i + 1}`).slice(0, 40),
+        (_, i) => (names[i]?.trim() || `${ui.placeholder} ${i + 1}`).slice(0, 40),
       ),
-    [teamCount, names],
+    [teamCount, names, ui.placeholder],
   );
 
   const withNames = useMemo<PreviewRequest>(() => {
@@ -187,7 +250,7 @@ export function PrintableSheet({
     <div className="print-sheet">
       <div className="print-sheet__controls">
         <label className="print-sheet__count">
-          <span className="print-sheet__count-label">Number of teams</span>
+          <span className="print-sheet__count-label">{ui.teamCount}</span>
           <input
             type="number"
             inputMode="numeric"
@@ -200,12 +263,8 @@ export function PrintableSheet({
           />
         </label>
 
-        <h2 className="doc__heading">Put your own teams on it</h2>
-        <p className="doc__para">
-          Optional — the sheet prints with numbered places if you leave this
-          empty. You can paste a list of clubs into any box, add more teams, or
-          type them in.
-        </p>
+        <h2 className="doc__heading">{ui.putTeamsHeading}</h2>
+        <p className="doc__para">{ui.putTeamsPara}</p>
 
         <ol className="print-sheet__names">
           {Array.from({ length: teamCount }, (_, i) => (
@@ -219,8 +278,8 @@ export function PrintableSheet({
                 onChange={(event) => handleNameChange(i, event.target.value)}
                 onPaste={(event) => handlePaste(event, i)}
                 onKeyDown={(event) => handleKeyDown(event, i)}
-                placeholder={`Team ${i + 1}`}
-                aria-label={`Team ${i + 1}`}
+                placeholder={`${ui.placeholder} ${i + 1}`}
+                aria-label={`${ui.placeholder} ${i + 1}`}
                 maxLength={40}
                 autoComplete="off"
               />
@@ -229,8 +288,8 @@ export function PrintableSheet({
                   type="button"
                   className="print-sheet__name-remove"
                   onClick={() => removeTeam(i)}
-                  aria-label={`Remove Team ${i + 1}`}
-                  title={`Remove Team ${i + 1}`}
+                  aria-label={`Remove ${ui.placeholder} ${i + 1}`}
+                  title={`Remove ${ui.placeholder} ${i + 1}`}
                 >
                   &times;
                 </button>
@@ -246,14 +305,14 @@ export function PrintableSheet({
             onClick={addTeam}
             disabled={teamCount >= MAX_TEAMS}
           >
-            + Add team
+            {ui.addTeam}
           </button>
           <button
             type="button"
             className="btn btn--quiet btn--small"
             onClick={() => setShowPaste((prev) => !prev)}
           >
-            {showPaste ? "Hide paste box" : "Paste list of teams"}
+            {showPaste ? ui.hidePaste : ui.pasteTeams}
           </button>
           {filledCount > 0 && (
             <button
@@ -261,7 +320,7 @@ export function PrintableSheet({
               className="btn btn--quiet btn--small"
               onClick={() => setNames([])}
             >
-              Clear names
+              {ui.clearNames}
             </button>
           )}
         </div>
@@ -271,7 +330,7 @@ export function PrintableSheet({
             <textarea
               className="wiz__input"
               rows={4}
-              placeholder="Paste team or club names here (one per line, or comma-separated)…"
+              placeholder={ui.pastePlaceholder}
               value={bulkText}
               onChange={(e) => setBulkText(e.target.value)}
             />
@@ -282,14 +341,14 @@ export function PrintableSheet({
                 onClick={applyBulkText}
                 disabled={bulkText.trim().length === 0}
               >
-                Apply teams
+                {ui.applyTeams}
               </button>
               <button
                 type="button"
                 className="btn btn--quiet btn--small"
                 onClick={() => setShowPaste(false)}
               >
-                Cancel
+                {ui.cancel}
               </button>
             </div>
           </div>
@@ -301,21 +360,20 @@ export function PrintableSheet({
           onClick={() => window.print()}
           disabled={state.status !== "ready"}
         >
-          Print this sheet ({teamCount} teams)
+          {ui.printSheet(teamCount)}
         </button>
       </div>
 
       {state.status === "loading" && (
-        <p className="doc__para print-sheet__status">Drawing it…</p>
+        <p className="doc__para print-sheet__status">{ui.drawing}</p>
       )}
       {state.status === "failed" && (
         <p className="doc__para print-sheet__status">
-          The draw could not be fetched ({state.message}). The numbers above are
-          still right — they are worked out here rather than asked for.
+          {ui.failed(state.message)}
         </p>
       )}
       {state.status === "ready" && (
-        <Plan plan={state.plan} effectiveNames={effectiveNames} />
+        <Plan plan={state.plan} effectiveNames={effectiveNames} locale={locale} />
       )}
     </div>
   );
@@ -329,9 +387,11 @@ export function PrintableSheet({
 function Plan({
   plan,
   effectiveNames,
+  locale = "en",
 }: {
   plan: StagePlan;
   effectiveNames: string[];
+  locale?: Locale;
 }) {
   const slots = useMemo(
     () => new Map(plan.slots.map((slot) => [slot.key, slot])),
@@ -353,6 +413,7 @@ function Plan({
               slots={slots}
               bracket={pool.kind !== "group"}
               effectiveNames={effectiveNames}
+              locale={locale}
             />
           </section>
         );
@@ -366,13 +427,16 @@ function Rounds({
   slots,
   bracket,
   effectiveNames,
+  locale = "en",
 }: {
   fixtures: FixtureDraft[];
   slots: Map<string, SlotDraft>;
   bracket: boolean;
   effectiveNames: string[];
+  locale?: Locale;
 }) {
-  const t = useT();
+  const t = (key: MessageKey, vars?: Vars) => translate(locale, key, vars);
+  const ui = PRINT_I18N[locale] ?? PRINT_I18N.en;
 
   const isBye = (key: string) => slots.get(key)?.source_type === "bye";
 
@@ -441,7 +505,7 @@ function Rounds({
           <h4 className="print-sheet__round-name">
             {bracket
               ? roundTitle(t, rounds.length - index)
-              : `Round ${round + 1}`}
+              : ui.round(round + 1)}
           </h4>
           <table className="print-sheet__table">
             <colgroup>

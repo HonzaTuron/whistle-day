@@ -14,6 +14,7 @@
  */
 
 import { COMPARISON_PAGES } from "./comparisons";
+import { CZECH_ALIASES, CZECH_PAGES } from "./czech";
 import { FORMAT_PAGES, HUB } from "./formats";
 import { GUIDE_PAGES } from "./guides";
 import { LEGAL_PAGES } from "./legal";
@@ -36,14 +37,15 @@ const dated = (pages: Page[], published: string, updated: string): Page[] =>
   pages.map((page) => ({ published, updated, ...page }));
 
 const ALL: Page[] = [
-  ...dated([HUB, ...FORMAT_PAGES], "2026-09-04", "2026-09-17"),
-  ...dated(PARAMETRIC_PAGES, "2026-09-04", "2026-09-17"),
+  ...dated([HUB, ...FORMAT_PAGES], "2026-09-04", "2026-10-22"),
+  ...dated(PARAMETRIC_PAGES, "2026-09-04", "2026-10-22"),
   ...dated(SPORT_PAGES, "2026-09-04", "2026-09-21"),
   ...dated(PADEL_ES_PAGES, "2026-09-21", "2026-09-21"),
+  ...dated(CZECH_PAGES, "2026-10-22", "2026-10-22"),
   ...dated(OPERATIONAL_PAGES, "2026-09-04", "2026-10-05"),
   ...dated(GUIDE_PAGES, "2026-09-04", "2026-09-17"),
   ...dated(COMPARISON_PAGES, "2026-09-04", "2026-09-17"),
-  ...dated(PRINTABLE_PAGES, "2026-09-04", "2026-10-21"),
+  ...dated(PRINTABLE_PAGES, "2026-09-04", "2026-10-22"),
   ...dated(LEGAL_PAGES, "2026-09-08", "2026-10-01"),
 ];
 
@@ -99,6 +101,7 @@ const RESOLVED = new Map(PAGES.map((page) => [page.slug, page]));
 export const SLUG_ALIASES: Record<string, string> = {
   ...PARAMETRIC_ALIASES,
   ...PADEL_ES_ALIASES,
+  ...CZECH_ALIASES,
   "privacy-policy": "privacy",
   "terms-of-service": "terms",
   "terms-of-use": "terms",

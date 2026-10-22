@@ -27,7 +27,7 @@ import {
   swissRounds,
   type PresetId,
 } from "../lib/presets";
-import type { Fact } from "./types";
+import type { Fact, TeamGrid } from "./types";
 
 /**
  * The marketing pages are English, so they carry an English translator rather
@@ -256,4 +256,205 @@ export function factsFor(preset: PresetId, teams: number): Fact[] {
         time,
       ];
   }
+}
+
+const csT = (key: MessageKey, vars?: Vars) => translate("cs", key, vars);
+
+/** Czech round progression for knockouts, e.g. "Čtvrtfinále → Semifinále → Finále". */
+export const knockoutPathCs = (teams: number) =>
+  Array.from({ length: knockoutRounds(teams) }, (_, i) =>
+    roundTitle(csT, knockoutRounds(teams) - i),
+  );
+
+/** "cca 3 h na 2 kurtech" */
+export function durationCs(preset: PresetId, teams: number, courts = 2) {
+  const { minutes } = estimate(presetById(preset), teams, courts);
+  return `${formatDuration(csT, minutes)} na ${courts} ${courts === 1 ? "kurtu" : courts < 5 ? "kurtech" : "kurtech"}`;
+}
+
+/** "2 skupiny po 4" */
+export function poolShapeCs(teams: number): string {
+  const sizes = poolSizes(teams);
+  const even = sizes.every((size) => size === sizes[0]);
+  const label = sizes.length === 1 ? "skupina" : sizes.length < 5 ? "skupiny" : "skupin";
+  return even
+    ? `${sizes.length} ${label} po ${sizes[0]}`
+    : `${sizes.length} ${label} po ${sizes.join(", ")}`;
+}
+
+/** Czech fact blocks for marketing pages. */
+export function factsForCs(preset: PresetId, teams: number): Fact[] {
+  const courts = 2;
+  const time = {
+    label: "Přibližná délka",
+    value: durationCs(preset, teams, courts),
+    note: "Při 25 minutách na zápas, kurty běží souběžně.",
+  };
+
+  switch (preset) {
+    case "knockout": {
+      const byes = byeCount(teams);
+      return [
+        {
+          label: "Zápasů",
+          value: String(knockoutMatches(teams)),
+          note: teams >= 4 ? "Včetně zápasu o 3. místo." : undefined,
+        },
+        {
+          label: "Kol",
+          value: String(knockoutRounds(teams)),
+          note: knockoutPathCs(teams).join(" → "),
+        },
+        {
+          label: "Volné losy (byes)",
+          value: String(byes),
+          note:
+            byes === 0
+              ? `${teams} je mocnina 2, takže nikdo v 1. kole nestojí.`
+              : `${byes} ${byes === 1 ? "tým postupuje" : byes < 5 ? "týmy postupují" : "týmů postupuje"} přímo do 2. kola (pavouk pro ${bracketSize(teams)}).`,
+        },
+        time,
+      ];
+    }
+
+    case "everyone":
+      return [
+        {
+          label: "Zápasů",
+          value: String(combinations(teams)),
+          note: "Každý s každým jednou.",
+        },
+        {
+          label: "Zápasů na tým",
+          value: String(matchesEach(teams)),
+          note: "Stejný počet pro každého bez ohledu na výsledky.",
+        },
+        {
+          label: "Kol",
+          value: String(roundRobinRounds(teams)),
+          note:
+            teams % 2 === 0
+              ? "Všichni hrají v každém kole."
+              : "Lichý počet: v každém kole má 1 tým pauzu (bye).",
+        },
+        time,
+      ];
+
+    case "swiss": {
+      const rounds = swissRounds(teams);
+      return [
+        {
+          label: "Kol",
+          value: String(rounds),
+          note: "Minimum kol pro nalezení neporaženého vítěze.",
+        },
+        {
+          label: "Zápasů",
+          value: String(presetById("swiss").matches(teams)),
+          note: "Včetně semifinále a zápasu o 3. místo pro nejlepší 4.",
+        },
+        {
+          label: "Zápasů na tým",
+          value: String(rounds),
+          note: "Nikdo nevypadává – všichni odehrají všechna kola.",
+        },
+        time,
+      ];
+    }
+
+    case "groups":
+      return [
+        {
+          label: "Skupiny",
+          value: String(poolCount(teams)),
+          note: poolShapeCs(teams),
+        },
+        {
+          label: "Zápasů",
+          value: String(presetById("groups").matches(teams)),
+          note: "Zápasy ve skupinách plus navazující play-off pavouk.",
+        },
+        {
+          label: "Zaručeno zápasů",
+          value: String(Math.min(...poolSizes(teams)) - 1),
+          note: "Předtím než kdokoliv může z turnaje vypadnout.",
+        },
+        time,
+      ];
+
+    default:
+      return factsFor(preset, teams);
+  }
+}
+
+/**
+ * Grid of all single-elimination bracket variants from 4 to 32 teams.
+ */
+export function singleElimGrid(locale: "en" | "cs" = "en"): TeamGrid {
+  const isCs = locale === "cs";
+  return {
+    heading: isCs
+      ? "Pavouk turnaje podle počtu týmů (4 až 32 týmů)"
+      : "Single Elimination Brackets by Team Count (4 to 32 teams)",
+    description: isCs
+      ? "Vyberte přesný počet týmů vašeho turnaje. U počtů, které nejsou mocninou dvou (např. 10, 12 nebo 14 týmů), pavouk automaticky nasazuje volné losy (byes)."
+      : "Select your exact field size from 4 to 32 teams. Brackets that are not a power of two (such as 10, 12, or 14 teams) automatically assign first-round byes to top seeds.",
+    items: Array.from({ length: 29 }, (_, i) => {
+      const count = i + 4;
+      const byes = byeCount(count);
+      const isPower = byes === 0;
+      let badge = "";
+      if (isCs) {
+        badge = isPower
+          ? "Bez byes"
+          : byes === 1
+            ? "1 volný los"
+            : byes < 5
+              ? `${byes} volné losy`
+              : `${byes} volných losů`;
+      } else {
+        badge = isPower ? "0 byes" : plural(byes, "bye");
+      }
+      return {
+        teams: count,
+        slug: `${count}-team-single-elimination-bracket`,
+        label: isCs ? `${count} ${count < 5 ? "týmy" : "týmů"}` : `${count} teams`,
+        badge,
+        isPowerOfTwo: isPower,
+      };
+    }),
+  };
+}
+
+/**
+ * Grid of all round-robin schedule variants from 4 to 32 teams.
+ */
+export function roundRobinGrid(locale: "en" | "cs" = "en"): TeamGrid {
+  const isCs = locale === "cs";
+  return {
+    heading: isCs
+      ? "Rozpisy každý s každým podle počtu týmů (4 až 32 týmů)"
+      : "Round Robin Schedules by Team Count (4 to 32 teams)",
+    description: isCs
+      ? "Kompletní rozpis zápasů každý s každým a automatická tabulka. U lichých počtů týmů rozpis plánuje volno (bye) v každém kole."
+      : "Complete match schedules where every team plays every opponent once, with a self-updating league table.",
+    items: Array.from({ length: 29 }, (_, i) => {
+      const count = i + 4;
+      const matches = combinations(count);
+      const isOdd = count % 2 === 1;
+      let badge = "";
+      if (isCs) {
+        badge = `${matches} ${matches < 5 ? "zápasy" : "zápasů"}`;
+      } else {
+        badge = `${matches} matches`;
+      }
+      return {
+        teams: count,
+        slug: `${count}-team-round-robin-schedule`,
+        label: isCs ? `${count} ${count < 5 ? "týmy" : "týmů"}` : `${count} teams`,
+        badge,
+        isPowerOfTwo: !isOdd,
+      };
+    }),
+  };
 }

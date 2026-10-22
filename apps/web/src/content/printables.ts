@@ -139,6 +139,7 @@ export const PRINTABLE_PAGES: Page[] = [
     lede:
       "Set the number of teams and print the draw: the bracket is sized up to the next power of two, the byes go to the top seeds, and every match has boxes for the score.",
     generator: { preset: "knockout", teams: 8 },
+    alternate: { hreflang: "cs", slug: "printable/pavouk-turnaje" },
     facts: factsFor("knockout", 8),
     sections: [
       {
@@ -166,6 +167,7 @@ export const PRINTABLE_PAGES: Page[] = [
     lede:
       "Set the number of teams and print the fixtures: every pair once, laid out round by round, with ruled boxes for the scores.",
     generator: { preset: "everyone", teams: 8 },
+    alternate: { hreflang: "cs", slug: "printable/rozpis-kazdy-s-kazdym" },
     facts: factsFor("everyone", 8),
     sections: [
       {

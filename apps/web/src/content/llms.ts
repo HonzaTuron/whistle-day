@@ -53,6 +53,7 @@ export function llmsTxt(pages: Page[], site: string): string {
   // for, so it leads rather than sitting halfway down "Running the day".
   const agents = pages.filter((page) => page.slug === "mcp");
   const english = pages.filter((page) => !page.locale && page.slug !== "mcp");
+  const czech = pages.filter((page) => page.locale === "cs");
   const spanish = pages.filter((page) => page.locale === "es");
 
   const blocks = [
@@ -65,6 +66,7 @@ export function llmsTxt(pages: Page[], site: string): string {
         site,
       ),
     ),
+    ...section("Česky", czech, site),
     ...section("En español", spanish, site),
     ...section(
       "Optional",

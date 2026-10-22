@@ -78,20 +78,25 @@ function MarketingPage() {
  * has no twin — a hreflang that points only at itself is noise.
  */
 function languageLinks(page: Page, site: string): { rel: "alternate"; hrefLang: string; href: string }[] {
-  if (!page.alternate && !page.locale) return [];
+  const alts = page.alternates ?? (page.alternate ? [page.alternate] : []);
+  if (alts.length === 0 && !page.locale) return [];
   const self = page.locale ?? "en";
   const links: { rel: "alternate"; hrefLang: string; href: string }[] = [
     { rel: "alternate", hrefLang: self, href: `${site}/${page.slug}` },
   ];
-  if (page.alternate) {
+  for (const alt of alts) {
     links.push({
       rel: "alternate",
-      hrefLang: page.alternate.hreflang,
-      href: `${site}/${page.alternate.slug}`,
+      hrefLang: alt.hreflang,
+      href: `${site}/${alt.slug}`,
     });
   }
   const english =
-    self === "en" ? `${site}/${page.slug}` : page.alternate ? `${site}/${page.alternate.slug}` : undefined;
+    self === "en"
+      ? `${site}/${page.slug}`
+      : alts.find((a) => a.hreflang === "en")
+        ? `${site}/${alts.find((a) => a.hreflang === "en")!.slug}`
+        : undefined;
   if (english) links.push({ rel: "alternate", hrefLang: "x-default", href: english });
   return links;
 }

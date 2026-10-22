@@ -7,7 +7,7 @@
  * somebody arrives on a promise and leaves on a broken wizard.
  */
 
-import { factsFor, poolShape } from "./shape";
+import { factsFor, poolShape, roundRobinGrid, singleElimGrid } from "./shape";
 import type { Page } from "./types";
 
 export const HUB: Page = {
@@ -20,6 +20,8 @@ export const HUB: Page = {
   lede:
     "Give it a list of teams and how long the day should be. It draws the tournament, schedules it across your courts, and gives you a link and a QR code to hand out. Then it runs the day: enter a result and the tables rebuild, the bracket fills in, and the next Swiss round draws itself.",
   generator: { preset: "groups", teams: 8 },
+  alternate: { hreflang: "cs", slug: "generator-turnaju" },
+  teamGrids: [singleElimGrid("en"), roundRobinGrid("en")],
   sections: [
     {
       heading: "Pick a format by how long you have, not by what it is called",
@@ -77,6 +79,8 @@ export const FORMAT_PAGES: Page[] = [
     lede:
       "Everybody plays everybody, and the table decides it. No knockout, nobody sent home after two matches, and the same number of games for every team however the results go.",
     generator: { preset: "everyone", teams: 6 },
+    alternate: { hreflang: "cs", slug: "rozpis-kazdy-s-kazdym-tabulka" },
+    teamGrids: [roundRobinGrid("en")],
     facts: factsFor("everyone", 6),
     sections: [
       {
@@ -140,6 +144,8 @@ export const FORMAT_PAGES: Page[] = [
     lede:
       "Lose once and you are out. The quickest way to a winner, and the least playing time for whoever draws badly. Any number of teams: the bracket is sized up to the next power of two and the byes are handed out for you.",
     generator: { preset: "knockout", teams: 8 },
+    alternate: { hreflang: "cs", slug: "pavouk-turnaje-generator" },
+    teamGrids: [singleElimGrid("en")],
     facts: factsFor("knockout", 8),
     sections: [
       {
@@ -254,6 +260,7 @@ export const FORMAT_PAGES: Page[] = [
     lede:
       "No groups and nobody knocked out. Everyone plays the same number of rounds, each one against somebody on the same record: win and you meet a winner, lose and you meet somebody who lost. The table sorts itself out.",
     generator: { preset: "swiss", teams: 16 },
+    alternate: { hreflang: "cs", slug: "svycarsky-system-turnaj-rozpis" },
     facts: factsFor("swiss", 16),
     sections: [
       {
@@ -316,6 +323,7 @@ export const FORMAT_PAGES: Page[] = [
     lede:
       "Everyone gets a few guaranteed matches, the top of each group carries on, and the playoff seeds itself from the tables the moment they are final. What most one-day tournaments actually do.",
     generator: { preset: "groups", teams: 12 },
+    alternate: { hreflang: "cs", slug: "skupiny-a-play-off-generator" },
     facts: factsFor("groups", 12),
     sections: [
       {

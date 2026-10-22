@@ -22,22 +22,30 @@ import type { MessageKey } from "../../lib/i18n";
  */
 
 /** Where the bar points. Slugs, so a rename is caught by the filter below. */
-const DESTINATIONS: { slug: string; key: MessageKey }[] = [
-  { slug: "tournament-generator", key: "nav.formats" },
-  { slug: "guide/how-to-run-a-one-day-tournament", key: "nav.guides" },
-  { slug: "tournament-projector-display", key: "nav.screens" },
-  { slug: "printable/round-robin-schedule", key: "nav.print" },
-  { slug: "alternatives/free-tournament-bracket-software", key: "nav.compare" },
-  { slug: "mcp", key: "nav.mcp" },
-];
-
-// Same reasoning as `related` in the content module: a nav link to a page that
-// no longer exists is a 404 on every page of the site, so a slug that stops
-// resolving drops out of the bar rather than shipping.
-const LINKS = DESTINATIONS.filter((link) => pageBySlug(link.slug));
+const DESTINATIONS: Record<string, { slug: string; key: MessageKey }[]> = {
+  cs: [
+    { slug: "generator-turnaju", key: "nav.formats" },
+    { slug: "guide/how-to-run-a-one-day-tournament", key: "nav.guides" },
+    { slug: "tournament-projector-display", key: "nav.screens" },
+    { slug: "printable/rozpis-kazdy-s-kazdym", key: "nav.print" },
+    { slug: "alternatives/free-tournament-bracket-software", key: "nav.compare" },
+    { slug: "mcp", key: "nav.mcp" },
+  ],
+  default: [
+    { slug: "tournament-generator", key: "nav.formats" },
+    { slug: "guide/how-to-run-a-one-day-tournament", key: "nav.guides" },
+    { slug: "tournament-projector-display", key: "nav.screens" },
+    { slug: "printable/round-robin-schedule", key: "nav.print" },
+    { slug: "alternatives/free-tournament-bracket-software", key: "nav.compare" },
+    { slug: "mcp", key: "nav.mcp" },
+  ],
+};
 
 export function SiteNav() {
   const { locale, t } = useI18n();
+  const destinations = (locale === "cs" ? DESTINATIONS.cs : DESTINATIONS.default).filter(
+    (link) => pageBySlug(link.slug),
+  );
 
   return (
     <header className="sitenav">
@@ -47,7 +55,7 @@ export function SiteNav() {
         </Link>
 
         <nav className="sitenav__links" aria-label={t("nav.label")}>
-          {LINKS.map((link) => (
+          {destinations.map((link) => (
             <Link
               key={link.slug}
               to="/$"

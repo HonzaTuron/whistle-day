@@ -43,7 +43,7 @@ import type { Page } from "./types";
 /** Field sizes worth a page of their own, per format. */
 const SINGLE_ELIM = range(3, 32);
 const DOUBLE_ELIM = [4, 5, 6, 7, 8, 10, 12, 16, 20, 24, 32];
-const ROUND_ROBIN = range(3, 16);
+const ROUND_ROBIN = range(3, 32);
 const SWISS = [8, 10, 12, 16, 20, 24, 32, 40, 48, 64];
 const GROUPS = [6, 8, 9, 10, 12, 14, 15, 16, 18, 20, 24, 28, 32];
 
@@ -57,9 +57,13 @@ function range(from: number, to: number): number[] {
 
 function singleElim(teams: number): Page {
   const byes = byeCount(teams);
+  const size = bracketSize(teams);
   const rounds = knockoutRounds(teams);
   const path = knockoutPath(teams);
   const matches = knockoutMatches(teams);
+  const r1Teams = Math.max(teams - byes, 0);
+  const r1Matches = r1Teams / 2;
+  const nextRoundName = rounds > 1 ? path[1] : "Final";
   // Three teams is the one size where the honest advice is not to run a
   // bracket at all: the bye is a free pass to the final, handed out by the draw.
   const three = teams === 3;
@@ -67,18 +71,22 @@ function singleElim(teams: number): Page {
   return {
     slug: `${teams}-team-single-elimination-bracket`,
     kind: "parametric",
-    title: `${teams} Team Single Elimination Bracket: Free Generator`,
+    title:
+      byes > 0
+        ? `${teams} Team Bracket with Byes: Single Elimination Generator`
+        : `${teams} Team Bracket (No Byes): Single Elimination Generator`,
     h1: `${teams} team single elimination bracket`,
     description:
-      `A ${teams} team knockout bracket: ${matches} matches over ${plural(rounds, "round")}` +
-      `${byes > 0 ? `, with ${plural(byes, "bye")}` : ""}. Generate it free, no account.`,
+      byes > 0
+        ? `A ${teams} team bracket with byes: ${byes} first-round byes, ${matches} matches over ${plural(rounds, "round")}. Printable & digital bracket, free.`
+        : `A ${teams} team bracket with no byes: ${matches} matches over ${plural(rounds, "round")}. Free printable sheet & live digital bracket.`,
     lede:
-      `${teams} teams, ${plural(matches, "match")}, ${plural(rounds, "round")}: ` +
-      `${path.join(", then ")}. ` +
-      (byes > 0
-        ? `${teams} is not a power of two, so the bracket is drawn at ${bracketSize(teams)} and ${plural(byes, "team")} skip the first round.`
-        : `${teams} is a power of two, so the bracket is full and nobody sits out.`) +
-      (three ? " With three teams, play everyone plays everyone instead." : ""),
+      byes > 0
+        ? `${teams} team bracket with byes: ${plural(matches, "match")}, ${plural(rounds, "round")}, and ${plural(byes, "first-round bye")}. ` +
+          `Because ${teams} is not a power of two, the bracket is drawn at ${size} with ${plural(byes, "team")} advancing directly to the ${nextRoundName.toLowerCase()}, while the other ${plural(r1Teams, "team")} play in round one.` +
+          (three ? " With three teams, play everyone plays everyone instead." : "")
+        : `${teams} teams, ${plural(matches, "match")}, ${plural(rounds, "round")}: ${path.join(", then ")}. ` +
+          `${teams} is a power of two, so the bracket is perfectly balanced and nobody sits out with a bye.`,
     generator: { preset: three ? "everyone" : "knockout", teams },
     facts: factsFor("knockout", teams),
     sections: [
@@ -94,17 +102,21 @@ function singleElim(teams: number): Page {
           ]
         : []),
       {
-        heading: byes > 0 ? `Where the ${plural(byes, "bye")} go` : "A full bracket",
+        heading:
+          byes > 0
+            ? `How byes work for ${teams} teams: ${byes === 1 ? "1 team gets a first-round bye" : `${byes} teams get a first-round bye`}`
+            : `No byes needed for ${teams} teams: a balanced ${teams}-team bracket`,
         body:
           byes > 0
             ? [
-                `A knockout bracket holds a power of two. ${teams} teams needs a bracket of ${bracketSize(teams)}, which leaves ${plural(byes, "position")} empty, and each empty position is a bye: a team that does not play in round one and enters in round two.`,
-                `The byes go to the top of the draw, to the seeded teams. That is the convention, and it is also the only placement that does not distort the bracket: scattering them at random would hand a free round to whoever happened to land next to one.`,
-                `Byes do not add matches. The ${matches} above is one match per eliminated team${teams >= 4 ? ", plus the third-place match" : ""}, and a team that skips round one has simply not played yet.`,
+                `In a **${teams} team bracket with byes**, ${teams} is not a power of two, so the draw expands to the next power of two (${size} slots). That leaves exactly **${plural(byes, "empty slot")}**, which become **${plural(byes, "first-round bye")}**.`,
+                `**Who gets the byes?** The top seeds (${byes === 1 ? "seed #1" : `seeds #1 through #${byes}`}) receive a first-round bye and skip straight to the ${nextRoundName.toLowerCase()}. The remaining ${plural(r1Teams, "team")} (${byes === teams - 1 ? `seed #${teams}` : `seeds #${byes + 1} through #${teams}`}) play in the opening round (${plural(r1Matches, "match")}).`,
+                `The ${r1Matches} winner${r1Matches === 1 ? "" : "s"} from round one then join the ${byes} rested seed${byes === 1 ? "" : "s"} in the ${nextRoundName.toLowerCase()}, completing a full ${size / 2}-team second round with zero further byes.`,
+                `Placing byes with the top seeds is standard tournament practice: it rewards regular season ranking and prevents distortion of the draw. Total matches: ${matches}${teams >= 4 ? " (including the third-place match)" : ""}.`,
               ]
             : [
-                `${teams} is a power of two, so the bracket is exactly full: every team plays in round one and nobody is handed a free pass. It is the tidiest a knockout gets.`,
-                `${plural(matches, "match")} in total (one per eliminated team${teams >= 4 ? ", plus the third-place match" : ""}) over ${plural(rounds, "round")}.`,
+                `Because ${teams} is an exact power of two (2^${rounds}), a **${teams} team bracket requires zero byes**. Every team enters in the opening round (${path[0]}), with ${teams / 2} matches starting simultaneously.`,
+                `The tournament progresses through ${plural(rounds, "round")}: ${path.map((name, i) => `${name} (${matchesInRound(teams, i)} matches)`).join(", then ")}${teams >= 4 ? ", plus a third-place match" : ""}. With ${matches} matches in total, every team plays an authentic opening match, and nobody receives an artificial bye.`,
               ],
       },
       {
@@ -133,11 +145,20 @@ function singleElim(teams: number): Page {
       ...(byes > 0
         ? [
             {
-              q: `How many byes with ${teams} teams?`,
-              a: `${byes}. The bracket is drawn at ${bracketSize(teams)} and the ${plural(byes, "spare position")} go to the top seeds, who enter in round two.`,
+              q: `How do byes work in a ${teams} team bracket?`,
+              a: `A ${teams} team bracket is drawn on a ${size}-team grid. Exactly ${byes} teams get a first-round bye (top seeds 1–${byes}) straight to the ${nextRoundName.toLowerCase()}, while the other ${r1Teams} teams play ${r1Matches} opening match${r1Matches === 1 ? "" : "es"}.`,
+            },
+            {
+              q: `Who gets the byes in a ${teams} team tournament?`,
+              a: `The top ${byes} seeds (seeds 1 through ${byes}) receive the first-round byes to reward seeding and maintain bracket balance.`,
             },
           ]
-        : []),
+        : [
+            {
+              q: `Does a ${teams} team bracket have byes?`,
+              a: `No. ${teams} is an exact power of two, so all ${teams} teams play in the opening round (${teams / 2} matches) with zero byes.`,
+            },
+          ]),
     ],
     related: relatives(
       "single-elimination-bracket-generator",
@@ -227,26 +248,33 @@ function roundRobin(teams: number): Page {
   return {
     slug: `${teams}-team-round-robin-schedule`,
     kind: "parametric",
-    title: `${teams} Team Round Robin Schedule: Free Generator`,
+    title: odd
+      ? `${teams} Team Round Robin Schedule (with Byes): Free Generator`
+      : `${teams} Team Round Robin Schedule (No Byes): Free Generator`,
     h1: `${teams} team round robin schedule`,
-    description:
-      `A ${teams} team round robin: ${matches} matches over ${plural(rounds, "round")}, ${each} each, with a live league table. Free, no account.`,
-    lede:
-      `Every team plays every other. ${plural(matches, "match")} in total, ${plural(each, "match")} each, over ${plural(rounds, "round")}` +
-      `${odd ? ", one more than an even field of this size, because somebody sits out every round." : "."}`,
+    description: odd
+      ? `A ${teams} team round robin schedule with byes: ${matches} matches over ${rounds} rounds (${each} each), live standings table. Free generator, no signup.`
+      : `A ${teams} team round robin schedule with no byes: ${matches} matches over ${rounds} rounds (${each} each). Free generator & live table.`,
+    lede: odd
+      ? `Every team plays every other. ${plural(matches, "match")} in total across ${rounds} rounds (${plural(each, "match")} each). ` +
+        `Because ${teams} is an odd number, one team sits out each round with a scheduled bye, meaning everybody gets exactly 1 rest round.`
+      : `Every team plays every other. ${plural(matches, "match")} in total, ${plural(each, "match")} each, over ${plural(rounds, "round")}. ` +
+        `Because ${teams} is even, every round pairs the entire field with zero byes.`,
     generator: { preset: "everyone", teams },
     facts: factsFor("everyone", teams),
     sections: [
       {
-        heading: odd ? `${teams} is odd, so there is a bye every round` : "Everybody plays every round",
+        heading: odd
+          ? `How byes work in a ${teams}-team round robin schedule`
+          : `Zero byes in a ${teams}-team round robin: full action every round`,
         body: odd
           ? [
-              `With ${teams} teams there is no way to pair everybody at once: ${teams - 1} play and one sits out. Over the tournament each team gets exactly one bye, which is why it takes ${rounds} rounds rather than the ${teams - 1} an even field of this size would need.`,
-              `A bye is not a match and it is not scored: the fixture count stays at ${matches}, and everybody still plays ${each}. The table is unaffected by who happened to sit out when.`,
+              `In a **${teams} team round robin with byes**, an odd number of teams cannot all play simultaneously: in each round, ${teams - 1} teams are paired into ${(teams - 1) / 2} matches while exactly 1 team sits out with a scheduled bye.`,
+              `Over the course of the ${rounds} rounds, every team receives exactly one bye round and plays ${plural(each, "match")}. Total fixtures remain at ${matches} (calculated as ${teams} × ${teams - 1} ÷ 2). A bye is not scored and awards zero points—it simply provides each team one rest rotation during the day.`,
             ]
           : [
-              `${teams} is even, so every round pairs the whole field: ${teams / 2} matches at once, ${rounds} rounds, and nobody sits out.`,
-              `That is the tidiest a round robin gets, and it is why even fields are worth arranging for if you have any say in the entry list.`,
+              `Because ${teams} is an even number, every team plays in every single round with **zero byes**. Each of the ${rounds} rounds pairs the entire field into ${teams / 2} simultaneous matches.`,
+              `That is the most efficient round robin format: every competitor plays ${each} matches, producing ${matches} total fixtures without anyone waiting on the bench.`,
             ],
       },
       {
@@ -278,6 +306,19 @@ function roundRobin(teams: number): Page {
           ? `${rounds}. An odd field needs one round per team, because one team sits out each round.`
           : `${rounds}. An even field pairs completely, so it is one fewer round than there are teams.`,
       },
+      ...(odd
+        ? [
+            {
+              q: `How do byes work in a ${teams} team round robin?`,
+              a: `With an odd field of ${teams} teams, each round features ${(teams - 1) / 2} matches while 1 team has a bye. Every team gets exactly one bye across the ${rounds} rounds.`,
+            },
+          ]
+        : [
+            {
+              q: `Does a ${teams} team round robin have byes?`,
+              a: `No. ${teams} is an even number, so all ${teams} teams play in all ${rounds} rounds without any byes.`,
+            },
+          ]),
     ],
     related: relatives(
       "round-robin-generator",

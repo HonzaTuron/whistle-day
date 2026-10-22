@@ -18,6 +18,12 @@ import type { Page } from "./types";
 /** The same words `PageView` puts around the content, in the page's language. */
 const CHROME = {
   en: { cta: "Set this up now", faq: "Common questions", updated: "Updated", related: "See also" },
+  cs: {
+    cta: "Vytvořit turnaj zdarma",
+    faq: "Časté dotazy",
+    updated: "Aktualizováno",
+    related: "Související rozpisy a návody",
+  },
   es: {
     cta: "Crear este torneo",
     faq: "Preguntas frecuentes",
@@ -43,7 +49,7 @@ function cta(page: Page, site: string, label: string): string[] {
 }
 
 export function pageMarkdown(page: Page, site: string): string {
-  const chrome = page.locale === "es" ? CHROME.es : CHROME.en;
+  const chrome = page.locale === "cs" ? CHROME.cs : page.locale === "es" ? CHROME.es : CHROME.en;
   const blocks: string[] = [`# ${page.h1}`, absolute(page.lede, site)];
 
   if (page.updated) blocks.push(`${chrome.updated} ${page.updated}`);
@@ -60,6 +66,20 @@ export function pageMarkdown(page: Page, site: string): string {
   }
 
   blocks.push(...cta(page, site, chrome.cta));
+
+  for (const grid of page.teamGrids ?? []) {
+    const lines = [`## ${grid.heading}`];
+    if (grid.description) lines.push(absolute(grid.description, site));
+    lines.push(
+      grid.items
+        .map(
+          (item) =>
+            `- [${item.label ?? `${item.teams} teams`}](${site}/${item.slug})${item.badge ? ` (${item.badge})` : ""}`,
+        )
+        .join("\n"),
+    );
+    blocks.push(...lines);
+  }
 
   for (const section of page.sections ?? []) {
     blocks.push(`## ${section.heading}`, ...section.body.map((text) => absolute(text, site)));

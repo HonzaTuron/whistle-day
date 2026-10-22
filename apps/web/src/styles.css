@@ -4855,6 +4855,70 @@ a.club__row:focus-visible {
   color: var(--muted);
 }
 
+/* --- team grids (hub directory of team counts) ----------------------------- */
+
+.doc__team-grid {
+  display: grid;
+  gap: 0.9rem;
+  padding: 1.25rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 0.75rem;
+}
+
+.doc__team-grid-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(6.2rem, 1fr));
+  gap: 0.5rem;
+}
+
+.doc__team-grid-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 0.65rem 0.4rem;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 0.5rem;
+  text-decoration: none;
+  color: var(--text);
+  transition: border-color 0.15s ease, background 0.15s ease, transform 0.15s ease;
+  text-align: center;
+}
+
+.doc__team-grid-card:hover {
+  border-color: var(--accent);
+  background: var(--surface-2);
+  text-decoration: none;
+  transform: translateY(-1px);
+}
+
+.doc__team-grid-card.is-power-of-two {
+  border-color: var(--line-strong);
+}
+
+.doc__team-grid-teams {
+  font-family: var(--numeric);
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.2;
+}
+
+.doc__team-grid-badge {
+  font-size: 0.68rem;
+  color: var(--muted);
+  margin-top: 0.2rem;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.doc__team-grid-badge--accent {
+  color: var(--accent);
+  font-weight: 600;
+}
+
 /* --- prose ---------------------------------------------------------------- */
 
 .doc__section {

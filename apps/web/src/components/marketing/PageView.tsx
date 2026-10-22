@@ -1,7 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { relatedLink, relatedTitle, type RelatedLink } from "../../content";
-import type { CodeBlock, Page } from "../../content/types";
+import type { CodeBlock, Page, TeamGrid } from "../../content/types";
 import { PrintableSheet } from "./PrintableSheet";
 import { SiteNav } from "./SiteNav";
 import { FORMAT_OF } from "../../content/formats-map";
@@ -26,9 +26,9 @@ import { SPORTS, type SportId } from "../../lib/scoring";
 /**
  * Chrome that is part of the page, not of the visitor's browser.
  *
- * A Spanish article prerenders before any bundle runs, so these strings cannot
+ * A Spanish or Czech article prerenders before any bundle runs, so these strings cannot
  * wait for `t()` — the server has no browser to ask, and an English button
- * under a Spanish lede is the page failing the search that found it.
+ * under a Czech lede is the page failing the search that found it.
  */
 const CHROME = {
   en: {
@@ -41,6 +41,17 @@ const CHROME = {
     privacy: "Privacy",
     terms: "Terms",
     deletion: "Data deletion",
+  },
+  cs: {
+    cta: "Vytvořit turnaj zdarma",
+    ctaNote: "Zdarma a bez registrace. Za minutu máte rozpis i QR kód pro hráče.",
+    faq: "Časté dotazy",
+    updated: "Aktualizováno",
+    related: "Související rozpisy a návody",
+    footer: "Turnajový organizátor zdarma. Bez registrace, bez reklam, bez limitů.",
+    privacy: "Soukromí",
+    terms: "Podmínky",
+    deletion: "Smazání údajů",
   },
   es: {
     cta: "Crear este torneo",
@@ -56,7 +67,9 @@ const CHROME = {
 } as const;
 
 function chromeOf(page: Page) {
-  return page.locale === "es" ? CHROME.es : CHROME.en;
+  if (page.locale === "cs") return CHROME.cs;
+  if (page.locale === "es") return CHROME.es;
+  return CHROME.en;
 }
 
 /**
@@ -66,7 +79,7 @@ function chromeOf(page: Page) {
  * whichever side of midnight the visitor's clock is on.
  */
 const longDate = (day: string, locale: Locale | undefined) =>
-  new Intl.DateTimeFormat(locale === "es" ? "es" : "en-GB", {
+  new Intl.DateTimeFormat(locale === "cs" ? "cs-CZ" : locale === "es" ? "es" : "en-GB", {
     dateStyle: "long",
     timeZone: "UTC",
   }).format(new Date(`${day}T00:00:00Z`));
@@ -116,10 +129,15 @@ export function PageView({ page }: { page: Page }) {
                 config: { thirdPlace: true },
               }}
               teams={page.generator.teams}
+              locale={page.locale}
             />
           ) : null}
 
           {page.generator && <Cta page={page} />}
+
+          {page.teamGrids?.map((grid) => (
+            <TeamGridView grid={grid} key={grid.heading} />
+          ))}
 
           {page.sections?.map((section) => (
             <section className="doc__section" key={section.heading}>
@@ -275,5 +293,35 @@ function Related({ page }: { page: Page }) {
         ))}
       </ul>
     </nav>
+  );
+}
+
+function TeamGridView({ grid }: { grid: TeamGrid }) {
+  return (
+    <section className="doc__team-grid">
+      <h2 className="doc__heading">{grid.heading}</h2>
+      {grid.description && (
+        <p className="doc__para">{renderInlineMarkdown(grid.description)}</p>
+      )}
+      <div className="doc__team-grid-cards">
+        {grid.items.map((item) => (
+          <Link
+            key={item.slug}
+            to="/$"
+            params={{ _splat: item.slug }}
+            className={`doc__team-grid-card ${item.isPowerOfTwo ? "is-power-of-two" : ""}`}
+          >
+            <span className="doc__team-grid-teams">{item.label ?? `${item.teams} teams`}</span>
+            {item.badge && (
+              <span
+                className={`doc__team-grid-badge ${item.isPowerOfTwo ? "doc__team-grid-badge--accent" : ""}`}
+              >
+                {item.badge}
+              </span>
+            )}
+          </Link>
+        ))}
+      </div>
+    </section>
   );
 }

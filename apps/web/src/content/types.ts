@@ -97,6 +97,25 @@ export interface GeneratorDefaults {
   lang?: Locale;
 }
 
+export interface AlternateLink {
+  hreflang: string;
+  slug: string;
+}
+
+export interface TeamGridItem {
+  teams: number;
+  slug: string;
+  label?: string;
+  badge?: string;
+  isPowerOfTwo?: boolean;
+}
+
+export interface TeamGrid {
+  heading: string;
+  description?: string;
+  items: TeamGridItem[];
+}
+
 export interface Page {
   /** Path without a leading slash: "8-team-single-elimination-bracket". */
   slug: string;
@@ -110,6 +129,7 @@ export interface Page {
   lede: string;
   facts?: Fact[];
   sections?: Section[];
+  teamGrids?: TeamGrid[];
   faq?: Faq[];
   /** In order. Only set this on a page whose sections are actually a procedure to follow, not a list of facts about one. */
   howTo?: HowToStep[];
@@ -122,7 +142,9 @@ export interface Page {
    */
   locale?: Locale;
   /** The other-language version of this page, for hreflang. */
-  alternate?: { hreflang: string; slug: string };
+  alternate?: AlternateLink;
+  /** Multiple other-language versions of this page, for hreflang. */
+  alternates?: AlternateLink[];
   /** Button label. Defaults to the locale's "set this up". */
   cta?: string;
   /** The line under the button. */
