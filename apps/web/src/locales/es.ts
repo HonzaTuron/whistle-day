@@ -103,7 +103,8 @@ export const es: Record<keyof Catalog, Message> = {
   // -------------------------------------------------------------------------
   // landing
   // -------------------------------------------------------------------------
-  "landing.title": "Whistle.day — Organizador de torneos gratis",
+  "landing.title": "Whistle.day — Organizador y generador de torneos gratis",
+  "landing.h1": "Organizador y generador de torneos gratis",
   "landing.description":
     "Organizador de torneos gratis. Sortea grupos, un cuadro o un suizo, dirige el día desde el teléfono y pon los resultados en la pantalla. Sin cuenta y sin anuncios.",
   "landing.eyebrow": "Resultados en vivo, en la pantalla",

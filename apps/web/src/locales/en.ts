@@ -110,9 +110,10 @@ export const en = {
   // -------------------------------------------------------------------------
   // landing
   // -------------------------------------------------------------------------
-  "landing.title": "Whistle.day — Free Tournament Organiser",
+  "landing.title": "Whistle.day — Free Tournament Organizer & Generator",
+  "landing.h1": "Free Tournament Organizer & Generator",
   "landing.description":
-    "Free tournament organiser. Draw groups, brackets or a Swiss, run the day from your phone, and put the results on a projector. No account, no ads.",
+    "Free tournament organizer. Draw groups, brackets or a Swiss, run the day from your phone, and put the results on a projector. No account, no ads.",
   "landing.eyebrow": "Live scores, on the wall",
   "landing.tagline": "Run a tournament off a phone and put it on the wall.",
   "landing.resume": "Back to {name}",
@@ -179,7 +180,7 @@ export const en = {
     "Whistle.day is also an MCP server — point Claude, ChatGPT or any MCP client at it and an agent can create a tournament, add teams and courts, draw a stage and settle matches on its own.",
   "landing.agentsLink": "See the MCP server",
   "landing.apiLink": "API reference",
-  "landing.footer": "Whistle.day, a free tournament organiser.",
+  "landing.footer": "Whistle.day, a free tournament organizer.",
   "landing.smithery": "Whistle.day on Smithery",
 
   // -------------------------------------------------------------------------

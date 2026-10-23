@@ -115,7 +115,8 @@ export function Landing() {
               <span className="home__eyebrow-dot" aria-hidden="true" />
               {t("landing.eyebrow")}
             </p>
-            <h1 className="home__logo">Whistle.day</h1>
+            <div className="home__logo">Whistle.day</div>
+            <h1 className="home__title">{t("landing.h1")}</h1>
             <p className="home__tagline">{t("landing.tagline")}</p>
 
             <div className="home__ctas">

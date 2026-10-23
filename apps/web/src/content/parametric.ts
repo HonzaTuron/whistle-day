@@ -415,9 +415,11 @@ function groups(teams: number): Page {
     slug: `${teams}-team-group-stage-and-playoff`,
     kind: "parametric",
     title: even
-      ? `${teams} Teams: ${shape}, Then a Playoff`
+      ? `${teams} Team Tournament Generator: ${shape}, Then a Playoff`
       : `${teams} Team Group Stage and Playoff: Free Generator`,
-    h1: `${teams} teams: ${shape}, then a playoff`,
+    h1: even
+      ? `${teams} team tournament generator: ${shape}, then a playoff`
+      : `${teams} teams: ${shape}, then a playoff`,
     description:
       `Draw ${teams} teams into ${shape} and a playoff that seeds itself from the tables. ${matches} matches, ${guaranteed}+ guaranteed each. Free.`,
     lede:

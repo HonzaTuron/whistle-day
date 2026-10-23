@@ -81,7 +81,7 @@ function printableRoundRobin(teams: number): Page {
   return {
     slug: `printable/${teams}-team-round-robin-schedule`,
     kind: "printable",
-    title: `Printable ${teams} Team Round Robin Schedule`,
+    title: `Printable ${teams} Team Round Robin Schedule: Free PDF Sheet`,
     h1: `Printable ${teams} team round robin schedule`,
     description:
       `A blank ${teams} team round robin schedule to print: all ${matches} fixtures, grouped by round, with score boxes. Free.`,
@@ -160,7 +160,7 @@ export const PRINTABLE_PAGES: Page[] = [
   {
     slug: "printable/round-robin-schedule",
     kind: "printable",
-    title: "Printable Round Robin Schedule: Any Number of Teams",
+    title: "Printable Round Robin Schedule: Free PDF Sheet",
     h1: "Printable round robin schedule",
     description:
       "Print a blank round robin schedule for any number of teams, grouped by round with score boxes. Free, no signup.",

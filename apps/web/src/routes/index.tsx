@@ -16,31 +16,31 @@ export const Route = createFileRoute("/")({
   },
   head: () => ({
     meta: [
-      { title: "Whistle.day — Free Tournament Organiser" },
+      { title: "Whistle.day — Free Tournament Organizer & Generator" },
       {
         name: "description",
         content:
-          "Free tournament organiser. Draw groups, brackets or a Swiss, run the day from your phone, and put the results on a projector. No account, no ads.",
+          "Free tournament organizer. Draw groups, brackets or a Swiss, run the day from your phone, and put the results on a projector. No account, no ads.",
       },
       { property: "og:site_name", content: "Whistle.day" },
       { property: "og:type", content: "website" },
       { property: "og:url", content: "https://whistle.day" },
-      { property: "og:title", content: "Whistle.day — Free Tournament Organiser" },
+      { property: "og:title", content: "Whistle.day — Free Tournament Organizer & Generator" },
       {
         property: "og:description",
         content:
-          "Free tournament organiser. Draw groups, brackets or a Swiss, run the day from your phone, and put the results on a projector. No account, no ads.",
+          "Free tournament organizer. Draw groups, brackets or a Swiss, run the day from your phone, and put the results on a projector. No account, no ads.",
       },
       { property: "og:image", content: "https://whistle.day/og.png" },
       { property: "og:image:width", content: "1200" },
       { property: "og:image:height", content: "630" },
       { property: "og:image:type", content: "image/png" },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:title", content: "Whistle.day — Free Tournament Organiser" },
+      { name: "twitter:title", content: "Whistle.day — Free Tournament Organizer & Generator" },
       {
         name: "twitter:description",
         content:
-          "Free tournament organiser. Draw groups, brackets or a Swiss, run the day from your phone, and put the results on a projector. No account, no ads.",
+          "Free tournament organizer. Draw groups, brackets or a Swiss, run the day from your phone, and put the results on a projector. No account, no ads.",
       },
       { name: "twitter:image", content: "https://whistle.day/og.png" },
     ],
