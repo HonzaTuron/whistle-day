@@ -281,3 +281,33 @@ func TestOpenAPICommandWritesFile(t *testing.T) {
 		}
 	}
 }
+
+func TestOpenAPICommandWritesHTML(t *testing.T) {
+	app := newTestApp(t)
+
+	outPath := filepath.Join(t.TempDir(), "docs.html")
+
+	rootCmd := &cobra.Command{Use: "pocketbase"}
+	RegisterCommand(app, rootCmd)
+
+	rootCmd.SetArgs([]string{"openapi", "--html", outPath})
+	if err := rootCmd.Execute(); err != nil {
+		t.Fatalf("command execution failed: %v", err)
+	}
+
+	raw, err := os.ReadFile(outPath)
+	if err != nil {
+		t.Fatalf("reading generated file: %v", err)
+	}
+
+	content := string(raw)
+	if !strings.Contains(content, "<!doctype html>") {
+		t.Errorf("expected HTML doctype in generated docs")
+	}
+	if !strings.Contains(content, "Whistle.day") {
+		t.Errorf("expected brand name in generated docs")
+	}
+	if !strings.Contains(content, "collection-tournaments") {
+		t.Errorf("expected collection sections in generated docs")
+	}
+}

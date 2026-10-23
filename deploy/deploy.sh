@@ -178,7 +178,7 @@ say "Checking the real thing, from outside"
 # ---------------------------------------------------------------------------
 # Through Caddy and TLS, which is the only version of "it works" that counts.
 failed=0
-for path in / /8-team-single-elimination-bracket /api/health /api/openapi.json /openapi.json; do
+for path in / /8-team-single-elimination-bracket /api/health /api/openapi.json /openapi.json /api/docs; do
 	code=$(curl -sS -o /dev/null -w '%{http_code}' -m 15 "https://$HOST$path" || echo "---")
 	printf '  %-40s %s\n' "$path" "$code"
 	[[ $code == 200 ]] || failed=1

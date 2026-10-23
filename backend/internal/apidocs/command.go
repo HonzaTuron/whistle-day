@@ -11,13 +11,16 @@ import (
 
 // RegisterCommand adds the `openapi` command to the root command.
 func RegisterCommand(app core.App, rootCmd *cobra.Command) {
-	var outPath string
+	var (
+		outPath  string
+		htmlMode bool
+	)
 
 	cmd := &cobra.Command{
 		Use:   "openapi [output-path]",
-		Short: "Generate the OpenAPI 3.1 specification JSON",
-		Long: "Generate the complete OpenAPI 3.1 specification JSON for the Whistle.day API,\n" +
-			"including live database schema definitions for all documented collections.",
+		Short: "Generate the OpenAPI 3.1 specification JSON or HTML docs",
+		Long: "Generate the complete OpenAPI 3.1 specification JSON or rendered HTML documentation\n" +
+			"for the Whistle.day API, including live database schema definitions for all documented collections.",
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			if devFlag := cmd.Flag("dev"); devFlag != nil && !devFlag.Changed {
 				_ = devFlag.Value.Set("false")
@@ -50,9 +53,24 @@ func RegisterCommand(app core.App, rootCmd *cobra.Command) {
 				return fmt.Errorf("migrations: %w", err)
 			}
 
-			specBytes, err := OpenAPI(app)
-			if err != nil {
-				return fmt.Errorf("build openapi: %w", err)
+			var (
+				payload []byte
+				kind    = "OpenAPI specification"
+			)
+
+			if htmlMode {
+				kind = "HTML reference"
+				page, err := Page(app)
+				if err != nil {
+					return fmt.Errorf("build docs page: %w", err)
+				}
+				payload = []byte(page)
+			} else {
+				specBytes, err := OpenAPI(app)
+				if err != nil {
+					return fmt.Errorf("build openapi: %w", err)
+				}
+				payload = specBytes
 			}
 
 			target := outPath
@@ -61,22 +79,23 @@ func RegisterCommand(app core.App, rootCmd *cobra.Command) {
 			}
 
 			if target == "" || target == "-" {
-				if _, err := os.Stdout.Write(append(specBytes, '\n')); err != nil {
+				if _, err := os.Stdout.Write(append(payload, '\n')); err != nil {
 					return err
 				}
 				return nil
 			}
 
-			if err := os.WriteFile(target, append(specBytes, '\n'), 0644); err != nil {
+			if err := os.WriteFile(target, append(payload, '\n'), 0644); err != nil {
 				return fmt.Errorf("write %s: %w", target, err)
 			}
 
-			cmd.Printf("Wrote OpenAPI specification to %s (%d bytes)\n", target, len(specBytes))
+			cmd.Printf("Wrote %s to %s (%d bytes)\n", kind, target, len(payload))
 			return nil
 		},
 	}
 
 	cmd.Flags().StringVarP(&outPath, "out", "o", "", "Output file path (default stdout)")
+	cmd.Flags().BoolVar(&htmlMode, "html", false, "Render as HTML documentation page instead of OpenAPI JSON")
 
 	rootCmd.AddCommand(cmd)
 }
