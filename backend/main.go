@@ -39,6 +39,7 @@ func main() {
 	oauth.RegisterOAuthServer(app)
 	oauth.RegisterSweep(app)
 	apidocs.RegisterRoutes(app)
+	apidocs.RegisterCommand(app, app.RootCmd)
 
 	if err := app.Start(); err != nil {
 		log.Fatal(err)

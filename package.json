@@ -10,6 +10,7 @@
   ],
   "scripts": {
     "check": "bun run typecheck && bun run web:test && bun run pb:test && bun run smoke",
+    "openapi": "cd backend && go run . openapi --dev=false ../apps/web/public/openapi.json",
     "typecheck": "tsc --noEmit -p packages/engine/tsconfig.json && tsc --noEmit -p apps/web/tsconfig.json",
     "web:test": "bun test",
     "pb:test": "cd backend && go vet ./... && go test ./...",

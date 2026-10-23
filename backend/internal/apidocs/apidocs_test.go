@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/pocketbase/pocketbase/tests"
+	"github.com/spf13/cobra"
 
 	_ "whistleday/backend/migrations"
 )
@@ -236,5 +237,47 @@ func TestInlineEscapesAndLinks(t *testing.T) {
 	want := `see <code>a&lt;b</code> at <a href="https://whistle.day/mcp">https://whistle.day/mcp</a>. &lt;script&gt;`
 	if got != want {
 		t.Errorf("inline =\n  %s\nwant\n  %s", got, want)
+	}
+}
+
+func TestOpenAPICommandWritesFile(t *testing.T) {
+	app := newTestApp(t)
+
+	outPath := filepath.Join(t.TempDir(), "openapi.json")
+
+	rootCmd := &cobra.Command{Use: "pocketbase"}
+	RegisterCommand(app, rootCmd)
+
+	rootCmd.SetArgs([]string{"openapi", outPath})
+	if err := rootCmd.Execute(); err != nil {
+		t.Fatalf("command execution failed: %v", err)
+	}
+
+	raw, err := os.ReadFile(outPath)
+	if err != nil {
+		t.Fatalf("reading generated file: %v", err)
+	}
+
+	var doc struct {
+		OpenAPI    string `json:"openapi"`
+		Components struct {
+			Schemas map[string]any `json:"schemas"`
+		} `json:"components"`
+		Paths map[string]any `json:"paths"`
+	}
+	if err := json.Unmarshal(raw, &doc); err != nil {
+		t.Fatalf("unmarshal generated openapi: %v", err)
+	}
+
+	if !strings.HasPrefix(doc.OpenAPI, "3.1") {
+		t.Errorf("openapi version = %q, want 3.1.x", doc.OpenAPI)
+	}
+	if len(doc.Paths) == 0 {
+		t.Errorf("generated doc has no paths")
+	}
+	for _, c := range spec.Collections {
+		if _, ok := doc.Components.Schemas[c.Name]; !ok {
+			t.Errorf("missing schema for collection %q", c.Name)
+		}
 	}
 }

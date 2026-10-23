@@ -21,6 +21,7 @@ backend/
 └── internal/apidocs/
     ├── openapi.json            the public API reference — edit this one
     ├── docs.html               the page /api/docs renders it into
+    ├── command.go              CLI command to generate the OpenAPI 3.1 document
     └── apidocs.go              serves both, adding fields from the live schema
 ```
 

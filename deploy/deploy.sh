@@ -111,6 +111,13 @@ else
 	die "No go compiler and no pocketbase binary found."
 fi
 
+say "Generating OpenAPI specification"
+if [[ -x release/pocketbase ]]; then
+	./release/pocketbase openapi --dev=false apps/web/public/openapi.json
+else
+	bun run openapi
+fi
+
 (cd apps/web && bun run build)
 bun build --compile --target=bun-linux-x64 \
 	apps/web/dist/server/server.js --outfile release/whistleday-web
@@ -171,7 +178,7 @@ say "Checking the real thing, from outside"
 # ---------------------------------------------------------------------------
 # Through Caddy and TLS, which is the only version of "it works" that counts.
 failed=0
-for path in / /8-team-single-elimination-bracket /api/health; do
+for path in / /8-team-single-elimination-bracket /api/health /api/openapi.json /openapi.json; do
 	code=$(curl -sS -o /dev/null -w '%{http_code}' -m 15 "https://$HOST$path" || echo "---")
 	printf '  %-40s %s\n' "$path" "$code"
 	[[ $code == 200 ]] || failed=1
