@@ -415,7 +415,7 @@ function groups(teams: number): Page {
     slug: `${teams}-team-group-stage-and-playoff`,
     kind: "parametric",
     title: even
-      ? `${teams} Team Tournament Generator: ${shape}, Then a Playoff`
+      ? `${teams} Team Tournament: ${shape}, Then Playoff | Free Generator`
       : `${teams} Team Group Stage and Playoff: Free Generator`,
     h1: even
       ? `${teams} team tournament generator: ${shape}, then a playoff`
